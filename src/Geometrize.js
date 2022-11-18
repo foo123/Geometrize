@@ -55,61 +55,95 @@ function makeClass(superklass, klass, statiks)
     }
     return constructor;
 }
-function onObservableChange(cb, add)
+function observeArray(array, typecaster, equals)
 {
-    var self = this, index;
-    if (is_function(cb))
-    {
-        if (false === add)
-        {
-            index = self.$cb.indexOf(cb);
-            if (-1 !== index) self.$cb.splice(index, 1);
-        }
-        else
-        {
-            index = self.$cb.indexOf(cb);
-            if (-1 !== index) self.$cb.push(cb);
-        }
-    }
-}
-function observeArray(array)
-{
-    if (onObservableChange === array.onChange) return array;
+    if (is_function(array.$unobserve)) return array;
 
-    var notify = debounce(function(array, item, index, method) {
-        array.$cb.forEach(function(cb) {cb(array, item, index, method);});
-    }, 10);
-    var methodInterceptor = function(array, notify) {
-        var interceptor = function(array, method, notify) {
+    var notify = function(changed) {
+        array.$cb.forEach(function(cb) {cb(changed);});
+    };
+
+    var doNotifyItems = true;
+
+    equals = equals || function(a, b) {return a === b;};
+
+    var methodInterceptor = function() {
+        var interceptor = function(method) {
             return function() {
-                var initialLength = array.length;
-                var result = Array.prototype[method].apply(array, arguments);
-                if ('push' === method || 'unshift' === method || 'splice' === method)
+                var args = arguments, result = null,
+                    index = 0,
+                    initialLength = array.length,
+                    finalLength = 0;
+
+                if (typecaster)
                 {
-                    itemInterceptor(array, initialLength, array.length, notify);
+                    if ('push' === method || 'unshift' === method)
+                    {
+                        args = Array.prototype.map.apply(args, typecaster);
+                    }
+                    if ('splice' === method && 2 < args.length)
+                    {
+                        args = Array.prototype.slice.call(args, 0, 2).concat(Array.prototype.slice.call(args, 2).map(typecaster));
+                    }
                 }
-                notify(array, null, null, method);
+
+                if ('unshift' === method || 'splice' === method)
+                {
+                    // avoid superfluous notifications
+                    doNotifyItems = false;
+                }
+                result = Array.prototype[method].apply(array, args);
+                if ('unshift' === method || 'splice' === method)
+                {
+                    // restore notifications
+                    doNotifyItems = true;
+                }
+
+                finalLength = array.length;
+                if (('push' === method || 'unshift' === method || 'splice' === method) && (finalLength > initialLength))
+                {
+                    itemInterceptor(initialLength, finalLength);
+                }
+
+                if ('push' === method)
+                {
+                    notify({target:array, method:method, from:initialLength, to:finalLength});
+                }
+                else if ('unshift' === method)
+                {
+                    notify({target:array, method:method, from:0, to:finalLength-initialLength-1});
+                }
+                else if ('splice' === method && 2 < args.length)
+                {
+                    notify({target:array, method:method, from:args[0], to:args[0]+args.length-3});
+                }
+                else
+                {
+                    notify({target:array, method:method});
+                }
+
                 return result;
             };
         };
         ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
-            array[method] = interceptor(array, method, notify);
+            array[method] = interceptor(method);
         });
-        return array;
     };
 
-    var itemInterceptor = function(array, start, stop, notify) {
-        var interceptor = function(array, index, notify) {
+    var itemInterceptor = function(start, stop) {
+        var interceptor = function(index) {
             var key = String(index), val = array[index];
             Object.defineProperty(array, key, {
                 get() {
                     return val;
                 },
                 set(value) {
-                    if (val !== value)
+                    if (typecaster) value = typecaster(value);
+                    var doNotify = !equals(val, value);
+                    val = value;
+                    if (doNotify && doNotifyItems)
                     {
-                        val = value;
-                        notify(array, val, index, 'set');
+                        notify({target:array, method:'set', from:index, to:index});
                     }
                 },
                 enumerable: true
@@ -117,13 +151,47 @@ function observeArray(array)
         };
         for (var index=start; index<stop; ++index)
         {
-            interceptor(array, index, notify);
+            interceptor(index);
         }
-        return array;
     };
-    array = itemInterceptor(methodInterceptor(array, notify), 0, array.length, notify);
+
+    methodInterceptor();
+
+    itemInterceptor(0, array.length);
+
     array.$cb = [];
-    array.onChange = onObservableChange;
+    array.onChange = function onChange(cb, add) {
+        var index;
+        if (is_function(cb))
+        {
+            if (false === add)
+            {
+                index = array.$cb.indexOf(cb);
+                if (-1 !== index) array.$cb.splice(index, 1);
+            }
+            else
+            {
+                index = array.$cb.indexOf(cb);
+                if (-1 !== index) array.$cb.push(cb);
+            }
+        }
+    };
+
+    array.$unobserve = function() {
+        delete array.$unobserve;
+
+        delete array.$cb;
+        delete array.onChange;
+
+        ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
+            array[method] = Array.prototype[method];
+        });
+
+        var values = array.slice();
+        array.length = 0;
+        array.push.apply(array, values);
+    };
+
     return array;
 }
 
@@ -139,133 +207,195 @@ var Matrix = makeClass(null, {
         {
             return new Matrix(m00, m01, m02, m10, m11, m12, m20, m21, m22);
         }
-        if (is_array(m00) && 9 <= m00.length)
+        if (is_array(m00) && (9 <= m00.length))
         {
-            self.m00 = m00[0] || 0;
-            self.m01 = m00[1] || 0;
-            self.m02 = m00[2] || 0;
-            self.m10 = m00[3] || 0;
-            self.m11 = m00[4] || 0;
-            self.m12 = m00[5] || 0;
-            self.m20 = m00[6] || 0;
-            self.m21 = m00[7] || 0;
-            self.m22 = m00[8] || 0;
+            self.$00 = m00[0] || 0;
+            self.$01 = m00[1] || 0;
+            self.$02 = m00[2] || 0;
+            self.$10 = m00[3] || 0;
+            self.$11 = m00[4] || 0;
+            self.$12 = m00[5] || 0;
+            self.$20 = 0;
+            self.$21 = 0;
+            self.$22 = 1;
         }
         else
         {
-            self.m00 = m00 || 0;
-            self.m01 = m01 || 0;
-            self.m02 = m02 || 0;
-            self.m10 = m10 || 0;
-            self.m11 = m11 || 0;
-            self.m12 = m12 || 0;
-            self.m20 = m20 || 0;
-            self.m21 = m21 || 0;
-            self.m22 = m22 || 0;
+            self.$00 = m00 || 0;
+            self.$01 = m01 || 0;
+            self.$02 = m02 || 0;
+            self.$10 = m10 || 0;
+            self.$11 = m11 || 0;
+            self.$12 = m12 || 0;
+            self.$20 = 0;
+            self.$21 = 0;
+            self.$22 = 1;
         }
     },
-    m00: 1
-    m01: 0,
-    m02: 0,
-    m10: 0,
-    m11: 1,
-    m12: 0,
-    m20: 0,
-    m21: 0,
-    m22: 1,
+    $00: 1
+    $01: 0,
+    $02: 0,
+    $10: 0,
+    $11: 1,
+    $12: 0,
+    $20: 0,
+    $21: 0,
+    $22: 1,
+    clone: function() {
+        return new Matrix(
+        this.$00, this.$01, this.$02,
+        this.$10, this.$11, this.$12,
+        this.$20, this.$21, this.$22
+        );
+    },
     add: function (other) {
         var self = this;
         return other instanceof Matrix ? new Matrix(
-            self.m00+other.m00,
-            self.m01+other.m01,
-            self.m02+other.m02,
-            self.m10+other.m10,
-            self.m11+other.m11,
-            self.m12+other.m12,
-            self.m20+other.m20,
-            self.m21+other.m21,
-            self.m22+other.m22,
+            self.$00 + other.$00,
+            self.$01 + other.$01,
+            self.$02 + other.$02,
+            self.$10 + other.$10,
+            self.$11 + other.$11,
+            self.$12 + other.$12,
+            0,
+            0,
+            1
         ) : new Matrix(
-            self.m00+other,
-            self.m01+other,
-            self.m02+other,
-            self.m10+other,
-            self.m11+other,
-            self.m12+other,
-            self.m20+other,
-            self.m21+other,
-            self.m22+other,
+            self.$00 + other,
+            self.$01 + other,
+            self.$02 + other,
+            self.$10 + other,
+            self.$11 + other,
+            self.$12 + other,
+            0,
+            0,
+            1
         );
     },
     mul: function (other) {
         var self = this;
         return other instanceof Matrix ? new Matrix(
-            self.m00*other.m00+self.m01*other.m10+self.m02*other.m20,
-            self.m00*other.m01+self.m01*other.m11+self.m02*other.m21,
-            self.m00*other.m02+self.m01*other.m12+self.m02*other.m22,
-            self.m10*other.m00+self.m11*other.m10+self.m12*other.m20,
-            self.m10*other.m01+self.m11*other.m11+self.m12*other.m21,
-            self.m10*other.m02+self.m11*other.m12+self.m12*other.m22,
-            self.m20*other.m00+self.m21*other.m10+self.m22*other.m20,
-            self.m20*other.m01+self.m21*other.m11+self.m22*other.m21,
-            self.m20*other.m02+self.m21*other.m12+self.m22*other.m22,
+            self.$00*other.$00 + self.$01*other.$10 + self.$02*other.$20,
+            self.$00*other.$01 + self.$01*other.$11 + self.$02*other.$21,
+            self.$00*other.$02 + self.$01*other.$12 + self.$02*other.$22,
+            self.$10*other.$00 + self.$11*other.$10 + self.$12*other.$20,
+            self.$10*other.$01 + self.$11*other.$11 + self.$12*other.$21,
+            self.$10*other.$02 + self.$11*other.$12 + self.$12*other.$22,
+            0,
+            0,
+            1
         ) : new Matrix(
-            self.m00*other,
-            self.m01*other,
-            self.m02*other,
-            self.m10*other,
-            self.m11*other,
-            self.m12*other,
-            self.m20*other,
-            self.m21*other,
-            self.m22*other,
+            self.$00*other,
+            self.$01*other,
+            self.$02*other,
+            self.$10*other,
+            self.$11*other,
+            self.$12*other,
+            0,
+            0,
+            1
         );
     },
     transform: function(point) {
-        return transform(this, point);
+        var x = point.x, y = point.y;
+        return new Point(
+            this.$00*x + this.$01*y + this.$02,
+            this.$10*x + this.$11*y + this.$12
+        );
+    },
+    transformSelf: function(point) {
+        var x = point.x, y = point.y;
+        point.x = this.$00*x + this.$01*y + this.$02;
+        point.y = this.$10*x + this.$11*y + this.$12;
+        return point;
+    },
+    toArray: function() {
+        return [
+        this.$00, this.$01, this.$02,
+        this.$10, this.$11, this.$12,
+        this.$20, this.$21, this.$22
+        ];
+    },
+    toTex: function() {
+        return Matrix.arrayTex(this.toArray(), 3, 3);
+    },
+    toString: function() {
+        return Matrix.arrayString(this.toArray(), 3, 3);
     }
 }, {
     eye: function() {
         return new Matrix(
-            1,0,0,
-            0,1,0,
-            0,0,1
+        1,0,0,
+        0,1,0,
+        0,0,1
         );
     },
     scale: function(sx, sy) {
         return new Matrix(
-            sx,0,0,
-            0,sy,0,
-            0,0,1
+        sx,0,0,
+        0,sy,0,
+        0,0,1
         );
     },
     shearX: function(s) {
         return new Matrix(
-            1,s,0,
-            0,1,0,
-            0,0,1
+        1,s || 0,0,
+        0,1,0,
+        0,0,1
         );
     },
     shearY: function(s) {
         return new Matrix(
-            1,0,0,
-            s,1,0,
-            0,0,1
+        1,0,0,
+        s || 0,1,0,
+        0,0,1
         );
     },
     translate: function(tx, ty) {
         return new Matrix(
-            1,0,tx || 0,
-            0,1,ty || 0,
-            0,0,1
+        1,0,tx || 0,
+        0,1,ty || 0,
+        0,0,1
         );
     },
     rotate: function(theta) {
+        theta = theta || 0;
         return new Matrix(
-            stdMath.cos(theta),-stdMath.sin(theta),0,
-            stdMath.sin(theta),stdMath.cos(theta),0,
-            0,0,1
+        stdMath.cos(theta),-stdMath.sin(theta),0,
+        stdMath.sin(theta),stdMath.cos(theta),0,
+        0,0,1
         );
+    },
+    arrayTex: function(array, rows, cols) {
+        var tex = '\\begin{pmatrix}';
+        for (var i=0; i<rows; ++i)
+        {
+            tex += array.slice(i*cols,i*cols+cols).join('&');
+            if (i+1 < rows) tex += '\\\\';
+        }
+        tex += '\\end{pmatrix}';
+        return tex;
+    },
+    arrayString: function(array, rows, cols) {
+        var maxlen = array.reduce(function(maxlen, x) {
+            return stdMath.max(maxlen, Str(x).length);
+        }, 0);
+        var str = '';
+        for (var i=0; i<rows; ++i)
+        {
+            str += '['+array.slice(i*cols,i*cols+cols).map(function(x){return pad(x, maxlen);}).join(' ')+']';
+            if (i+1 < rows) str += "\n";
+        }
+        return str;
+    }
+    pointTex: function(point) {
+        return '\\begin{pmatrix}'+Str(point.x)+'\\\\'+Str(point.y)+'\\\\1\\end{pmatrix}';
+    },
+    pointString: function(point) {
+        var maxlen = [point.x, point.y].reduce(function(maxlen, s) {
+            return stdMath.max(maxlen, Str(s).length);
+        }, 0);
+        return '['+pad(point.x, maxlen)+"]\n["+pad(point.y, maxlen)+"]\n["+pad(1, maxlen)+']';
     }
 });
 
@@ -322,7 +452,8 @@ var Primitive = makeClass(null, {
         var self = this;
         if (self.$cb && self.$pb) self.$pb();
         return self;
-    }
+    },
+    clone: function() {}
 });
 
 // 2D Point class
@@ -386,11 +517,24 @@ var Point = makeClass(Primitive, {
             self.$super.dispose.call(self);
         };
     },
+    clone: function() {
+        return new Point(this.x, this.y);
+    },
     transform: function(matrix) {
         return matrix.transform(this);
     },
     isEqual: function(other) {
-        return stdMath.abs(this.x-other.x) < EPSILON && stdMath.abs(this.y-other.y) < EPSILON;
+        if (other instanceof Point)
+        {
+            return is_almost_equal(this.x, other.x) && is_almost_equal(this.y, other.y);
+        }
+        return false;
+    },
+    dot: function(other) {
+        return dotp(this, other);
+    },
+    cross: function(other) {
+        return crossp(this, other);
     },
     distanceToLine: function(p1, p2) {
         return p1 instanceof Line ? point_line_distance(this, p1.start, p1.end) : point_line_distance(this, p1, p2);
@@ -408,6 +552,12 @@ var Point = makeClass(Primitive, {
             return other.intersects(this);
         }
         return false;
+    },
+    toTex: function() {
+        return '\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\end{pmatrix}';
+    },
+    toString: function() {
+        return 'Point('+Str(this.x)+','+Str(this.y)+')';
     }
 });
 
@@ -415,10 +565,10 @@ var Point = makeClass(Primitive, {
 var Line = makeClass(Primitive, {
     constructor: function Line(start, end) {
         var self = this, _start = null, _end = null,
-            _length = null, onChange;
+            _length = null, onPointChange;
         if (start instanceof Line) return start;
         if (!(self instanceof Line)) return new Line(start, end);
-        onChange = function onChange(point) {
+        onPointChange = function onPointChange(point) {
             if (point.isDirty())
             {
                 _length = null;
@@ -428,8 +578,8 @@ var Line = makeClass(Primitive, {
         };
         _start = Point(start);
         _end = Point(end);
-        _start.onChange(onChange);
-        _end.onChange(onChange);
+        _start.onChange(onPointChange);
+        _end.onChange(onPointChange);
         Object.defineProperty(self, 'start', {
             get() {
                 return _start;
@@ -438,8 +588,8 @@ var Line = makeClass(Primitive, {
                 start = Point(start);
                 if (_start !== start)
                 {
-                    _start.onChange(onChange, false);
-                    start.onChange(onChange);
+                    _start.onChange(onPointChange, false);
+                    start.onChange(onPointChange);
                     if (!_start.isEqual(start))
                     {
                         _start = start;
@@ -456,7 +606,8 @@ var Line = makeClass(Primitive, {
                         self.triggerChange();
                     }
                 }
-            }
+            },
+            enumerable: true
         });
         Object.defineProperty(self, 'end', {
             get() {
@@ -466,8 +617,8 @@ var Line = makeClass(Primitive, {
                 end = Point(end);
                 if (_end !== end)
                 {
-                    _end.onChange(onChange, false);
-                    end.onChange(onChange);
+                    _end.onChange(onPointChange, false);
+                    end.onChange(onPointChange);
                     if (!_end.isEqual(end))
                     {
                         _end = end;
@@ -484,7 +635,8 @@ var Line = makeClass(Primitive, {
                         self.triggerChange();
                     }
                 }
-            }
+            },
+            enumerable: true
         });
         Object.defineProperty(self, 'length', {
             get() {
@@ -493,7 +645,8 @@ var Line = makeClass(Primitive, {
                     _length = euclidean_distance(_start, _end);
                 }
                 return _length;
-            }
+            },
+            enumerable: true
         });
         self.isDirty = function(isDirty) {
             if (false === isDirty)
@@ -506,19 +659,31 @@ var Line = makeClass(Primitive, {
         self.dispose = function() {
             if (_start)
             {
-                _start.onChange(onChange, false);
+                _start.onChange(onPointChange, false);
                 _start = null;
             }
             if (_end)
             {
-                _end.onChange(onChange, false);
+                _end.onChange(onPointChange, false);
                 _end = null;
             }
             self.$super.dispose.call(self);
         };
     },
+    clone: function() {
+        return new Line(this.start.clone(), this.end.clone());
+    },
     transform: function(matrix) {
         return new Line(this.start.transform(matrix), this.end.transform(matrix));
+    },
+    getPoint: function(t) {
+        t = t || 0;
+        if (0 > t || 1 < t) return null;
+        var p0 = this.start, p1 = this.end;
+        return new Point(
+            p0.x*(1-t)+p1.x*t,
+            p0.y*(1-t)+p1.y*t
+        );
     },
     distanceToPoint: function(point) {
         return point_line_distance(point, this.start, this.end);
@@ -535,7 +700,17 @@ var Line = makeClass(Primitive, {
         {
             return line_line_intersection(this.start, this.end, other.start, other.end);
         }
+        else if ((other instanceof Primitive) && is_function(other.intersects))
+        {
+            return other.intersects(this);
+        }
         return false;
+    },
+    toTex: function() {
+        return Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t';
+    },
+    toString: function() {
+        return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';
     }
 });
 
@@ -544,11 +719,11 @@ var Line = makeClass(Primitive, {
 var Polyline = makeClass(Primitive, {
     constructor: function Polyline(points) {
         var self = this, _points = null, _length = null,
-            onChange, onChangeArray;
+            onPointChange, onArrayChange;
         if (points instanceof Polyline) return points;
         if (!(self instanceof Polyline)) return new Polyline(points);
         if (!is_array(points)) points = [points];
-        onChange = function onChange(point) {
+        onPointChange = function onPointChange(point) {
             if (point.isDirty())
             {
                 _length = null;
@@ -556,29 +731,31 @@ var Polyline = makeClass(Primitive, {
                 self.triggerChange();
             }
         };
-        onChangeArray = function onChangeArray(array, point, index, method) {
-            if (point) point.isDirty(true);
+        onArrayChange = debounce(function onArrayChange(changed) {
             _length = null;
             self.isDirty(true);
             self.triggerChange();
-        };
-        _points = observeArray(points.map(Point));
-        _points.forEach(function(point) {point.onChange(onChange);});
-        _points.onChange(onChangeArray);
+        }, 10);
+        _points = observeArray(points.map(Point), Point, function(a, b) {return a.isEqual(b);});
+        _points.forEach(function(point) {point.onChange(onPointChange);});
+        _points.onChange(onArrayChange);
         Object.defineProperty(self, 'points', {
             get() {
                 return _points;
             },
             set(points) {
                 if (!is_array(points)) points = [points];
-                points = observeArray(points.map(Point));
-                _points.forEach(function(point) {point.onChange(onChange, false);});
-                _points.onChange(onChangeArray, false);
-                _points = points;
-                _points.forEach(function(point) {point.onChange(onChange);});
-                _points.onChange(onChangeArray);
-                self.isDirty(true);
-                self.triggerChange();
+                if (_points !== points)
+                {
+                    _points.$unobserve();
+                    _points.forEach(function(point) {point.onChange(onPointChange, false);});
+                    _points = observeArray(points.map(Point), Point, function(a, b) {return a.isEqual(b);});
+                    _points.forEach(function(point) {point.onChange(onPointChange);});
+                    _points.onChange(onArrayChange);
+                    _length = null;
+                    self.isDirty(true);
+                    self.triggerChange();
+                }
             }
         });
         Object.defineProperty(self, 'lines', {
@@ -590,7 +767,8 @@ var Polyline = makeClass(Primitive, {
                     }
                     return lines;
                 }, new Array(_points.length-1)) : [];
-            }
+            },
+            enumerable: true
         });
         Object.defineProperty(self, 'length', {
             get() {
@@ -603,7 +781,8 @@ var Polyline = makeClass(Primitive, {
                     }
                 }
                 return _length;
-            }
+            },
+            enumerable: true
         });
         self.isDirty = function(isDirty) {
             if (false === isDirty)
@@ -615,15 +794,26 @@ var Polyline = makeClass(Primitive, {
         self.dispose = function() {
             if (_points)
             {
-                _points.forEach(function(point) {point.onChange(onChange, false);});
-                _points.onChange(onChangeArray, false);
+                _points.$unobserve();
+                _points.forEach(function(point) {point.onChange(onPointChange, false);});
                 _points = null;
             }
             self.$super.dispose.call(self);
         };
     },
+    clone: function() {
+        return new Polyline(this.points.map(function(point) {return point.clone();}));
+    },
     transform: function(matrix) {
         return new Polyline(this.points.map(function(point) {return point.transform(matrix);}));
+    },
+    getPoint: function(t) {
+        var lines = this.lines, n = lines.length, i;
+        t = t || 0;
+        if (0 > t || 1 < t || 0 >= n) return null;
+        // 0-1/n, 1/n-2/n,..,(n-1)/n,n/n
+        i = stdMath.floor(n * t);
+        return lines[i].getPoint(t);
     },
     distanceToPoint: function(point) {
         return 1 < _points.length ? _points.reduce(function(dist, _, i) {
@@ -642,42 +832,164 @@ var Polyline = makeClass(Primitive, {
             }
             return res;
         }, false) : false;
+    },
+    intersects: function(other) {
+        if (other instanceof Point)
+        {
+            return this.hasPoint(other) ? other : false;
+        }
+        else if (other instanceof Line)
+        {
+            var i = this.lines.reduce(function(i, line) {
+                var p;
+                if (p=line.intersects(other))
+                    i.push(p);
+                return i;
+            }, []);
+            return i.length ? i : false;
+        }
+        else if (other instanceof Polyline)
+        {
+            var i = [], n, m, p,
+                l1 = this.lines, l2 = other.lines;
+            for (n=0; n<l1.length; ++n)
+            {
+                for (m=0; m<l2.length; ++m)
+                {
+                    if (p = l1[n].intersects(l2[m]))
+                        i.push(p);
+                }
+            }
+            return i.length ? i : false;
+        }
+        else if ((other instanceof Primitive) && is_function(other.intersects))
+        {
+            return other.intersects(this);
+        }
+        return false;
+    },
+    toTex: function() {
+        return '\\left\\{'+this.lines.map(Tex).join('\\\\')+'\\right\\\\';
+    },
+    toString: function() {
+        return 'Polyline('+this.points.map(Str).join(',')+')';
     }
 });
 
-/*function Polygon(vertices)
-{
-    var self = this;
-    if (vertices instanceof Polygon) return vertices;
-    if (!(self instanceof Polygon)) return new Polygon(vertices);
-    self.vertices = vertices.map(Point);
-}
-Polygon.prototype = {
-    constructor: Polygon,
-    vertices: null,
+// 2D Polygon class
+// defined by vertices as a closed polyline
+var Polygon = makeClass(Primitive, {
+    constructor: function Polygon(vertices) {
+        var self = this, _vertices, _length = null, _area = null,
+            onPointChange, onArrayChange;
+        if (vertices instanceof Polygon) return vertices;
+        if (!(self instanceof Polygon)) return new Polygon(vertices);
+        if (!is_array(vertices)) vertices = [vertices];
+        onPointChange = function onPointChange(point) {
+            if (point.isDirty())
+            {
+                _length = null;
+                _area = null;
+                self.isDirty(true);
+                self.triggerChange();
+            }
+        };
+        onArrayChange = debounce(function onArrayChange(changed) {
+            _length = null;
+            _area = null;
+            self.isDirty(true);
+            self.triggerChange();
+        }, 10);
+        _vertices = observeArray(vertices.map(Point), Point, function(a, b) {return a.isEqual(b);});
+        _vertices.forEach(function(point) {point.onChange(onPointChange);});
+        _vertices.onChange(onArrayChange);
+        Object.defineProperty(self, 'vertices', {
+            get() {
+                return _vertices;
+            },
+            set(vertices) {
+                if (!is_array(vertices)) vertices = [vertices];
+                if (_vertices !== vertices)
+                {
+                    _vertices.$unobserve();
+                    _vertices.forEach(function(point) {point.onChange(onPointChange, false);});
+                    _vertices = observeArray(vertices.map(Point), Point, function(a, b) {return a.isEqual(b);});
+                    _vertices.forEach(function(point) {point.onChange(onPointChange);});
+                    _vertices.onChange(onArrayChange);
+                    _length = null;
+                    _area = null;
+                    self.isDirty(true);
+                    self.triggerChange();
+                }
+            }
+        });
+        Object.defineProperty(self, 'edges', {
+            get() {
+                return 1 < _vertices.length ? _vertices.map(function(vertex, i) {
+                    return new Line(vertex, _vertices[(i+1) % _vertices.length]);
+                }) : [];
+            },
+            enumerable: true
+        });
+        Object.defineProperty(self, 'length', {
+            get() {
+                if (null == _length)
+                {
+                    _length = 0;
+                    for (var i=0,n=_vertices.length; i<n; ++i)
+                    {
+                        _length += euclidean_distance(_vertices[i], _vertices[(i+1) % n]);
+                    }
+                }
+                return _length;
+            },
+            enumerable: true
+        });
+        Object.defineProperty(self, 'area', {
+            get() {
+                if (null == _area)
+                {
+                    _area = 0;
+                    for (var i=0,n=_vertices.length; i<n; ++i)
+                    {
+                        // shoelace formula
+                        _area += _vertices[i].cross(_vertices[(i+1) % n]) / 2;
+                    }
+                }
+                return _area;
+            },
+            enumerable: true
+        });
+        self.isDirty = function(isDirty) {
+            if (false === isDirty)
+            {
+                _vertices.forEach(function(point) {point.isDirty(false);});
+            }
+            return self.$super.isDirty.apply(self, arguments);
+        };
+        self.dispose = function() {
+            if (_vertices)
+            {
+                _vertices.$unobserve();
+                _vertices.forEach(function(point) {point.onChange(onPointChange, false);});
+                _vertices = null;
+            }
+            self.$super.dispose.call(self);
+        };
+    },
+    clone: function() {
+        return new Polygon(this.vertices.map(function(vertex) {return vertex.clone();}));
+    },
     transform: function(matrix) {
         return new Polygon(this.vertices.map(function(vertex) {return vertex.transform(matrix);}));
     },
-    circumferance: function() {
-        var points = this.points, sum = 0, i, n = points.length-1;
-        for (i=0; i<n; ++i) sum += euclidean_distance(points[i], points[i+1]);
-        if (1 < n) sum += euclidean_distance(points[0], points[n]);
-        return sum;
+    toTex: function() {
+        return '\left( ' + this.vertices.map(Tex).join(',') + ' \right)';
     },
-    area: function() {
-        var points = this.points, d = 0, i, n = points.length-1, x1, x2, y1, y2;
-        for (i=0; i<n; ++i)
-        {
-            // shoelace area formula for simple polygons
-            x1 = points[i].x;
-            x2 = points[i+1].x;
-            y1 = points[i].y;
-            y2 = points[i+1].y;
-            d += (x1*y2-x2*y1) / 2;
-        }
-        return d;
+    toString: function() {
+        return 'Polygon('+this.vertices.map(Str).join(',')+')';
     }
-};*/
+});
 
 // ---- utilities -----
 function is_numeric(x)
@@ -715,12 +1027,40 @@ function debounce(func, wait, immediate)
         if (callNow) func.apply(context, args);
     };
 }
-function transform(matrix, point)
+function Tex(o)
 {
-    return new Point(
-       matrix.m00*point.x+matrix.m01*point.y+matrix.m02,
-       matrix.m10*point.x+matrix.m11*point.y+matrix.m12
-    );
+    return is_function(o.toTex) ? o.toTex() : o.toString();
+}
+function Str(o)
+{
+    return String(o);
+}
+function pad(x, n, c, post)
+{
+    var s = Str(x), l = s.length, p = '';
+    if (l < n)
+    {
+        c = c || ' ';
+        p = (new Array(n-l+1)).join(c);
+        s = post ? s + p : p + s;
+    }
+    return s;
+}
+function is_almost_zero(x)
+{
+    return stdMath.abs(x) < Number.EPSILON;
+}
+function is_almost_equal(a, b)
+{
+    return is_almost_zero(a-b);
+}
+function dotp(p1, p2)
+{
+    return p1.x*p2.x + p1.y*p2.y;
+}
+function crossp(p1, p2)
+{
+    p1.x*p2.y - p1.y*p2.x;
 }
 function euclidean_distance(p1, p2)
 {
