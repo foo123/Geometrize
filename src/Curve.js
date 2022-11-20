@@ -27,7 +27,7 @@ var Curve = makeClass(Primitive, {
         };
         onArrayChange.id = self.id;
 
-        _points = observeArray(points.map(Point), Point, function(a, b) {return a.isEqual(b);});
+        _points = observeArray(points.map(Point), Point, function(a, b) {return a.eq(b);});
         _points.forEach(function(point) {point.onChange(onPointChange);});
         _points.onChange(onArrayChange);
 
@@ -46,7 +46,7 @@ var Curve = makeClass(Primitive, {
 
                     if (is_array(points))
                     {
-                        _points = observeArray(points.map(Point), Point, function(a, b) {return a.isEqual(b);});
+                        _points = observeArray(points.map(Point), Point, function(a, b) {return a.eq(b);});
                         _points.forEach(function(point) {point.onChange(onPointChange);});
                         _points.onChange(onArrayChange);
                         if (!self.isDirty())
@@ -96,6 +96,12 @@ var Curve = makeClass(Primitive, {
     },
     getPoint: function(t) {
         return null;
+    },
+    toXYEquation: function() {
+        return null;
+    },
+    toBezier: function() {
+        return this;
     },
     toTex: function() {
         return '\\text{Curve}';

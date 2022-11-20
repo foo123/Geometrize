@@ -5,12 +5,12 @@ var Style = makeClass(EventEmitter, {
         var self = this, _props = null, _style = null;
         if (style instanceof Style) return style;
         if (!(self instanceof Style)) return new Style(style);
-        _props = ['stroke', 'fill', 'width'];
+        _props = ['stroke', 'stroke-width', 'fill'];
         // defaults
         _style = {
-            stroke: '#000000',
-            fill: 'transparent',
-            width: 1
+            'stroke': '#000000',
+            'stroke-width': 1,
+            'fill': null
         };
         if (is_object(style))
         {
@@ -45,5 +45,9 @@ var Style = makeClass(EventEmitter, {
             fill: this.fill,
             width: this.width
         });
+    },
+    toSVG: function() {
+        var styl = this;
+        return 'stroke:'+Str(styl['stroke'])+';stroke-width:'+Str(styl['stroke-width'])+';'+(null != styl['fill'] ? 'fill:'+Str(styl['fill'])+';' : '');
     }
 });

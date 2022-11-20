@@ -97,7 +97,7 @@ var Polyline = makeClass(Curve, {
         return new Polyline(this.points.map(function(point) {return point.transform(matrix);}));
     },
     isClosed: function() {
-        return 2 < this.points.length ? this.points[0].isEqual(this.points[this.points.length-1]) : false;
+        return 2 < this.points.length ? this.points[0].eq(this.points[this.points.length-1]) : false;
     },
     getBoundingBox: function() {
         return this._bbox;
@@ -108,14 +108,14 @@ var Polyline = makeClass(Curve, {
     intersects: function(other) {
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? other : false;
+            return this.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Line)
         {
             var i = this.lines.reduce(function(i, line) {
                 var p;
                 if (p=line.intersects(other))
-                    i.push(p);
+                    i.push.apply(i, p);
                 return i;
             }, []);
             return i.length ? i : false;
@@ -129,7 +129,7 @@ var Polyline = makeClass(Curve, {
                 for (m=0; m<l2.length; ++m)
                 {
                     if (p = l1[n].intersects(l2[m]))
-                        i.push(p);
+                        i.push.apply(i, p);
                 }
             }
             return i.length ? i : false;
@@ -152,13 +152,18 @@ var Polyline = makeClass(Curve, {
         return 1 < _points.length ? _points.reduce(function(res, _, i) {
             if (!res && (i+1 < _points.length))
             {
-                res = !!points_colinear(point, _points[i], _points[i+1]);
+                res = !!point_between(point, _points[i], _points[i+1]);
             }
             return res;
         }, false) : false;
     },
-    toBezier: function() {
-        return this.lines.map(function(line) {return line.toBezier();});
+    toSVG: function(svg) {
+        return SVG('polyline', {
+            'id': this.id,
+            'points': this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '),
+            'transform': this.matrix.toSVG(),
+            'style': this.style.toSVG()
+        }, arguments.length ? svg : false);
     },
     toTex: function() {
         return '\\text{Polyline:}'+'\\left\\{'+this.lines.map(Tex).join('\\\\')+'\\right\\\\';

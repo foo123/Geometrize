@@ -117,16 +117,26 @@ var Line = makeClass(Curve, {
         );
     },
     hasPoint: function(point) {
-        return !!points_colinear(point, this.start, this.end);
+        return !!point_between(point, this.start, this.end);
     },
     intersects: function(other) {
         if (other instanceof Point)
         {
-            return points_colinear(other, this.start, this.end);
+            var p = point_between(other, this.start, this.end);
+            return p ? [p] : false;
         }
         else if (other instanceof Line)
         {
-            return line_line_intersection(this.start, this.end, other.start, other.end);
+            var abc = this.toXYEquation(), klm = other.toXYEquation(), p;
+            if ((p=line_line_intersection(abc[0], abc[1], abc[2], klm[0], klm[1], klm[2])) && (!point_between(point, this.start, this.end) || (!point_between(point, other.start, other.end)))
+            {
+                p = false;
+            }
+            return p ? [p] : false;
+        }
+        else if (other instanceof Circle || other instanceof Ellipse)
+        {
+            return line_quadratic_intersection(this, other);
         }
         else if ((other instanceof Primitive) && is_function(other.intersects))
         {
@@ -134,11 +144,24 @@ var Line = makeClass(Curve, {
         }
         return false;
     },
-    toBezier: function() {
-        return new Polybezier3([this.start, this.getPoint(1/3), this.getPoint(2/3), this.end]);
+    toXYEquation: function() {
+        var p1 = this.start, p2 = this.end;
+        //           a x  +   b  y   +      c                = 0
+        return [p2.y-p1.y, p1.x-p2.x, p2.x*p1.y-p1.x*p2.y];
     },
-    toTex: function() {
-        return '\\text{Line:}'+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t';
+    toSVG: function(svg) {
+        return SVG('line', {
+            'id': this.id,
+            'x1': this.start.x,
+            'y1': this.start.y,
+            'x2': this.end.x,
+            'y2': this.end.y,
+            'transform': this.matrix.toSVG(),
+            'style': this.style.toSVG()
+        }, arguments.length ? svg : false);
+    },
+    toTex: function(interval) {
+        return '\\text{Line:}'+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }'+(interval||'0 \\le t \\le 1');
     },
     toString: function() {
         return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';

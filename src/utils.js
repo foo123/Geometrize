@@ -1,86 +1,11 @@
 // ---- utilities -----
-var cnt = 0;
-function uuid(ns)
-{
-    return Str(ns||'')+'_'+Str(++cnt)+'_'+Str(new Date().getTime())+'_'+Str(stdMath.round(1000*stdMath.random()));
-}
-function Num(x)
-{
-    return (+x) || 0;
-}
-function Tex(o)
-{
-    return is_function(o.toTex) ? o.toTex() : o.toString();
-}
-function Str(o)
-{
-    return String(o);
-}
-function is_numeric(x)
-{
-    return !isNaN(+x);
-}
-function is_string(x)
-{
-    return ('string' === typeof x) || ('[object String]' === toString.call(x));
-}
-function is_array(x)
-{
-    return ('[object Array]' === toString.call(x));
-}
-function is_object(x)
-{
-    return ('[object Object]' === toString.call(x)) && ('function' === typeof x.constructor) && ('Object' === x.constructor.name);
-}
-function is_function(x)
-{
-    return "function" === typeof x;
-}
-function pad(x, n, c, post)
-{
-    var s = Str(x), l = s.length, p = '';
-    if (l < n)
-    {
-        c = c || ' ';
-        p = (new Array(n-l+1)).join(c);
-        s = post ? s + p : p + s;
-    }
-    return s;
-}
-function merge(keys, a, b)
-{
-    if (keys)
-    {
-        keys.forEach(function(k) {
-            if (HAS.call(b, k))
-                a[k] = b[k];
-        });
-    }
-    else
-    {
-        for (var k in b)
-        {
-            if (HAS.call(b, k))
-                a[k] = b[k];
-        }
-    }
-    return a;
-}
-function sort_asc(a, b)
-{
-    return a - b;
-}
-function sort_asc0(a, b)
-{
-    return a[0] - b[0];
-}
 function is_almost_zero(x)
 {
     return stdMath.abs(x) < Number.EPSILON;
 }
 function is_almost_equal(a, b)
 {
-    return is_almost_zero(a-b);
+    return is_almost_zero(a - b);
 }
 function dotp(x1, y1, x2, y2)
 {
@@ -102,8 +27,8 @@ function polar_angle(p1, p2)
 }
 function dir(p1, p2, p3)
 {
-    var dx1 = p1.x-p3.x, dx2 = p2.x-p3.x,
-        dy1 = p1.y-p3.y, dy2 = p2.y-p3.y;
+    var dx1 = p1.x - p3.x, dx2 = p2.x - p3.x,
+        dy1 = p1.y - p3.y, dy2 = p2.y - p3.y;
     return dx1*dy2 - dy1*dx2;
 }
 function point_line_distance(p0, p1, p2)
@@ -112,49 +37,52 @@ function point_line_distance(p0, p1, p2)
     var dx = p2.x - p1.x, dy = p2.y - p1.y;
     return stdMath.abs(dx*(p1.y-p0.y) - dy*(p1.x-p0.x)) / stdMath.sqrt(dx*dx + dy*dy);
 }
-function points_colinear(p0, p1, p2)
+function point_between(p, p1, p2)
 {
-    if (is_almost_equal(p2.x, p1.x))
+    var t = 0,
+        dxp = p.x - p1.x,
+        dx = p2.x - p1.x,
+        dyp = p.y - p1.y,
+        dy = p2.y - p1.y
+    ;
+    if (is_almost_zero(dyp*dx - dy*dxp))
     {
-        // vertical
-        return is_almost_equal(p0.x, p1.x) && (p0.y >= stdMath.min(p1.y, p2.y)) && (p0.y <= stdMath.max(p1.y, p2.y)) ? p0 : false;
+        // colinear and inside line segment of p1-p2
+        t = is_almost_zero(dx) ? dyp/dy : dxp/dx;
+        return (0 <= t) && (t <= 1);
     }
-    else if (is_almost_equal(p0.x, p1.x))
-    {
-        return is_almost_equal(p0.y, p1.y) ? p0 : false;
-    }
-    else
-    {
-        return is_almost_zero((p2.y - p1.y) / (p2.x-p1.x) - (p0.y - p1.y) / (p0.x - p1.x)) ? p0 : false;
-    }
+    return false;
 }
-function line_line_intersection(p1, p2, p3, p4)
+function line_line_intersection(a, b, c, k, l, m)
 {
-    // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
-    var den = (p1.x-p2.x)*(p3.y-p4.y) - (p1.y-p2.y)*(p3.x-p4.x), pi;
-    if (is_almost_zero(den)) return false;
-    pi = new Point(
-        ((p1.x*p2.y-p1.y*p2.x)*(p3.x-p4.x) - (p1.x-p2.x)*(p3.x*p4.y-p3.y*p4.x)) / den,
-        ((p1.x*p2.y-p1.y*p2.x)*(p3.y-p4.y) - (p1.y-p2.y)*(p3.x*p4.y-p3.y*p4.x)) / den
-    );
-    return pi.isOnline(p1, p2) && pi.isOnLine(p3, p4) ? pi : false;
-}
-function quadratic_roots(a, b, c)
-{
-    var d = b*b - 4*a*c;
-    if (is_almost_zero(d))
-    {
-         return [(-b)/(2*a)];
-    }
-    else if (0 < d)
-    {
-        d = stdMath.sqrt(d);
-        return [(-b+d)/(2*a), (-b-d)/(2*a)];
-    }
-    return [];
+    /*
+    https://www.wolframalpha.com/input?key=&i=system+of+equations&assumption=%7B%22F%22%2C+%22SolveSystemOf2EquationsCalculator%22%2C+%22equation1%22%7D+-%3E%22ax%2Bby%2Bc%3D0%22&assumption=%7B%22C%22%2C+%22system+of+equations%22%7D+-%3E+%7B%22Calculator%22%7D&assumption=%22FSelect%22+-%3E+%7B%7B%22SolveSystemOf2EquationsCalculator%22%7D%7D&assumption=%7B%22F%22%2C+%22SolveSystemOf2EquationsCalculator%22%2C+%22equation2%22%7D+-%3E%22kx%2Bly%2Bm%3D0%22
+
+    ax+by+c=0
+    kx+ly+m=0
+
+    x = (c l - b m)/(b k - a l)
+    y = (c k - a m)/(a l - b k)
+    and b k!=a l and b!=0
+    */
+    var det = a*l - b*k;
+    // zero, infinite or one point
+    return is_almost_zero(det) ? false : new Point((b*m - c*l)/det, (c*k - a*m)/det);
 }
 function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
 {
+    // https://live.sympy.org/
+    /*
+    https://live.sympy.org/
+    mx+ny+k=0
+    ax^2+by^2+cxy+dx+ey+f=0
+
+    x,y,a,b,c,d,e,f,n,m,k = symbols('x y a b c d e f n m k', real=True)
+    nonlinsolve([a*x**2+b*y**2+c*x*y+d*x+e*y+f, m*x+n*y+k], [x, y])
+
+    {(-(k + n*(-m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))))/m, -m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))), (-(k + n*(m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))))/m, m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)))}
+    */
+
     /*
     https://www.wolframalpha.com/input?key=&i=systems+of+equations+calculator&assumption=%7B%22F%22%2C+%22SolveSystemOf2EquationsCalculator%22%2C+%22equation1%22%7D+-%3E%22mx%2Bny%2Bk%3D0%22&assumption=%22FSelect%22+-%3E+%7B%7B%22SolveSystemOf2EquationsCalculator%22%7D%7D&assumption=%7B%22F%22%2C+%22SolveSystemOf2EquationsCalculator%22%2C+%22equation2%22%7D+-%3E%22ax%5E2%2Bby%5E2%2Bcxy%2Bdx%2Bey%2Bf%3D+0%22
     mx+ny+k=0
@@ -166,101 +94,18 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
     x = (sqrt((2 b k m - c k n + d n^2 - e m n)^2 - 4 (b k^2 + f n^2 - e k n) (a n^2 + b m^2 - c m n)) - 2 b k m + c k n - d n^2 + e m n)/(2 (a n^2 + b m^2 - c m n))
     ∧ y = (-m sqrt((2 b k m - c k n + d n^2 - e m n)^2 - 4 (b k^2 + f n^2 - e k n) (a n^2 + b m^2 - c m n)) - 2 a k n^2 + c k m n + d m n^2 - e m^2 n)/(2 n (a n^2 + b m^2 - c m n))
     ∧ a n^2 + b m^2 - c m n!=0 ∧ n!=0
-
-    y = (-sqrt((c x + e)^2 - 4 b (a x^2 + d x + f)) - c x - e)/(2 b)
-    ∧ n = 0 ∧ m = 0 ∧ k = 0 ∧ b!=0
-    y = (sqrt((c x + e)^2 - 4 b (a x^2 + d x + f)) - c x - e)/(2 b)
-    ∧ n = 0 ∧ m = 0 ∧ k = 0 ∧ b!=0
-
-    x = -k/m
-    ∧ y = (-m sqrt((e - (c k)/m)^2 - 4 b ((a k^2)/m^2 - (d k)/m + f)) + c k - e m)/(2 b m) ∧ n = 0 ∧ m!=0 ∧ b!=0
-    x = -k/m
-    ∧ y = (m sqrt((e - (c k)/m)^2 - 4 b ((a k^2)/m^2 - (d k)/m + f)) + c k - e m)/(2 b m)
-    ∧ n = 0 ∧ m!=0 ∧ b!=0
-
-    x = (f n)/(e m - d n)
-    ∧ y = -(f m)/(e m - d n)
-    ∧ k = 0 ∧ n!=0 ∧ a = (c m n - b m^2)/n^2 ∧ -m (-b d^2 n^2 + e^2 b m^2 + e c d n^2 - e^2 c m n)!=0
-
-    x = (-b k^2 - f n^2 + e k n)/(n (d n - c k))
-    ∧ y = -k/n
-    ∧ m = 0 ∧ a = 0 ∧ -n (d n - c k)!=0 ∧ b k!=0
-
-    x = 0
-    ∧ y = -f/e
-    ∧ n = 0 ∧ k = 0 ∧ m!=0 ∧ b = 0
-
-    y = (-a x^2 - d x - f)/(c x + e)
-    ∧ c x + e!=0 ∧ n = 0 ∧ m = 0 ∧ k = 0 ∧ b = 0
-
-    x = (b k^2 + f n^2 - e k n)/(-2 b k m + c k n - d n^2 + e m n)
-    ∧ y = (-b k^2 m + c k^2 n - d k n^2 + f m n^2)/(n (2 b k m - c k n + d n^2 - e m n))
-    ∧ n!=0 ∧ a = (c m n - b m^2)/n^2 ∧ -m^2 (-2 b k m + c k n - d n^2 + e m n)!=0 ∧ b k!=0
-
-    y = -(m x)/n
-    ∧ f = 0 ∧ k = 0 ∧ n!=0 ∧ d = (e m)/n ∧ a = (c m n - b m^2)/n^2 ∧ m!=0
-
-    x = -f/d
-    ∧ y = 0
-    ∧ m = 0 ∧ k = 0 ∧ a = 0 ∧ d!=0 ∧ n!=0
-
-    y = 0
-    ∧ f = 0 ∧ m = 0 ∧ k = 0 ∧ d = 0 ∧ a = 0 ∧ n!=0
-
-    y = -k/n
-    ∧ f = -(k (b k - e n))/n^2 ∧ m = 0 ∧ k!=0 ∧ c = (d n)/k ∧ a = 0 ∧ d n!=0
-
-    x = -e/c
-    ∧ f = -(e (e a - c d))/c^2 ∧ n = 0 ∧ m = 0 ∧ k = 0 ∧ b = 0 ∧ c!=0
-
-    x = -k/m
-    ∧ y = -(a k^2 - d k m + f m^2)/(m (e m - c k))
-    ∧ n = 0 ∧ k!=0 ∧ b = 0 ∧ m!=0 ∧ c k - e m!=0
-
-    x = -k/m
-    ∧ f = -(k (a k - d m))/m^2 ∧ n = 0 ∧ k!=0 ∧ c = (e m)/k ∧ b = 0 ∧ e m!=0
-    
-    x = (f n - e k)/(c k - d n + e m) 
-    ∧ y = -(-c k^2 + d k n - f m n)/(n (-c k + d n - e m)) 
-    ∧ b = 0 ∧ n!=0 ∧ a = (c m)/n ∧ c k - d n + e m!=0 ∧ m!=0 ∧ k!=0
-    
-    y = (-k - m x)/n 
-    ∧ c = 0 ∧ f = (k (d n + e m))/(2 m n) ∧ k m!=0 ∧ b = (e m n - d n^2)/(2 k m) ∧ -d n^2!=0 ∧ a = (m (d n - e m))/(2 k n) ∧ -(d n - e m)^2!=0
-    
-    x = (f n)/(2 e m) 
-    ∧ y = -f/(2 e) 
-    ∧ k = 0 ∧ n!=0 ∧ d = -(e m)/n ∧ c = 0 ∧ a = -(b m^2)/n^2 ∧ -e m!=0
-    
-    x = (f n)/(e m - d n) 
-    ∧ y = -(f m)/(e m - d n) 
-    ∧ k = 0 ∧ d n + e m!=0 ∧ b = (e c n)/(d n + e m) ∧ a = (c d m)/(d n + e m) ∧ e c d n - e^2 c m!=0 ∧ m n!=0
-    
-    x = (f n - e k)/(c k - d n) 
-    ∧ y = -k/n ∧ m = 0 ∧ b = 0 ∧ a = 0 ∧ c k - d n!=0 ∧ n!=0 ∧ k!=0
-    
-    y = -k/n 
-    ∧ f = (e k)/n ∧ m = 0 ∧ d = 0 ∧ c = 0 ∧ b = 0 ∧ a = 0 ∧ n!=0 ∧ k!=0
-    
-    y = (-k - m x)/n 
-    ∧ f = (e k)/n ∧ k!=0 ∧ c = (d n - e m)/k ∧ b = 0 ∧ n!=0 ∧ a = -(m (e m - d n))/(k n) ∧ d n - e m!=0 ∧ m!=0
-    
-    y = (-k - m x)/n 
-    ∧ f = (k (-c k + d n + e m))/(2 m n) ∧ k m!=0 ∧ b = (n (c k - d n + e m))/(2 k m) ∧ c k n - d n^2!=0 ∧ a = -(m (-c k - d n + e m))/(2 k n) ∧ -d^2 n^2 + 2 e d m n - e^2 m^2!=0 ∧ n (c k - d n + e m)!=0 ∧ c^3 k^2 - e c^2 k m - c d^2 n^2 + e c d m n!=0
-    
-    y = (-k - m x)/n 
-    ∧ f = (2 e k m - c k^2)/(2 m n) ∧ n!=0 ∧ d = (e m)/n ∧ e m!=0 ∧ b = (c n)/(2 m) ∧ a = (c m)/(2 n) ∧ m!=0 ∧ c k n!=0
-    
-    y = (-k - m x)/n 
-    ∧ f = (e k)/(2 n) ∧ k!=0 ∧ c = (d n)/k ∧ d!=0 ∧ b = (e n)/(2 k) ∧ n!=0 ∧ a = -(m (e m - 2 d n))/(2 k n) ∧ e n!=0 ∧ -2 d^4 m n^4 + 5 e d^3 m^2 n^3 - 4 e^2 d^2 m^3 n^2 + e^3 d m^4 n!=0
-    
-    y = (-k - m x)/n 
-    ∧ f = (d k)/m ∧ k (e m - d n)!=0 ∧ c = (e m - d n)/k ∧ m!=0 ∧ b = (n (e m - d n))/(k m) ∧ -(d n - e m) (2 d n - e m)!=0 ∧ a = 0 ∧ -(e m - d n)^2!=0 ∧ n (e m - d n)^2!=0
     */
 }
 function quadratic_quadratic_intersection(a, b, c, d, e, f, m, n, l, k, g, h)
 {
-    // ax^2+by^2+cxy+dx+ey+f= 0
-    // mx^2+ny^2+lxy+kx+gy+h=0
+    /*
+    https://live.sympy.org/
+    ax^2+by^2+cxy+dx+ey+f=0
+    mx^2+ny^2+lxy+kx+gy+h=0
+
+    x,y,a,b,c,d,e,f,n,m,l,k,g,h = symbols('x y a b c d e f n m l k g h', real=True)
+    nonlinsolve([a*x**2+b*y**2+c*x*y+d*x+e*y+f, m*x**2+n*y**2+l*x*y+k*x+g*y+h], [x, y])
+    */
 }
 function convex_hull(points)
 {
@@ -321,6 +166,124 @@ function in_convex_hull(convexHull, p, strict)
     return true;
 }
 
+// ----------------------
+var cnt = 0;
+function uuid(ns)
+{
+    return Str(ns||'')+'_'+Str(++cnt)+'_'+Str(new Date().getTime())+'_'+Str(stdMath.round(1000*stdMath.random()));
+}
+function Num(x)
+{
+    return (+x) || 0;
+}
+function Tex(o)
+{
+    return is_function(o.toTex) ? o.toTex() : o.toString();
+}
+function Str(o)
+{
+    return String(o);
+}
+function is_numeric(x)
+{
+    return !isNaN(+x);
+}
+function is_string(x)
+{
+    return ('string' === typeof x) || ('[object String]' === toString.call(x));
+}
+function is_array(x)
+{
+    return ('[object Array]' === toString.call(x));
+}
+function is_object(x)
+{
+    return ('[object Object]' === toString.call(x)) && ('function' === typeof x.constructor) && ('Object' === x.constructor.name);
+}
+function is_function(x)
+{
+    return "function" === typeof x;
+}
+function merge(keys, a, b)
+{
+    if (keys)
+    {
+        keys.forEach(function(k) {
+            if (HAS.call(b, k))
+                a[k] = b[k];
+        });
+    }
+    else
+    {
+        for (var k in b)
+        {
+            if (HAS.call(b, k))
+                a[k] = b[k];
+        }
+    }
+    return a;
+}
+function SVG(tag, atts, svg, g, ga)
+{
+    if (false === svg)
+    {
+        svg = '<'+tag+' '+Object.keys(atts).reduce(function(s, a) {
+            return s + a+'="'+Str(atts[a])+'" ';
+        }, '')+'/>';
+        if (g)
+        {
+            svg = '<g '+Object.keys(ga||{}).reduce(function(s, a) {
+                return s + a+'="'+Str(ga[a])+'" ';
+            }, '')+'>'+svg+'</g>';
+        }
+    }
+    else
+    {
+        if (!svg)
+        {
+            svg = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            if (g)
+            {
+                g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.appendChild(svg);
+            }
+        }
+        else if (g)
+        {
+            g = svg;
+            svg = g.firstChild;
+        }
+        Object.keys(atts).forEach(function(a) {
+            svg.setAttribute(a, atts[a]);
+        });
+        if (g)
+        {
+            Object.keys(ga||{}).forEach(function(a) {
+                g.setAttribute(a, ga[a]);
+            });
+        }
+    }
+    return svg;
+}
+function sort_asc(a, b)
+{
+    return a - b;
+}
+function sort_asc0(a, b)
+{
+    return a[0] - b[0];
+}
+function pad(x, n, c, post)
+{
+    var s = Str(x), l = s.length, p = '';
+    if (l < n)
+    {
+        c = c || ' ';
+        p = (new Array(n-l+1)).join(c);
+        s = post ? s + p : p + s;
+    }
+    return s;
+}
 function debounce(func, wait, immediate)
 {
     var timeout;

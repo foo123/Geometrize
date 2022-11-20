@@ -80,7 +80,7 @@ var Point = makeClass(Primitive, {
         right: this.x
         };
     },
-    isEqual: function(other) {
+    eq: function(other) {
         if (other instanceof Point)
         {
             return is_almost_equal(this.x, other.x) && is_almost_equal(this.y, other.y);
@@ -103,18 +103,28 @@ var Point = makeClass(Primitive, {
         return p1 instanceof Line ? point_line_distance(this, p1.start, p1.end) : point_line_distance(this, p1, p2);
     },
     isOnLine: function(p1, p2) {
-        return !!(p1 instanceof Line ? points_colinear(this, p1.start, p1.end) : points_colinear(this, p1, p2));
+        return !!(p1 instanceof Line ? point_between(this, p1.start, p1.end) : point_between(this, p1, p2));
     },
     intersects: function(other) {
         if (other instanceof Point)
         {
-            return this.isEqual(other) ? this : false;
+            return this.eq(other) ? [this] : false;
         }
         else if ((other instanceof Primitive) && is_function(other.intersects))
         {
             return other.intersects(this);
         }
         return false;
+    },
+    toSVG: function(svg) {
+        return SVG('circle', {
+            'id': this.id,
+            'cx': this.x,
+            'cy': this.y,
+            'r': this.style['stroke-width'],
+            'transform': this.matrix.toSVG(),
+            'style': 'fill:'+Str(this.style['stroke'])+';'
+        }, arguments.length ? svg : false);
     },
     toTex: function() {
         return '\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\end{pmatrix}';

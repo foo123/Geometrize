@@ -59,7 +59,14 @@ var Matrix = makeClass(null, {
         this.$20, this.$21, this.$22
         );
     },
-    add: function (other) {
+    eq: function(other) {
+        if (other instanceof Matrix)
+        {
+            return is_almost_equal(this.$00, other.$00) && is_almost_equal(this.$01, other.$01) && is_almost_equal(this.$02, other.$02) && is_almost_equal(this.$10, other.$10) && is_almost_equal(this.$11, other.$11) && is_almost_equal(this.$12, other.$12);
+        }
+        return false;
+    },
+    add: function(other) {
         var self = this;
         if (other instanceof Matrix)
         {
@@ -91,7 +98,7 @@ var Matrix = makeClass(null, {
             );
         }
     },
-    mul: function (other) {
+    mul: function(other) {
         var self = this;
         if (other instanceof Matrix)
         {
@@ -170,6 +177,20 @@ var Matrix = makeClass(null, {
         return new Matrix(
         Num(sx),0,0,
         0,Num(sy),0,
+        0,0,1
+        );
+    },
+    reflectX: function() {
+        return new Matrix(
+        -1,0,0,
+        0,1,0,
+        0,0,1
+        );
+    },
+    reflectY: function() {
+        return new Matrix(
+        1,0,0,
+        0,-1,0,
         0,0,1
         );
     },

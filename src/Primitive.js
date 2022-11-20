@@ -1,6 +1,6 @@
 // 2D Geometric Primitive base class
 var Primitive = makeClass(EventEmitter, {
-    constructor: function() {
+    constructor: function Primitive() {
         var _matrix = null,
             _style = null,
             _dom = null,
@@ -94,8 +94,8 @@ var Primitive = makeClass(EventEmitter, {
     getConvexHull: function() {
         return [];
     },
-    toBezier: function() {
-        return this;
+    toSVG: function(svg) {
+        return arguments.length ? svg : '';
     },
     toTex: function() {
         return '\\text{Primitive}';

@@ -118,8 +118,13 @@ var Polygon = makeClass(Curve, {
     getConvexHull: function() {
         return this._hull;
     },
-    toBezier: function() {
-        return this.edges.map(function(edge) {return edge.toBezier();});
+    toSVG: function(svg) {
+        return SVG('polygon', {
+            'id': this.id,
+            'points': this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '),
+            'transform': this.matrix.toSVG(),
+            'style': this.style.toSVG()
+        }, arguments.length ? svg : false);
     },
     toTex: function() {
         return '\\text{Polygon:}'+'\left( ' + this.vertices.map(Tex).join(',') + ' \right)';
