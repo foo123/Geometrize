@@ -41,7 +41,8 @@ var Point = makeClass(Primitive, {
                         self.triggerChange();
                     }
                 }
-            }
+            },
+            enumerable: true
         });
         Object.defineProperty(self, 'y', {
             get() {
@@ -58,7 +59,8 @@ var Point = makeClass(Primitive, {
                         self.triggerChange();
                     }
                 }
-            }
+            },
+            enumerable: true
         });
         self.dispose = function() {
             _x = null;
@@ -99,11 +101,14 @@ var Point = makeClass(Primitive, {
     cross: function(other) {
         return crossp(this.x, this.y, other.x, other.y);
     },
+    angle: function(other) {
+        return angle(this.x, this.y, other.x, other.y);
+    },
+    between: function(p1, p2) {
+        return !!(p1 instanceof Line ? point_between(this, p1.start, p1.end) : point_between(this, p1, p2));
+    },
     distanceToLine: function(p1, p2) {
         return p1 instanceof Line ? point_line_distance(this, p1.start, p1.end) : point_line_distance(this, p1, p2);
-    },
-    isOnLine: function(p1, p2) {
-        return !!(p1 instanceof Line ? point_between(this, p1.start, p1.end) : point_between(this, p1, p2));
     },
     intersects: function(other) {
         if (other instanceof Point)
@@ -124,10 +129,17 @@ var Point = makeClass(Primitive, {
             'r': this.style['stroke-width'],
             'transform': this.matrix.toSVG(),
             'style': 'fill:'+Str(this.style['stroke'])+';'
-        }, arguments.length ? svg : false);
+        }, arguments.length ? svg : false, {
+            'id': false,
+            'cx': this.isDirty(),
+            'cy': this.isDirty(),
+            'r': this.style.isDirty(),
+            'transform': this.isDirty(),
+            'style': this.style.isDirty()
+        });
     },
     toTex: function() {
-        return '\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\end{pmatrix}';
+        return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';
     },
     toString: function() {
         return 'Point('+Str(this.x)+','+Str(this.y)+')';

@@ -11,8 +11,8 @@ var Circle = makeClass(Curve, {
 
         if (center instanceof Circle) return center;
         if (!(self instanceof Circle)) return new Circle(center, radius);
-        _radius = stdMath.abs(Num(radius));
-        Curve.call(self, [center]);
+        _radius = new Value(stdMath.abs(Num(radius)));
+        Curve.call(self, [center], {radius:_radius});
 
         Object.defineProperty(self, 'center', {
             get() {
@@ -25,22 +25,14 @@ var Circle = makeClass(Curve, {
         });
         Object.defineProperty(self, 'radius', {
             get() {
-                return _radius;
+                return _radius.val();
             },
             set(radius) {
-                radius = stdMath.abs(Num(radius));
-                if (_radius !== radius)
+                _radius.val(stdMath.abs(Num(radius)));
+                if (_radius.isDirty() && !self.isDirty())
                 {
-                    var isDirty = !is_almost_equal(_radius, radius);
-                    _radius = radius;
-                    if (isDirty)
-                    {
-                        if (!self.isDirty())
-                        {
-                            self.isDirty(true);
-                            self.triggerChange();
-                        }
-                    }
+                    self.isDirty(true);
+                    self.triggerChange();
                 }
             },
             enumerable: true
@@ -49,7 +41,7 @@ var Circle = makeClass(Curve, {
             get() {
                 if (null == _length)
                 {
-                    _length = 2 * stdMath.PI * _radius;
+                    _length = 2 * stdMath.PI * _radius.val();
                 }
                 return _length;
             },
@@ -59,7 +51,7 @@ var Circle = makeClass(Curve, {
             get() {
                 if (null == _area)
                 {
-                    _area = stdMath.PI * _radius * _radius;
+                    _area = stdMath.PI * _radius.val() * _radius.val();
                 }
                 return _area;
             },
@@ -69,7 +61,7 @@ var Circle = makeClass(Curve, {
             get() {
                 if (null == _bbox)
                 {
-                    var c = self.center, r = _radius;
+                    var c = self.center, r = _radius.val();
                     _bbox = {
                         top: c.y - r,
                         left: c.x - r,
@@ -85,7 +77,7 @@ var Circle = makeClass(Curve, {
             get() {
                 if (null == _hull)
                 {
-                    var c = self.center, r = _radius;
+                    var c = self.center, r = _radius.val();
                     _hull = [
                         new Point(c.x-r, c.y-r),
                         new Point(c.x+r, c.y-r),
@@ -128,7 +120,7 @@ var Circle = makeClass(Curve, {
     getConvexHull: function() {
         return this._hull;
     },
-    getPoint: function(t) {
+    getPointAt: function(t) {
         t = Num(t);
         if (0 > t || 1 < t) return null;
         var c = this.center, r = this.radius;
@@ -137,6 +129,11 @@ var Circle = makeClass(Curve, {
             c.x + r*stdMath.cos(t),
             c.y + r*stdMath.sin(t)
         );
+    },
+    getAtOfPoint: function(p) {
+        var theta = stdMath.atan2(p.y - this.center.y, p.x - this.center.x);
+        if (0 > theta) theta += 2*stdMath.PI;
+        return theta / (2*stdMath.PI);
     },
     hasPoint: function(point, notInside) {
         var center = this.center,
@@ -150,7 +147,7 @@ var Circle = makeClass(Curve, {
     intersects: function(other) {
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? other : false;
+            return this.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Circle)
         {
@@ -170,10 +167,17 @@ var Circle = makeClass(Curve, {
             'r': this.radius,
             'transform': this.matrix.toSVG(),
             'style': this.style.toSVG()
-        }, arguments.length ? svg : false);
+        }, arguments.length ? svg : false, {
+            'id': false,
+            'cx': this.center.isDirty(),
+            'cy': this.center.isDirty(),
+            'r': this.values.radius.isDirty(),
+            'transform': this.isDirty(),
+            'style': this.style.isDirty()
+        });
     },
     toTex: function() {
-        return '\\text{Circle:}'+'(x - '+Str(this.center.x)+')^2 + (y - '+Str(this.center.y)+')^2 = '+Str(this.radius)+'^2';
+        return '\\text{Circle:}'+'\\frac{(x - '+Str(this.center.x)+')^2 + (y - '+Str(this.center.y)+')^2}{'+Str(this.radius)+'^2} = 1';
     },
     toString: function() {
         return 'Circle('+[Str(this.center), Str(this.radius)].join(',')+')';

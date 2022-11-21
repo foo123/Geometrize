@@ -140,7 +140,7 @@ var Polyline = makeClass(Curve, {
         }
         return false;
     },
-    getPoint: function(t) {
+    getPointAt: function(t) {
         var lines = this.lines, n = lines.length, i;
         t = Num(t);
         if (0 > t || 1 < t || 0 >= n) return null;
@@ -163,10 +163,16 @@ var Polyline = makeClass(Curve, {
             'points': this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '),
             'transform': this.matrix.toSVG(),
             'style': this.style.toSVG()
-        }, arguments.length ? svg : false);
+        }, arguments.length ? svg : false, {
+            'id': false,
+            'points': this.isDirty(),
+            'transform': this.isDirty(),
+            'style': this.style.isDirty()
+        });
     },
     toTex: function() {
-        return '\\text{Polyline:}'+'\\left\\{'+this.lines.map(Tex).join('\\\\')+'\\right\\\\';
+        var lines = this.lines, n = lines.length;
+        return '\\text{Polyline:}'+'\\left\\{'+lines.map(function(line, i) {return line.toTex((0 === i ? '0' : '\\frac{'+Str(i)+'}{'+Str(n)+'}')+' \\le t \\le '+('\\frac{'+Str(i+1)+'}{'+Str(n)+'}'));}.join('\\\\')+'\\right\\\\';
     },
     toString: function() {
         return 'Polyline('+this.points.map(Str).join(',')+')';

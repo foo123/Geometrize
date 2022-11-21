@@ -124,7 +124,12 @@ var Polygon = makeClass(Curve, {
             'points': this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '),
             'transform': this.matrix.toSVG(),
             'style': this.style.toSVG()
-        }, arguments.length ? svg : false);
+        }, arguments.length ? svg : false, {
+            'id': false,
+            'points': this.isDirty(),
+            'transform': this.isDirty(),
+            'style': this.style.isDirty()
+        });
     },
     toTex: function() {
         return '\\text{Polygon:}'+'\left( ' + this.vertices.map(Tex).join(',') + ' \right)';

@@ -31,8 +31,11 @@ var Primitive = makeClass(EventEmitter, {
         onStyleChange = function onStyleChange(style) {
             if (_style === style)
             {
-                self.isDirty(true);
-                self.triggerChange();
+                if (!self.isDirty())
+                {
+                    self.isDirty(true);
+                    self.triggerChange();
+                }
             }
         };
         _style = new Style();

@@ -13,10 +13,10 @@ var Ellipse = makeClass(Curve, {
 
         if (center instanceof Ellipse) return center;
         if (!(self instanceof Ellipse)) return new Ellipse(center, radiusX, radiusY, theta);
-        _radiusX = stdMath.abs(Num(radiusX));
-        _radiusY = stdMath.abs(Num(radiusY));
-        _theta = Num(theta);
-        Curve.call(self, [center]);
+        _radiusX = new Value(stdMath.abs(Num(radiusX)));
+        _radiusY = new Value(stdMath.abs(Num(radiusY)));
+        _theta = new Value(theta);
+        Curve.call(self, [center], {radiusX:_radiusX, radiusY:_radiusY, theta:_theta});
 
         Object.defineProperty(self, 'center', {
             get() {
@@ -29,66 +29,42 @@ var Ellipse = makeClass(Curve, {
         });
         Object.defineProperty(self, 'radiusX', {
             get() {
-                return _radiusX;
+                return _radiusX.val();
             },
             set(radiusX) {
-                radiusX = stdMath.abs(Num(radiusX));
-                if (_radiusX !== radiusX)
+                _radiusX.val(stdMath.abs(Num(radiusX)));
+                if (_radiusX.isDirty() && !self.isDirty())
                 {
-                    var isDirty = !is_almost_equal(_radiusX, radiusX);
-                    _radiusX = radiusX;
-                    if (isDirty)
-                    {
-                        if (!self.isDirty())
-                        {
-                            self.isDirty(true);
-                            self.triggerChange();
-                        }
-                    }
+                    self.isDirty(true);
+                    self.triggerChange();
                 }
             },
             enumerable: true
         });
         Object.defineProperty(self, 'radiusY', {
             get() {
-                return _radiusY;
+                return _radiusY.val();
             },
             set(radiusY) {
-                radiusY = stdMath.abs(Num(radiusY));
-                if (_radiusY !== radiusY)
+                _radiusY.val(stdMath.abs(Num(radiusY)));
+                if (_radiusY.isDirty() && !self.isDirty())
                 {
-                    var isDirty = !is_almost_equal(_radiusY, radiusY);
-                    _radiusY = radiusY;
-                    if (isDirty)
-                    {
-                        if (!self.isDirty())
-                        {
-                            self.isDirty(true);
-                            self.triggerChange();
-                        }
-                    }
+                    self.isDirty(true);
+                    self.triggerChange();
                 }
             },
             enumerable: true
         });
         Object.defineProperty(self, 'theta', {
             get() {
-                return _theta;
+                return _theta.val();
             },
             set(theta) {
-                theta = Num(theta);
-                if (_theta !== theta)
+                _theta.val(theta);
+                if (_theta.isDirty() && !self.isDirty())
                 {
-                    var isDirty = !is_almost_equal(_theta, theta);
-                    _theta = theta;
-                    if (isDirty)
-                    {
-                        if (!self.isDirty())
-                        {
-                            self.isDirty(true);
-                            self.triggerChange();
-                        }
-                    }
+                    self.isDirty(true);
+                    self.triggerChange();
                 }
             },
             enumerable: true
@@ -98,7 +74,7 @@ var Ellipse = makeClass(Curve, {
                 if (null == _length)
                 {
                     // approximate
-                    _length = stdMath.PI * (3*(_radiusX+_radiusY)-stdMath.sqrt((3*_radiusX+_radiusY)*(_radiusX+3*_radiusY)));
+                    _length = stdMath.PI * (3*(_radiusX.val()+_radiusY.val())-stdMath.sqrt((3*_radiusX.val()+_radiusY.val())*(_radiusX.val()+3*_radiusY.val())));
                 }
                 return _length;
             },
@@ -108,7 +84,7 @@ var Ellipse = makeClass(Curve, {
             get() {
                 if (null == _area)
                 {
-                    _area = stdMath.PI * _radiusX * _radiusY;
+                    _area = stdMath.PI * _radiusX.val() * _radiusY.val();
                 }
                 return _area;
             },
@@ -134,8 +110,8 @@ var Ellipse = makeClass(Curve, {
             get() {
                 if (null == _hull)
                 {
-                    var c = self.center, rX = _radiusX, rX = _radiusY,
-                        m = Matrix.rotate(_theta);
+                    var c = self.center, rX = _radiusX.val(), rX = _radiusY.val(),
+                        m = Matrix.rotate(_theta.val());
                     _hull = [
                         new Point(c.x-rX, c.y-rY).transform(m),
                         new Point(c.x+rX, c.y-rY).transform(m),
@@ -181,7 +157,7 @@ var Ellipse = makeClass(Curve, {
     getConvexHull: function() {
         return this._hull;
     },
-    getPoint: function(t) {
+    getPointAt: function(t) {
         t = Num(t);
         if (0 > t || 1 < t) return null;
         var ce = this.center,
@@ -235,15 +211,23 @@ var Ellipse = makeClass(Curve, {
             'ry': this.radiusY,
             'transform': 'rotate('+Str(this.theta)+' '+Str(this.center.x)+' '+Str(this.center.y)+')',
             'style': this.style.toSVG()
-        }, arguments.length ? svg : false, true, {
+        }, arguments.length ? svg : false, {
+            'id': false,
+            'cx': this.center.isDirty(),
+            'cy': this.center.isDirty(),
+            'rx': this.values.radiusX.isDirty(),
+            'ry': this.values.radiusY.isDirty(),
+            'transform': this.isDirty(),
+            'style': this.style.isDirty()
+        }, true, {
             'id': this.id,
             'transform': this.matrix.toSVG()
         });
     },
     toTex: function() {
-        return '\\text{Ellipse('+Str(this.theta)+'):}'+'\\frac{(x - '+Str(this.center.x)+')^2}{'+Str(this.radiusX)+'^2} + \\frac{(y - '+Str(this.center.y)+')^2}{'+Str(this.radiusY)+'^2} = 1';
+        return '\\text{Ellipse('+Str(this.theta*180/stdMath.PI)+'°):}'+'\\frac{(x - '+Str(this.center.x)+')^2}{'+Str(this.radiusX)+'^2} + \\frac{(y - '+Str(this.center.y)+')^2}{'+Str(this.radiusY)+'^2} = 1';
     },
     toString: function() {
-        return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(this.theta)].join(',')+')';
+        return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(this.theta*180/stdMath.PI)+'°'].join(',')+')';
     }
 });

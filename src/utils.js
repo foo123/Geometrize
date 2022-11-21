@@ -15,6 +15,11 @@ function crossp(x1, y1, x2, y2)
 {
     return x1*y2 - y1*x2;
 }
+function angle(x1, y1, x2, y2)
+{
+    var n1 = stdMath.sqrt(x1*x1 + y1*y1), n2 = stdMath.sqrt(x2*x2 + y2*y2);
+    return stdMath.acos((x1*x2 + y1*y2) / (n1*n2));
+}
 function dist(p1, p2)
 {
     var dx = p1.x - p2.x, dy = p1.y - p2.y;
@@ -67,11 +72,10 @@ function line_line_intersection(a, b, c, k, l, m)
     */
     var det = a*l - b*k;
     // zero, infinite or one point
-    return is_almost_zero(det) ? false : new Point((b*m - c*l)/det, (c*k - a*m)/det);
+    return is_almost_zero(det) ? false : {x:(b*m - c*l)/det, y:(c*k - a*m)/det};
 }
 function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
 {
-    // https://live.sympy.org/
     /*
     https://live.sympy.org/
     mx+ny+k=0
@@ -96,6 +100,17 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
     ∧ a n^2 + b m^2 - c m n!=0 ∧ n!=0
     */
 }
+function line_cubic_intersection(m, n, k, a, b, c, d, e, f, g, h)
+{
+    /*
+    https://live.sympy.org/
+    mx+ny+k=0
+    ax^3+by^3+cx^2y+dxy^2+exy+fx+gy+h=0
+    x,y,a,b,c,d,e,f,g,h,n,m,k = symbols('x y a b c d e f g h n m k', real=True)
+    nonlinsolve([a*x**3+b*y**3+c*x**2*y+d*x*y**2+e*x*y+f*x+g*y+h, m*x+n*y+k], [x, y])
+
+    */
+}
 function quadratic_quadratic_intersection(a, b, c, d, e, f, m, n, l, k, g, h)
 {
     /*
@@ -110,8 +125,6 @@ function quadratic_quadratic_intersection(a, b, c, d, e, f, m, n, l, k, g, h)
 function convex_hull(points)
 {
     // https://en.wikipedia.org/wiki/Convex_hull
-    // https://en.wikipedia.org/wiki/Convex_hull_algorithms
-    // https://en.wikipedia.org/wiki/Graham_scan
     var pc = points.length;
 
     // at least 3 points must define a non-trivial convex hull
@@ -167,43 +180,6 @@ function in_convex_hull(convexHull, p, strict)
 }
 
 // ----------------------
-var cnt = 0;
-function uuid(ns)
-{
-    return Str(ns||'')+'_'+Str(++cnt)+'_'+Str(new Date().getTime())+'_'+Str(stdMath.round(1000*stdMath.random()));
-}
-function Num(x)
-{
-    return (+x) || 0;
-}
-function Tex(o)
-{
-    return is_function(o.toTex) ? o.toTex() : o.toString();
-}
-function Str(o)
-{
-    return String(o);
-}
-function is_numeric(x)
-{
-    return !isNaN(+x);
-}
-function is_string(x)
-{
-    return ('string' === typeof x) || ('[object String]' === toString.call(x));
-}
-function is_array(x)
-{
-    return ('[object Array]' === toString.call(x));
-}
-function is_object(x)
-{
-    return ('[object Object]' === toString.call(x)) && ('function' === typeof x.constructor) && ('Object' === x.constructor.name);
-}
-function is_function(x)
-{
-    return "function" === typeof x;
-}
 function merge(keys, a, b)
 {
     if (keys)
@@ -223,16 +199,17 @@ function merge(keys, a, b)
     }
     return a;
 }
-function SVG(tag, atts, svg, g, ga)
+function SVG(tag, atts, svg, isDirty, g, ga)
 {
+    var setAnyway = false;
     if (false === svg)
     {
-        svg = '<'+tag+' '+Object.keys(atts).reduce(function(s, a) {
+        svg = '<'+tag+' '+Object.keys(atts||EMPTYO).reduce(function(s, a) {
             return s + a+'="'+Str(atts[a])+'" ';
         }, '')+'/>';
         if (g)
         {
-            svg = '<g '+Object.keys(ga||{}).reduce(function(s, a) {
+            svg = '<g '+Object.keys(ga||EMPTYO).reduce(function(s, a) {
                 return s + a+'="'+Str(ga[a])+'" ';
             }, '')+'>'+svg+'</g>';
         }
@@ -241,6 +218,7 @@ function SVG(tag, atts, svg, g, ga)
     {
         if (!svg)
         {
+            setAnyway = true;
             svg = document.createElementNS('http://www.w3.org/2000/svg', tag);
             if (g)
             {
@@ -251,38 +229,20 @@ function SVG(tag, atts, svg, g, ga)
         else if (g)
         {
             g = svg;
-            svg = g.firstChild;
+            svg = g.firstChild || g;
         }
-        Object.keys(atts).forEach(function(a) {
-            svg.setAttribute(a, atts[a]);
+        isDirty = isDirty || EMPTYO;
+        if (atts) Object.keys(atts).forEach(function(a) {
+            if (setAnyway || isDirty[a]) svg.setAttribute(a, atts[a]);
         });
-        if (g)
+        if (g && ga)
         {
-            Object.keys(ga||{}).forEach(function(a) {
-                g.setAttribute(a, ga[a]);
+            Object.keys(ga).forEach(function(a) {
+                if (setAnyway || isDirty[a]) g.setAttribute(a, ga[a]);
             });
         }
     }
     return svg;
-}
-function sort_asc(a, b)
-{
-    return a - b;
-}
-function sort_asc0(a, b)
-{
-    return a[0] - b[0];
-}
-function pad(x, n, c, post)
-{
-    var s = Str(x), l = s.length, p = '';
-    if (l < n)
-    {
-        c = c || ' ';
-        p = (new Array(n-l+1)).join(c);
-        s = post ? s + p : p + s;
-    }
-    return s;
 }
 function debounce(func, wait, immediate)
 {
@@ -437,4 +397,56 @@ function unobserveArray(array)
     array.push.apply(array, values);
 
     return array;
+}
+function sort_asc(a, b)
+{
+    return a - b;
+}
+function sort_asc0(a, b)
+{
+    return a[0] - b[0];
+}
+function pad(x, n, c, post)
+{
+    var s = Str(x), l = s.length, p = '';
+    if (l < n)
+    {
+        c = c || ' ';
+        p = (new Array(n-l+1)).join(c);
+        s = post ? s + p : p + s;
+    }
+    return s;
+}
+var cnt = 0, Str = String, EMPTYO = {};
+function uuid(ns)
+{
+    return Str(ns||'')+'_'+Str(++cnt)+'_'+Str(new Date().getTime())+'_'+Str(stdMath.round(1000*stdMath.random()));
+}
+function Num(x)
+{
+    return (+x) || 0;
+}
+function Tex(o)
+{
+    return is_function(o.toTex) ? o.toTex() : o.toString();
+}
+function is_numeric(x)
+{
+    return !isNaN(+x);
+}
+function is_string(x)
+{
+    return ('string' === typeof x) || ('[object String]' === toString.call(x));
+}
+function is_array(x)
+{
+    return ('[object Array]' === toString.call(x));
+}
+function is_object(x)
+{
+    return ('[object Object]' === toString.call(x)) && ('function' === typeof x.constructor) && ('Object' === x.constructor.name);
+}
+function is_function(x)
+{
+    return "function" === typeof x;
 }

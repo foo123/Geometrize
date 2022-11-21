@@ -1,5 +1,5 @@
 // 2D Line segment class (equivalent to Linear Bezier curve)
-var Line = makeClass(Curve, {
+var Line = makeClass(Bezier, {
     constructor: function Line(start, end) {
         var self = this,
             _length = null,
@@ -10,7 +10,7 @@ var Line = makeClass(Curve, {
         if (start instanceof Line) return start;
         if (!(self instanceof Line)) return new Line(start, end);
 
-        Curve.call(self, [start, end]);
+        Bezier.call(self, [start, end]);
 
         Object.defineProperty(self, 'start', {
             get() {
@@ -107,7 +107,7 @@ var Line = makeClass(Curve, {
     getConvexHull: function() {
         return this._hull;
     },
-    getPoint: function(t) {
+    getPointAt: function(t) {
         t = Num(t);
         if (0 > t || 1 < t) return null;
         var p0 = this.start, p1 = this.end;
@@ -115,6 +115,14 @@ var Line = makeClass(Curve, {
             p0.x*(1-t) + p1.x*t,
             p0.y*(1-t) + p1.y*t
         );
+    },
+    getAtOfPoint: function(p) {
+        var dxp = p.x - this.start.x,
+            dx = this.end.x - this.start.x,
+            dyp = p.y - this.start.y,
+            dy = this.end.y - this.start.y
+        ;
+        return is_almost_zero(dx) ? dyp/dy : dxp/dx;
     },
     hasPoint: function(point) {
         return !!point_between(point, this.start, this.end);
@@ -132,11 +140,15 @@ var Line = makeClass(Curve, {
             {
                 p = false;
             }
-            return p ? [p] : false;
+            return p ? [new Point(p)] : false;
         }
-        else if (other instanceof Circle || other instanceof Ellipse)
+        else if (other instanceof Circle || other instanceof Ellipse || other instanceof Bezier2)
         {
             return line_quadratic_intersection(this, other);
+        }
+        else if (other instanceof Bezier3)
+        {
+            return line_cubic_intersection(this, other);
         }
         else if ((other instanceof Primitive) && is_function(other.intersects))
         {
@@ -158,7 +170,15 @@ var Line = makeClass(Curve, {
             'y2': this.end.y,
             'transform': this.matrix.toSVG(),
             'style': this.style.toSVG()
-        }, arguments.length ? svg : false);
+        }, arguments.length ? svg : false, {
+            'id': false,
+            'x1': this.start.isDirty(),
+            'y1': this.start.isDirty(),
+            'x2': this.end.isDirty(),
+            'y2': this.end.isDirty(),
+            'transform': this.isDirty(),
+            'style': this.style.isDirty()
+        });
     },
     toTex: function(interval) {
         return '\\text{Line:}'+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }'+(interval||'0 \\le t \\le 1');

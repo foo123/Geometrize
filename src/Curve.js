@@ -1,10 +1,11 @@
 // 2D generic Curve base class
 var Curve = makeClass(Primitive, {
-    constructor: function Curve(points) {
-        var self = this, _points = null,
+    constructor: function Curve(points, values) {
+        var self = this, _points = null, _values = null,
             onPointChange, onArrayChange;
 
         if (null == points) points = [];
+        if (null == values) values = {};
         Primitive.call(self);
 
         onPointChange = function onPointChange(point) {
@@ -30,6 +31,7 @@ var Curve = makeClass(Primitive, {
         _points = observeArray(points.map(Point), Point, function(a, b) {return a.eq(b);});
         _points.forEach(function(point) {point.onChange(onPointChange);});
         _points.onChange(onArrayChange);
+        _values = values;
 
         Object.defineProperty(self, 'points', {
             get() {
@@ -60,7 +62,17 @@ var Curve = makeClass(Primitive, {
                         _points = null;
                     }
                 }
-            }
+            },
+            enumerable: true
+        });
+        Object.defineProperty(self, 'values', {
+            get() {
+                return _values;
+            },
+            set(values) {
+                if (null == values) _values = null;
+            },
+            enumerable: false
         });
         Object.defineProperty(self, 'length', {
             get() {
@@ -82,20 +94,25 @@ var Curve = makeClass(Primitive, {
             this.points.forEach(function(point) {point.onChange(this.id, false);});
             this.points = null;
         }
+        this.values = null;
         this.$super.dispose.call(this);
     },
     isDirty: function(isDirty) {
         if (false === isDirty)
         {
             this.points.forEach(function(point) {point.isDirty(false);});
+            Object.keys(this.values).forEach(function(k) {this.values[k].isDirty(false);});
         }
         return this.$super.isDirty.apply(this, arguments);
     },
     isClosed: function() {
         return false;
     },
-    getPoint: function(t) {
+    getPointAt: function(t) {
         return null;
+    },
+    getAtOfPoint: function(p) {
+        return -1;
     },
     toXYEquation: function() {
         return null;
@@ -108,5 +125,29 @@ var Curve = makeClass(Primitive, {
     },
     toString: function() {
         return 'Curve()';
+    }
+});
+
+// 2D generic Bezier curve base class
+var Bezier = makeClass(Curve, {
+    constructor: function Bezier(points) {
+        var self = this, degree = 0;
+
+        if (null == points) points = [];
+        Curve.call(self, points);
+
+        degree = self.points.length - 1;
+        Object.defineProperty(self, 'degree', {
+            get() {
+                return degree;
+            },
+            enumerable: true
+        });
+    },
+    toTex: function() {
+        return '\\text{Bezier}';
+    },
+    toString: function() {
+        return 'Bezier()';
     }
 });
