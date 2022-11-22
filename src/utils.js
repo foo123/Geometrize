@@ -120,9 +120,9 @@ function line_line_intersection(a, b, c, k, l, m)
     kx+ly+m=0
     x,y={((b*m - c*l)/(a*l - b*k), -(a*m - c*k)/(a*l - b*k))}
     */
-    var det = a*l - b*k;
+    var D = a*l - b*k;
     // zero, infinite or one point
-    return is_almost_zero(det) ? false : {x:(b*m - c*l)/det, y:(c*k - a*m)/det};
+    return is_almost_zero(D) ? false : {x:(b*m - c*l)/D, y:(c*k - a*m)/D};
 }
 function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
 {
@@ -243,8 +243,8 @@ function line_circle_intersection(p1, p2, center, radius)
     var p = new Array(2), pi = 0, i, n,
         ir2 = 1/radius/radius,
         s = line_quadratic_intersection(
-            p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
-            ir2, ir2, 0, -2*center.x*ir2, -2*center.y*ir2, center.x*center.x*ir2+center.y*center.y*ir2-1
+        p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
+        ir2, ir2, 0, -2*center.x*ir2, -2*center.y*ir2, center.x*center.x*ir2+center.y*center.y*ir2-1
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
@@ -255,14 +255,18 @@ function line_circle_intersection(p1, p2, center, radius)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_ellipse_intersection(p1, p2, center, radiusX, radiusY, theta)
+function line_ellipse_intersection(p1, p2, center, radiusX, radiusY, angle, cossin)
 {
     var p = new Array(2), pi = 0, i, n,
-        irX2 = 1/radiusX/radiusX,
-        irY2 = 1/radiusY/radiusY,
+        x0 = center.x, y0 = center.y,
+        a = radiusX, b = radiusY,
+        cos_a = cossin[0], sin_a = cossin[1],
+        A = a*a*sin_a*sin_a + b*b*cos_a*cos_a,
+        C = a*a*cos_a*cos_a + b*b*sin_a*sin_a,
+        B = 2*(b*b - a*a)*sin_a*cos_a,
         s = line_quadratic_intersection(
-            p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
-            irX2, irY2, 0, -2*center.x*ir2, -2*center.y*ir2, center.x*center.x*irX2+center.y*center.y*irY2-1
+        p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
+        A, C, B, -2*A*x0 - B*y0, -B*x0 - 2*C*y0, A*x0*x0 + B*x0*y0 + C*y0*y0 - a*a*b*b
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
@@ -286,8 +290,8 @@ function line_bezier2_intersection(p1, p2, c)
         E = -2*c[0].x*c[0].x*c[2].y + 4*c[0].x*c[1].x*c[1].y + 4*c[0].x*c[1].x*c[2].y + 2*c[0].x*c[2].x*c[0].y - 8*c[0].x*c[2].x*c[1].y + 2*c[0].x*c[2].x*c[2].y - 4*c[1].x*c[1].x*c[0].y - 4*c[1].x*c[1].x*c[2].y + 4*c[1].x*c[2].x*c[0].y + 4*c[1].x*c[2].x*c[1].y - 2*c[2].x*c[2].x*c[0].y,
         F = c[0].x*c[0].x*c[2].y*c[2].y - 4*c[0].x*c[1].x*c[1].y*c[2].y - 2*c[0].x*c[2].x*c[0].y*c[2].y + 4*c[0].x*c[2].x*c[1].y*c[1].y + 4*c[1].x*c[1].x*c[0].y*c[2].y - 4*c[1].x*c[2].x*c[0].y*c[1].y + c[2].x*c[2].x*c[0].y*c[0].y,
         s = line_quadratic_intersection(
-            M, N, K,
-            A, B, C, D, E, F
+        M, N, K,
+        A, B, C, D, E, F
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
@@ -297,6 +301,39 @@ function line_bezier2_intersection(p1, p2, c)
     }
     p.length = pi;
     return p.length ? p : false;
+}
+function circle_circle_intersection(c1, r1, c2, r2)
+{
+    if (r2 > r1)
+    {
+        var tmp = r1;
+        r1 = r2;
+        r2 = tmp;
+        tmp = c1;
+        c1 = c2;
+        c2 = tmp;
+    }
+    if (p_eq(c1, c2) && is_almost_equal(r1, r2))
+    {
+        // same circles, they intersect at all points
+        return false;
+    }
+    var d = dist(c1, c2);
+    if (d > r1+r2)
+    {
+        // circle (c2,r2) is outside circle (c1,r1) and does not intersect
+        return false;
+    }
+    else if (d+r2 < r1)
+    {
+        // circle (c2,r2) is inside circle (c1,r1) and does not intersect
+        return false;
+    }
+    else
+    {
+        // circles intersect at 1 or 2 points
+        return true;
+    }
 }
 function curve_ellipse_intersection(ellipse, curve_points, get_point)
 {
@@ -317,9 +354,9 @@ function curve_area(curve_points, get_point)
     get_point = get_point || identity;
     for (var p1,p2,area=0,i=0,n=curve_points.length-1; i<n; ++i)
     {
-        // shoelace formula
         p1 = get_point(curve_points[i]);
         p2 = get_point(curve_points[i+1]);
+        // shoelace formula
         area += crossp(p1.x, p1.y, p2.x, p2.y) / 2;
     }
     return area;

@@ -53,16 +53,19 @@ var Matrix = makeClass(null, {
     $21: 0,
     $22: 1,
     clone: function() {
+        var self = this;
         return new Matrix(
-        this.$00, this.$01, this.$02,
-        this.$10, this.$11, this.$12,
-        this.$20, this.$21, this.$22
+        self.$00, self.$01, self.$02,
+        self.$10, self.$11, self.$12,
+        //self.$20, self.$21, self.$22
+        0, 0, 1
         );
     },
     eq: function(other) {
         if (other instanceof Matrix)
         {
-            return is_almost_equal(this.$00, other.$00) && is_almost_equal(this.$01, other.$01) && is_almost_equal(this.$02, other.$02) && is_almost_equal(this.$10, other.$10) && is_almost_equal(this.$11, other.$11) && is_almost_equal(this.$12, other.$12);
+            var self = this;
+            return is_almost_equal(self.$00, other.$00) && is_almost_equal(self.$01, other.$01) && is_almost_equal(self.$02, other.$02) && is_almost_equal(self.$10, other.$10) && is_almost_equal(self.$11, other.$11) && is_almost_equal(self.$12, other.$12);
         }
         return false;
     },
@@ -71,30 +74,18 @@ var Matrix = makeClass(null, {
         if (other instanceof Matrix)
         {
             return new Matrix(
-                self.$00 + other.$00,
-                self.$01 + other.$01,
-                self.$02 + other.$02,
-                self.$10 + other.$10,
-                self.$11 + other.$11,
-                self.$12 + other.$12,
-                0,
-                0,
-                1
+                self.$00 + other.$00, self.$01 + other.$01, self.$02 + other.$02,
+                self.$10 + other.$10, self.$11 + other.$11, self.$12 + other.$12,
+                0, 0, 1
             );
         }
         else
         {
             other = Num(other);
             return new Matrix(
-                self.$00 + other,
-                self.$01 + other,
-                self.$02 + other,
-                self.$10 + other,
-                self.$11 + other,
-                self.$12 + other,
-                0,
-                0,
-                1
+                self.$00 + other, self.$01 + other, self.$02 + other,
+                self.$10 + other, self.$11 + other, self.$12 + other,
+                0, 0, 1
             );
         }
     },
@@ -109,55 +100,67 @@ var Matrix = makeClass(null, {
                 self.$10*other.$00 + self.$11*other.$10 + self.$12*other.$20,
                 self.$10*other.$01 + self.$11*other.$11 + self.$12*other.$21,
                 self.$10*other.$02 + self.$11*other.$12 + self.$12*other.$22,
-                0,
-                0,
-                1
+                0, 0, 1
             );
         }
         else
         {
             other = Num(other);
             return new Matrix(
-                self.$00*other,
-                self.$01*other,
-                self.$02*other,
-                self.$10*other,
-                self.$11*other,
-                self.$12*other,
-                0,
-                0,
-                1
+                self.$00*other, self.$01*other, self.$02*other,
+                self.$10*other, self.$11*other, self.$12*other,
+                0, 0, 1
             );
         }
     },
+    det: function() {
+        var self = this;
+        return self.$00*(self.$11*self.$22 - self.$12*self.$21) + self.$01*(self.$12*self.$20 - self.$10*self.$22) + self.$02*(self.$21*self.$10 - self.$11*self.$20);
+    },
+    inv: function() {
+        var self = this, det = self.det();
+        if (is_almost_zero(det)) return null;
+
+        var a00 = self.$00, a01 = self.$01, a02 = self.$02,
+            a10 = self.$10, a11 = self.$11, a12 = self.$12;
+            //a20 = self.$20, a21 = self.$21, a22 = self.$22;
+        return new Matrix(
+        (a11*a22-a12*a21)/det, (a02*a21-a01*a22)/det, (a01*a12-a02*a11)/det,
+        (a12*a20-a10*a22)/det, (a00*a22-a02*a20)/det, (a02*a10-a00*a12)/det,
+        //(a10*a21-a11*a20)/det, (a01*a20-a00*a21)/det, (a00*a11-a01*a10)/det
+        0, 0, 1
+        );
+    },
     transform: function(point, newpoint) {
-        var x = point.x, y = point.y;
+        var self = this, x = point.x, y = point.y,
+            nx = self.$00*x + self.$01*y + self.$02,
+            ny = self.$10*x + self.$11*y + self.$12;
         if (newpoint instanceof Point)
         {
-            newpoint.x = this.$00*x + this.$01*y + this.$02;
-            newpoint.y = this.$10*x + this.$11*y + this.$12;
+            newpoint.x = nx;
+            newpoint.y = ny;
         }
         else
         {
-            newpoint = new Point(
-                this.$00*x + this.$01*y + this.$02,
-                this.$10*x + this.$11*y + this.$12
-            );
+            newpoint = new Point(nx, ny);
         }
         return newpoint;
     },
     toArray: function() {
+        var self = this;
         return [
-        this.$00, this.$01, this.$02,
-        this.$10, this.$11, this.$12,
-        this.$20, this.$21, this.$22
+        self.$00, self.$01, self.$02,
+        self.$10, self.$11, self.$12,
+        self.$20, self.$21, self.$22
         ];
     },
     toSVG: function() {
-        return 'matrix('+Str(this.$00)+' '+Str(this.$10)+' '+Str(this.$01)+' '+Str(this.$11)+' '+Str(this.$02)+' '+Str(this.$12)+')';
+        var self = this;
+        return 'matrix('+Str(self.$00)+' '+Str(self.$10)+' '+Str(self.$01)+' '+Str(self.$11)+' '+Str(self.$02)+' '+Str(self.$12)+')';
     },
     toCSS: function() {
-        return 'matrix('+Str(this.$00)+', '+Str(this.$10)+', '+Str(this.$01)+', '+Str(this.$11)+', '+Str(this.$02)+', '+Str(this.$12)+')';
+        var self = this;
+        return 'matrix('+Str(self.$00)+', '+Str(self.$10)+', '+Str(self.$01)+', '+Str(self.$11)+', '+Str(self.$02)+', '+Str(self.$12)+')';
     },
     toTex: function() {
         return Matrix.arrayTex(this.toArray(), 3, 3);
@@ -217,10 +220,10 @@ var Matrix = makeClass(null, {
     },
     rotate: function(theta) {
         theta = Num(theta);
-        var c = stdMath.cos(theta), s = stdMath.sin(theta);
+        var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
         return new Matrix(
-        c,-s,0,
-        s,c,0,
+        cos,-sin,0,
+        sin,cos,0,
         0,0,1
         );
     },
@@ -252,7 +255,7 @@ var Matrix = makeClass(null, {
     pointString: function(point) {
         var maxlen = [point.x, point.y].reduce(function(maxlen, s) {
             return stdMath.max(maxlen, Str(s).length);
-        }, 0);
+        }, 1);
         return '['+pad(point.x, maxlen)+"]\n["+pad(point.y, maxlen)+"]\n["+pad(1, maxlen)+']';
     }
 });

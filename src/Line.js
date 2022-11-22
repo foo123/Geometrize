@@ -126,7 +126,7 @@ var Bezier1 = makeClass(Bezier, {
         }
         else if (other instanceof Ellipse)
         {
-            p = line_ellipse_intersection(this.start, this.end, other.center, other.radiusX, other.radiusY, other.theta);
+            p = line_ellipse_intersection(this.start, this.end, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
             return p ? p.map(Point) : false;
         }
         else if (other instanceof Bezier2)
@@ -152,14 +152,6 @@ var Bezier1 = makeClass(Bezier, {
             p0.x*(1-t) + p1.x*t,
             p0.y*(1-t) + p1.y*t
         );
-    },
-    getAtOfPoint: function(p) {
-        var dxp = p.x - this.start.x,
-            dx = this.end.x - this.start.x,
-            dyp = p.y - this.start.y,
-            dy = this.end.y - this.start.y
-        ;
-        return is_almost_zero(dx) ? dyp/dy : dxp/dx;
     },
     distanceToPoint: function(point) {
         return point_line_segment_distance(point, this.start, this.end);

@@ -1,10 +1,12 @@
 // 2D Ellipse class
 var Ellipse = makeClass(Curve, {
-    constructor: function Ellipse(center, radiusX, radiusY, theta) {
+    constructor: function Ellipse(center, radiusX, radiusY, angle) {
         var self = this,
             _radiusX = null,
             _radiusY = null,
-            _theta = null,
+            _angle = null,
+            _cos = 0,
+            _sin = 0,
             _length = null,
             _area = null,
             _bbox = null,
@@ -12,11 +14,14 @@ var Ellipse = makeClass(Curve, {
         ;
 
         if (center instanceof Ellipse) return center;
-        if (!(self instanceof Ellipse)) return new Ellipse(center, radiusX, radiusY, theta);
+        if (!(self instanceof Ellipse)) return new Ellipse(center, radiusX, radiusY, angle);
         _radiusX = new Value(stdMath.abs(Num(radiusX)));
         _radiusY = new Value(stdMath.abs(Num(radiusY)));
-        _theta = new Value(theta);
-        Curve.call(self, [center], {radiusX:_radiusX, radiusY:_radiusY, theta:_theta});
+        _angle = new Value(angle);
+        _cos = stdMath.cos(_angle.val());
+        _sin = stdMath.sin(_angle.val());
+        
+        Curve.call(self, [center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle});
 
         Object.defineProperty(self, 'center', {
             get() {
@@ -55,19 +60,27 @@ var Ellipse = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'theta', {
+        Object.defineProperty(self, 'angle', {
             get() {
-                return _theta.val();
+                return _angle.val();
             },
-            set(theta) {
-                _theta.val(theta);
-                if (_theta.isChanged() && !self.isChanged())
+            set(angle) {
+                _angle.val(angle);
+                _cos = stdMath.cos(_angle.val());
+                _sin = stdMath.sin(_angle.val());
+                if (_angle.isChanged() && !self.isChanged())
                 {
                     self.isChanged(true);
                     self.triggerChange();
                 }
             },
             enumerable: true
+        });
+        Object.defineProperty(self, 'sincos', {
+            get() {
+                return [_cos, _sin];
+            },
+            enumerable: false
         });
         Object.defineProperty(self, 'length', {
             get() {
@@ -111,12 +124,16 @@ var Ellipse = makeClass(Curve, {
                 if (null == _hull)
                 {
                     var c = self.center, rX = _radiusX.val(), rX = _radiusY.val(),
-                        m = Matrix.rotate(_theta.val());
+                        m = Matrix.translate(c.x, c.y).mul(new Matrix(
+                            _cos, -_sin, 0,
+                            _sin, _cos, 0,
+                            0, 0, 1
+                        ));
                     _hull = [
-                        new Point(c.x-rX, c.y-rY).transform(m),
-                        new Point(c.x+rX, c.y-rY).transform(m),
-                        new Point(c.x+rX, c.y+rY).transform(m),
-                        new Point(c.x-rX, c.y+rY).transform(m)
+                        new Point(-rX, -rY).transform(m),
+                        new Point(rX, -rY).transform(m),
+                        new Point(rX, rY).transform(m),
+                        new Point(-rX, rY).transform(m)
                     ];
                 }
                 return _hull;
@@ -135,18 +152,18 @@ var Ellipse = makeClass(Curve, {
         };
     },
     clone: function() {
-        return new Ellipse(this.center.clone(), this.radiusX, this.radiusY, this.theta);
+        return new Ellipse(this.center.clone(), this.radiusX, this.radiusY, this.angle);
     },
     transform: function(matrix) {
         var c = this.center,
             rX = this.radiusX,
             rY = this.radiusY,
-            th = this.theta,
+            a = this.angle,
             ct = c.transform(matrix),
-            pX = new Point(c.x+rX, c.y).transform(matrix),
-            pY = new Point(c.x, c.y+rY).transform(matrix),
+            pX = new Point(rX, 0).transform(matrix),
+            pY = new Point(0, rY).transform(matrix),
         ;
-        return new Ellipse(ct, dist(ct, pX), dist(ct, pY), th);
+        return new Ellipse(ct, hypot(pX.x, pX.y), hypot(pY.x, pY.y), a);
     },
     isClosed: function() {
         return true;
@@ -163,15 +180,13 @@ var Ellipse = makeClass(Curve, {
         var ce = this.center,
             rX = this.radiusX,
             rY = this.radiusY,
-            theta = this.theta,
-            c = stdMath.cos(theta),
-            s = stdMath.sin(theta),
+            cs = this.sincos,
             ct = stdMath.cos(t*2*stdMath.PI),
             st = stdMath.sin(t*2*stdMath.PI)
         ;
         return new Point(
-            ce.x + rX*c*ct - rY*s*st,
-            ce.y + rY*c*st + rX*s*ct
+            ce.x + rX*cs[0]*ct - rY*cs[1]*st,
+            ce.y + rY*cs[0]*st + rX*cs[1]*ct
         );
     },
     hasPoint: function(point) {
@@ -188,7 +203,7 @@ var Ellipse = makeClass(Curve, {
         }
         else if (other instanceof Circle || other instanceof Ellipse)
         {
-            return quadratic_quadratic_intersection(this, other);
+            return ellipse_ellipse_intersection(this, other);
         }
         else if ((other instanceof Primitive) && is_function(other.intersects))
         {
@@ -202,7 +217,7 @@ var Ellipse = makeClass(Curve, {
             'cy': this.center.y,
             'rx': this.radiusX,
             'ry': this.radiusY,
-            'transform': 'rotate('+Str(this.theta)+' '+Str(this.center.x)+' '+Str(this.center.y)+')',
+            'transform': 'rotate('+Str(this.angle)+' '+Str(this.center.x)+' '+Str(this.center.y)+')',
             'style': this.style.toSVG()
         }, arguments.length ? svg : false, {
             'id': false,
@@ -210,7 +225,7 @@ var Ellipse = makeClass(Curve, {
             'cy': this.center.isChanged(),
             'rx': this.values.radiusX.isChanged(),
             'ry': this.values.radiusY.isChanged(),
-            'transform': this.isChanged(),
+            'transform': this.center.isChanged() || this.values.angle.isChanged(),
             'style': this.style.isChanged()
         }, true, {
             'id': this.id,

@@ -118,9 +118,6 @@ var Curve = makeClass(Primitive, {
     getPointAt: function(t) {
         return null;
     },
-    getAtOfPoint: function(p) {
-        return -1;
-    },
     toBezier: function() {
         return this;
     },

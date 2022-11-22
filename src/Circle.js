@@ -130,11 +130,6 @@ var Circle = makeClass(Curve, {
             c.y + r*stdMath.sin(t)
         );
     },
-    getAtOfPoint: function(p) {
-        var theta = stdMath.atan2(p.y - this.center.y, p.x - this.center.x);
-        if (0 > theta) theta += 2*stdMath.PI;
-        return theta / (2*stdMath.PI);
-    },
     hasPoint: function(point) {
         return 2 === point_inside_circle(point, this.center, this.radius);
     },
@@ -149,7 +144,8 @@ var Circle = makeClass(Curve, {
         }
         else if (other instanceof Circle)
         {
-            return quadratic_quadratic_intersection(this, other);
+            var p = circle_circle_intersection(this.center, this.radius, other.center, other.radius);
+            return p ? p.map(Point) : false;
         }
         else if ((other instanceof Primitive) && is_function(other.intersects))
         {
