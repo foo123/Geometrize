@@ -35,7 +35,7 @@ var Polygon = makeClass(Curve, {
             get() {
                 if (null == _length)
                 {
-                    _length = curve_length(self.points.concat(self.points[0]));
+                    _length = curve_length(self.points.concat([self.points[0]]));
                 }
                 return _length;
             },
@@ -45,7 +45,7 @@ var Polygon = makeClass(Curve, {
             get() {
                 if (null == _area)
                 {
-                    _area = curve_area(self.points);
+                    _area = curve_area(self.points.concat([self.points[0]]));
                 }
                 return _area;
             },
@@ -108,6 +108,13 @@ var Polygon = makeClass(Curve, {
     },
     getConvexHull: function() {
         return this._hull;
+    },
+    hasPoint: function(point) {
+        return 2 === point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this.points.concat([this.points[0]]));
+    },
+    hasInsidePoint: function(point, strict) {
+        var inside = point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this.points.concat([this.points[0]]));
+        return strict ? 1 === inside : 0 < inside;
     },
     toSVG: function(svg) {
         return SVG('polygon', {

@@ -108,19 +108,31 @@ var Bezier1 = makeClass(Bezier, {
         return !!point_between(point, this.start, this.end);
     },
     intersects: function(other) {
+        var p;
         if (other instanceof Point)
         {
-            var p = point_between(other, this.start, this.end);
+            p = point_between(other, this.start, this.end);
             return p ? [p] : false;
         }
         else if (other instanceof Line)
         {
-            var p = line_segments_intersection(this.start, this.end, other.start, other.end);
+            p = line_segments_intersection(this.start, this.end, other.start, other.end);
             return p ? [Point(p)] : false;
         }
-        else if (other instanceof Circle || other instanceof Ellipse || other instanceof Arc || other instanceof Bezier2)
+        else if (other instanceof Circle)
         {
-            return line_quadratic_intersection(this, other);
+            p = line_circle_intersection(this.start, this.end, other.center, other.radius);
+            return p ? p.map(Point) : false;
+        }
+        else if (other instanceof Ellipse)
+        {
+            p = line_ellipse_intersection(this.start, this.end, other.center, other.radiusX, other.radiusY, other.theta);
+            return p ? p.map(Point) : false;
+        }
+        else if (other instanceof Bezier2)
+        {
+            p = line_bezier2_intersection(this.start, this.end, other.points);
+            return p ? p.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {

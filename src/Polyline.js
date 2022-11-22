@@ -95,6 +95,11 @@ var Polyline = makeClass(Curve, {
     hasPoint: function(point) {
         return point_on_curve(point, this.points);
     },
+    hasInsidePoint: function(point, strict) {
+        if (!this.isClosed()) return false;
+        var inside = point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this.points);
+        return strict ? 1 === inside : 0 < inside;
+    },
     getPointAt: function(t) {
         var lines = this.lines, n = lines.length, i;
         t = Num(t);

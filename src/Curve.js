@@ -109,6 +109,12 @@ var Curve = makeClass(Primitive, {
     isClosed: function() {
         return false;
     },
+    hasPoint: function(p) {
+        return false;
+    },
+    hasInsidePoint: function(p, strict) {
+        return false;
+    },
     getPointAt: function(t) {
         return null;
     },

@@ -174,19 +174,12 @@ var Ellipse = makeClass(Curve, {
             ce.y + rY*c*st + rX*s*ct
         );
     },
-    hasPoint: function(point, notInside) {
-        var center = this.center,
-            rX2 = this.radiusX*this.radiusX,
-            rY2 = this.radiusY*this.radiusY,
-            c = stdMath.cos(-this.theta),
-            s = stdMath.sin(-this.theta),
-            x = point.x - center.x,
-            y = point.y - center.y,
-            dx = c*x - s*y,
-            dy = c*y + s*x,
-            d = dx*dx/rX2 + dy*dy/rY2
-        ;
-        return notInside ? is_almost_equal(d, 1) : d <= 1;
+    hasPoint: function(point) {
+        return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.theta);
+    },
+    hasInsidePoint: function(point, strict) {
+        var inside = point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.theta);
+        return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
         if (other instanceof Point)

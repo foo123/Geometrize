@@ -120,6 +120,12 @@ var Point = makeClass(Primitive, {
     distanceToLine: function(p1, p2) {
         return p1 instanceof Line ? point_line_distance(this, p1.start, p1.end) : point_line_distance(this, p1, p2);
     },
+    isOn: function(curve) {
+        return is_function(curve.hasPoint) ? curve.hasPoint(this) : false;
+    },
+    isInside: function(closedCurve, strict) {
+        return is_function(closedCurve.hasInsidePoint) ? closedCurve.hasInsidePoint(this, strict) : false;
+    },
     intersects: function(other) {
         if (other instanceof Point)
         {

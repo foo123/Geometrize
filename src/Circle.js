@@ -135,14 +135,12 @@ var Circle = makeClass(Curve, {
         if (0 > theta) theta += 2*stdMath.PI;
         return theta / (2*stdMath.PI);
     },
-    hasPoint: function(point, notInside) {
-        var center = this.center,
-            r2 = this.radius*this.radius,
-            dx = point.x - center.x,
-            dy = point.y - center.y,
-            d = dx*dx + dy*dy
-        ;
-        return notInside ? is_almost_equal(d, r2) : d <= r2;
+    hasPoint: function(point) {
+        return 2 === point_inside_circle(point, this.center, this.radius);
+    },
+    hasInsidePoint: function(point, strict) {
+        var inside = point_inside_circle(point, this.center, this.radius);
+        return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
         if (other instanceof Point)

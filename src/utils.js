@@ -99,17 +99,26 @@ function point_between(p, p1, p2)
     }
     return false;
 }
+function lin_solve(a, b)
+{
+    return is_almost_zero(a) ? false : [-b / a];
+}
+function quad_solve(a, b, c)
+{
+    if (is_almost_zero(a)) return lin_solve(b, c);
+    var D = b*b - 4*a*c;
+    if (0 > D) return false;
+    if (is_almost_zero(D)) return [-b / (2*a)];
+    D = stdMath.sqrt(D);
+    return [(-b-D) / (2*a), (-b+D) / (2*a)];
+}
 function line_line_intersection(a, b, c, k, l, m)
 {
     /*
-    https://www.wolframalpha.com/input?key=&i=system+of+equations&assumption=%7B%22F%22%2C+%22SolveSystemOf2EquationsCalculator%22%2C+%22equation1%22%7D+-%3E%22ax%2Bby%2Bc%3D0%22&assumption=%7B%22C%22%2C+%22system+of+equations%22%7D+-%3E+%7B%22Calculator%22%7D&assumption=%22FSelect%22+-%3E+%7B%7B%22SolveSystemOf2EquationsCalculator%22%7D%7D&assumption=%7B%22F%22%2C+%22SolveSystemOf2EquationsCalculator%22%2C+%22equation2%22%7D+-%3E%22kx%2Bly%2Bm%3D0%22
-
+    https://live.sympy.org/
     ax+by+c=0
     kx+ly+m=0
-
-    x = (c l - b m)/(b k - a l)
-    y = (c k - a m)/(a l - b k)
-    and b k!=a l and b!=0
+    x,y={((b*m - c*l)/(a*l - b*k), -(a*m - c*k)/(a*l - b*k))}
     */
     var det = a*l - b*k;
     // zero, infinite or one point
@@ -121,43 +130,31 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
     https://live.sympy.org/
     mx+ny+k=0
     ax^2+by^2+cxy+dx+ey+f=0
-
     x,y,a,b,c,d,e,f,n,m,k = symbols('x y a b c d e f n m k', real=True)
     nonlinsolve([a*x**2+b*y**2+c*x*y+d*x+e*y+f, m*x+n*y+k], [x, y])
-
-    {(-(k + n*(-m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))))/m, -m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))), (-(k + n*(m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))))/m, m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)))}
+    x,y={(-(k + n*(-m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))))/m, -m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))), (-(k + n*(m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))))/m, m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)))}
     */
-
-    /*
-    https://www.wolframalpha.com/input?key=&i=systems+of+equations+calculator&assumption=%7B%22F%22%2C+%22SolveSystemOf2EquationsCalculator%22%2C+%22equation1%22%7D+-%3E%22mx%2Bny%2Bk%3D0%22&assumption=%22FSelect%22+-%3E+%7B%7B%22SolveSystemOf2EquationsCalculator%22%7D%7D&assumption=%7B%22F%22%2C+%22SolveSystemOf2EquationsCalculator%22%2C+%22equation2%22%7D+-%3E%22ax%5E2%2Bby%5E2%2Bcxy%2Bdx%2Bey%2Bf%3D+0%22
-    mx+ny+k=0
-    ax^2+by^2+cxy+dx+ey+f=0
-
-    x = (-sqrt((2 b k m - c k n + d n^2 - e m n)^2 - 4 (b k^2 + f n^2 - e k n) (a n^2 + b m^2 - c m n)) - 2 b k m + c k n - d n^2 + e m n)/(2 (a n^2 + b m^2 - c m n))
-    ∧ y = (m sqrt((2 b k m - c k n + d n^2 - e m n)^2 - 4 (b k^2 + f n^2 - e k n) (a n^2 + b m^2 - c m n)) - 2 a k n^2 + c k m n + d m n^2 - e m^2 n)/(2 n (a n^2 + b m^2 - c m n))
-    ∧ a n^2 + b m^2 - c m n!=0 ∧ n!=0
-    x = (sqrt((2 b k m - c k n + d n^2 - e m n)^2 - 4 (b k^2 + f n^2 - e k n) (a n^2 + b m^2 - c m n)) - 2 b k m + c k n - d n^2 + e m n)/(2 (a n^2 + b m^2 - c m n))
-    ∧ y = (-m sqrt((2 b k m - c k n + d n^2 - e m n)^2 - 4 (b k^2 + f n^2 - e k n) (a n^2 + b m^2 - c m n)) - 2 a k n^2 + c k m n + d m n^2 - e m^2 n)/(2 n (a n^2 + b m^2 - c m n))
-    ∧ a n^2 + b m^2 - c m n!=0 ∧ n!=0
-    */
-}
-function quadratic_quadratic_intersection(a, b, c, d, e, f, m, n, l, k, g, h)
-{
-    /*
-    ax^2+by^2+cxy+dx+ey+f=0
-    mx^2+ny^2+lxy+kx+gy+h=0
-
-    (a)x^2+(cy+d)x+(by^2+ey+f) = 0
-    x = (-(cy+d) +/- sqrt((cy+d)^2-4(a)(by^2+ey+f)))/2(a)
-    x = (-(cy+d) +/- sqrt((c^2y^2+d^2+2cdy)-4aby^2+4aey+4af)))/2(a)
-    x = (-(cy+d) +/- sqrt((c^2-4ab)y^2+(4ae+2cd)y+(d^2+4af)))/2(a)
-
-    (n)y^2+(lx+g)y+(mx^2+kx+h) = 0
-    y = (-(lx+g) +/- sqrt((lx+g)^2-4(n)(mx^2+kx+h)))/2(n)
-
-    print(nonlinsolve([a*x**4+b*x**3+c*x**2+d*x+e], [x]))
-    {(Piecewise((-sqrt(-2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 2*c/(3*a) + b**2/(4*a**2))/2 - sqrt((2*d/a - b*c/a**2 + b**3/(4*a**3))/sqrt(-2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 2*c/(3*a) + b**2/(4*a**2)) + 2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 4*c/(3*a) + b**2/(2*a**2))/2 - b/(4*a), Eq(e/a - b*d/(4*a**2) + c**2/(12*a**2), 0)), (-sqrt(-2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) + 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 2*c/(3*a) + b**2/(4*a**2))/2 - sqrt((2*d/a - b*c/a**2 + b**3/(4*a**3))/sqrt(-2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) + 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 2*c/(3*a) + b**2/(4*a**2)) + 2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) - 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 4*c/(3*a) + b**2/(2*a**2))/2 - b/(4*a), True)),), (Piecewise((-sqrt(-2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 2*c/(3*a) + b**2/(4*a**2))/2 + sqrt((2*d/a - b*c/a**2 + b**3/(4*a**3))/sqrt(-2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 2*c/(3*a) + b**2/(4*a**2)) + 2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 4*c/(3*a) + b**2/(2*a**2))/2 - b/(4*a), Eq(e/a - b*d/(4*a**2) + c**2/(12*a**2), 0)), (-sqrt(-2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) + 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 2*c/(3*a) + b**2/(4*a**2))/2 + sqrt((2*d/a - b*c/a**2 + b**3/(4*a**3))/sqrt(-2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) + 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 2*c/(3*a) + b**2/(4*a**2)) + 2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) - 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 4*c/(3*a) + b**2/(2*a**2))/2 - b/(4*a), True)),), (Piecewise((sqrt(-2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 2*c/(3*a) + b**2/(4*a**2))/2 - sqrt(-(2*d/a - b*c/a**2 + b**3/(4*a**3))/sqrt(-2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 2*c/(3*a) + b**2/(4*a**2)) + 2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 4*c/(3*a) + b**2/(2*a**2))/2 - b/(4*a), Eq(e/a - b*d/(4*a**2) + c**2/(12*a**2), 0)), (sqrt(-2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) + 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 2*c/(3*a) + b**2/(4*a**2))/2 - sqrt(-(2*d/a - b*c/a**2 + b**3/(4*a**3))/sqrt(-2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) + 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 2*c/(3*a) + b**2/(4*a**2)) + 2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) - 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 4*c/(3*a) + b**2/(2*a**2))/2 - b/(4*a), True)),), (Piecewise((sqrt(-2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 2*c/(3*a) + b**2/(4*a**2))/2 + sqrt(-(2*d/a - b*c/a**2 + b**3/(4*a**3))/sqrt(-2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 2*c/(3*a) + b**2/(4*a**2)) + 2*(-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**(1/3) - 4*c/(3*a) + b**2/(2*a**2))/2 - b/(4*a), Eq(e/a - b*d/(4*a**2) + c**2/(12*a**2), 0)), (sqrt(-2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) + 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 2*c/(3*a) + b**2/(4*a**2))/2 + sqrt(-(2*d/a - b*c/a**2 + b**3/(4*a**3))/sqrt(-2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) + 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 2*c/(3*a) + b**2/(4*a**2)) + 2*(-e/a + b*d/(4*a**2) - c**2/(12*a**2))/(3*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3)) - 2*((c/a - 3*b**2/(8*a**2))**3/216 - (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/6 + sqrt((-e/a + b*d/(4*a**2) - c**2/(12*a**2))**3/27 + (-(c/a - 3*b**2/(8*a**2))**3/108 + (c/a - 3*b**2/(8*a**2))*(e/a - b*d/(4*a**2) + b**2*c/(16*a**3) - 3*b**4/(256*a**4))/3 - (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/8)**2/4) + (d/a - b*c/(2*a**2) + b**3/(8*a**3))**2/16)**(1/3) - 4*c/(3*a) + b**2/(2*a**2))/2 - b/(4*a), True)),)}
-    */
+    var x, y, x1 = 0, y1 = 0, x2 = 0, y2 = 0, D = 0, R = 0, F = 0;
+    if (is_almost_zero(m))
+    {
+        y = lin_solve(n, k);
+        if (!y) return false;
+        y1 = y[0];
+        x = quad_solve(a, c*y1+d, b*y1*y1+e*y1+f);
+        if (!x) return false;
+        return 2 === x.length ? [{x:x[0],y:y1},{x:x[1],y:y1}] : [{x:x[0],y:y1}];
+    }
+    else
+    {
+        R = 2*(a*n*n + b*m*m - c*m*n);
+        if (is_almost_zero(R)) return false;
+        D = -4*a*b*k*k + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m*m + c*c*k*k - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d*d*n*n - 2*d*e*m*n + e*e*m*m;
+        if (0 > D) return false;
+        F = 2*a*k*n - c*k*m - d*m*n + e*m*m;
+        if (is_almost_zero(D)) return [{x:-(k + n*(-F/R))/m, y:-F/R}];
+        D = stdMath.sqrt(D);
+        return [{x:-(k + n*((-m*D - F)/R))/m, y:(-m*D - F)/R},{x:-(k + n*((m*D - F)/R))/m, y:(m*D - F)/R}];
+    }
 }
 function line_segments_intersection(p1, p2, p3, p4)
 {
@@ -200,26 +197,109 @@ function point_on_curve(p, curve_points, get_point)
 function point_inside_curve(p, maxp, curve_points, get_point)
 {
     get_point = get_point || identity;
-    for (var p1,p2,i=0,intersects=0,n=curve_points.length; i<n; ++i)
+    for (var p1,p2,i=0,intersects=0,n=curve_points.length-1; i<n; ++i)
     {
         p1 = get_point(curve_points[i]);
-        p2 = get_point(curve_points[(i+1) % n]);
-        //if (point_between(p, p1, p2)) return true;
+        p2 = get_point(curve_points[i+1]);
+        if (point_between(p, p1, p2)) return 2;
         if (line_segments_intersection(p, maxp, p1, p2)) ++intersects;
     }
-    return intersects & 1 ? true : false;
+    return intersects & 1 ? 1 : 0;
 }
-function curve_curve_intersection(other_curve, this_curve_points)
+function point_inside_rect(p, top, left, bottom, right)
 {
-    var i, n = this_curve.length, cost, result = [];
-    for (i=0; i<n; ++i)
+    if (is_almost_equal(p.x, left) && p.y >= top && p.y <= bottom) return 2;
+    if (is_almost_equal(p.x, right) && p.y >= top && p.y <= bottom) return 2;
+    if (is_almost_equal(p.y, top) && p.x >= left && p.x <= right) return 2;
+    if (is_almost_equal(p.y, bottom) && p.x >= left && p.x <= right) return 2;
+    return p.x >= left && p.x <= right && p.y >= top && p.y <= bottom ? 1 : 0;
+}
+function point_inside_circle(p, center, radius)
+{
+    var dx = p.x - center.x,
+        dy = p.y - center.y,
+        d2 = dx*dx + dy*dy,
+        r2 = radius*radius;
+    if (is_almost_equal(d2, r2)) return 2;
+    return d2 < r2 ? 1 : 0;
+}
+function point_inside_ellipse(p, center, radiusX, radiusY, theta)
+{
+    var rX2 = radiusX*radiusX,
+        rY2 = radiusY*radiusY,
+        c = stdMath.cos(-theta),
+        s = stdMath.sin(-theta),
+        dx0 = p.x - center.x,
+        dy0 = p.y - center.y,
+        dx = c*dx0 - s*dy0,
+        dy = c*dy0 + s*dx0,
+        d2 = dx*dx/rX2 + dy*dy/rY2
+    ;
+    if (is_almost_equal(d2, 1)) return 2;
+    return d2 < 1 ? 1 : 0;
+}
+function line_circle_intersection(p1, p2, center, radius)
+{
+    var p = new Array(2), pi = 0, i, n,
+        ir2 = 1/radius/radius,
+        s = line_quadratic_intersection(
+            p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
+            ir2, ir2, 0, -2*center.x*ir2, -2*center.y*ir2, center.x*center.x*ir2+center.y*center.y*ir2-1
+        );
+    if (!s) return false;
+    for (i=0,n=s.length; i<n; ++i)
     {
-        p = this_curve_points[i][0];
-        cost = other_curve(p);
-        if (is_almost_zero(cost))
-            result.push(p);
+        if (point_between(s[i], p1, p2))
+            p[pi++] = s[i];
     }
-    return result.length ? result : false;
+    p.length = pi;
+    return p.length ? p : false;
+}
+function line_ellipse_intersection(p1, p2, center, radiusX, radiusY, theta)
+{
+    var p = new Array(2), pi = 0, i, n,
+        irX2 = 1/radiusX/radiusX,
+        irY2 = 1/radiusY/radiusY,
+        s = line_quadratic_intersection(
+            p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
+            irX2, irY2, 0, -2*center.x*ir2, -2*center.y*ir2, center.x*center.x*irX2+center.y*center.y*irY2-1
+        );
+    if (!s) return false;
+    for (i=0,n=s.length; i<n; ++i)
+    {
+        if (point_between(s[i], p1, p2))
+            p[pi++] = s[i];
+    }
+    p.length = pi;
+    return p.length ? p : false;
+}
+function line_bezier2_intersection(p1, p2, c)
+{
+    var p = new Array(2), pi = 0, i, n,
+        M = p2.y - p1.y,
+        N = p1.x - p2.x,
+        K = p2.x*p1.y - p1.x*p2.y,
+        A = c[0].y*c[0].y - 4*c[0].y*c[1].y + 2*c[0].y*c[2].y + 4*c[1].y*c[1].y - 4*c[1].y*c[2].y + c[2].y*c[2].y,
+        B = c[0].x*c[0].x - 4*c[0].x*c[1].x + 2*c[0].x*c[2].x + 4*c[1].x*c[1].x - 4*c[1].x*c[2].x + c[2].x*c[2].x,
+        C = -2*c[0].x*c[0].y + 4*c[0].x*c[1].y - 2*c[0].x*c[2].y + 4*c[1].x*c[0].y - 8*c[1].x*c[1].y + 4*c[1].x*c[2].y - 2*c[2].x*c[0].y + 4*c[2].x*c[1].y - 2*c[2].x*c[2].y,
+        D = 2*c[0].x*c[0].y*c[2].y - 4*c[0].x*c[1].y*c[1].y + 4*c[0].x*c[1].y*c[2].y - 2*c[0].x*c[2].y*c[2].y + 4*c[1].x*c[0].y*c[1].y - 8*c[1].x*c[0].y*c[2].y + 4*c[1].x*c[1].y*c[2].y - 2*c[2].x*c[0].y*c[0].y + 4*c[2].x*c[0].y*c[1].y + 2*c[2].x*c[0].y*c[2].y - 4*c[2].x*c[1].y*c[1].y,
+        E = -2*c[0].x*c[0].x*c[2].y + 4*c[0].x*c[1].x*c[1].y + 4*c[0].x*c[1].x*c[2].y + 2*c[0].x*c[2].x*c[0].y - 8*c[0].x*c[2].x*c[1].y + 2*c[0].x*c[2].x*c[2].y - 4*c[1].x*c[1].x*c[0].y - 4*c[1].x*c[1].x*c[2].y + 4*c[1].x*c[2].x*c[0].y + 4*c[1].x*c[2].x*c[1].y - 2*c[2].x*c[2].x*c[0].y,
+        F = c[0].x*c[0].x*c[2].y*c[2].y - 4*c[0].x*c[1].x*c[1].y*c[2].y - 2*c[0].x*c[2].x*c[0].y*c[2].y + 4*c[0].x*c[2].x*c[1].y*c[1].y + 4*c[1].x*c[1].x*c[0].y*c[2].y - 4*c[1].x*c[2].x*c[0].y*c[1].y + c[2].x*c[2].x*c[0].y*c[0].y,
+        s = line_quadratic_intersection(
+            M, N, K,
+            A, B, C, D, E, F
+        );
+    if (!s) return false;
+    for (i=0,n=s.length; i<n; ++i)
+    {
+        if (point_between(s[i], p1, p2))
+            p[pi++] = s[i];
+    }
+    p.length = pi;
+    return p.length ? p : false;
+}
+function curve_ellipse_intersection(ellipse, curve_points, get_point)
+{
 }
 function curve_length(curve_points, get_point)
 {
@@ -235,11 +315,11 @@ function curve_length(curve_points, get_point)
 function curve_area(curve_points, get_point)
 {
     get_point = get_point || identity;
-    for (var p1,p2,area=0,i=0,n=curve_points.length; i<n; ++i)
+    for (var p1,p2,area=0,i=0,n=curve_points.length-1; i<n; ++i)
     {
         // shoelace formula
         p1 = get_point(curve_points[i]);
-        p2 = get_point(curve_points[(i+1) % n]);
+        p2 = get_point(curve_points[i+1]);
         area += crossp(p1.x, p1.y, p2.x, p2.y) / 2;
     }
     return area;

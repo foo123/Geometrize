@@ -217,9 +217,10 @@ var Matrix = makeClass(null, {
     },
     rotate: function(theta) {
         theta = Num(theta);
+        var c = stdMath.cos(theta), s = stdMath.sin(theta);
         return new Matrix(
-        stdMath.cos(theta),-stdMath.sin(theta),0,
-        stdMath.sin(theta),stdMath.cos(theta),0,
+        c,-s,0,
+        s,c,0,
         0,0,1
         );
     },
