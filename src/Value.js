@@ -1,5 +1,5 @@
 // generic scalar Value class
-var Value = makeClass(EventEmitter, {
+var Value = makeClass(Changeable, {
     constructor: function Value(v) {
         var self = this;
         if (v instanceof Value) return v;
@@ -17,11 +17,11 @@ var Value = makeClass(EventEmitter, {
             if (arguments.length)
             {
                 newv = newv instanceof Value ? newv.val() : Num(newv);
-                var isDirty = !is_almost_equal(v, newv);
+                var isChanged = !is_almost_equal(v, newv);
                 v = newv;
-                if (isDirty && !self.isDirty())
+                if (isChanged && !self.isChanged())
                 {
-                    self.isDirty(true);
+                    self.isChanged(true);
                     self.triggerChange();
                 }
                 return self;
@@ -37,7 +37,7 @@ var Value = makeClass(EventEmitter, {
         self.toString = function() {
             return Str(v);
         };
-        self.isDirty(true);
+        self.isChanged(true);
     },
     dispose: null,
     clone: null,

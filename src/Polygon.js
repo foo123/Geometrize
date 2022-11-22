@@ -35,11 +35,7 @@ var Polygon = makeClass(Curve, {
             get() {
                 if (null == _length)
                 {
-                    _length = 0;
-                    for (var i=0,v=self.points,n=v.length; i<n; ++i)
-                    {
-                        _length += dist(v[i], v[(i+1) % n]);
-                    }
+                    _length = curve_length(self.points.concat(self.points[0]));
                 }
                 return _length;
             },
@@ -49,12 +45,7 @@ var Polygon = makeClass(Curve, {
             get() {
                 if (null == _area)
                 {
-                    _area = 0;
-                    for (var i=0,v=self.points,n=v.length; i<n; ++i)
-                    {
-                        // shoelace formula
-                        _area += v[i].cross(v[(i+1) % n]) / 2;
-                    }
+                    _area = curve_area(self.points);
                 }
                 return _area;
             },
@@ -70,7 +61,7 @@ var Polygon = makeClass(Curve, {
                         bottom: -Infinity,
                         right: -Infinity
                     };
-                    for (var i=0,p=self.points,n=p.length; i+1<n; ++i)
+                    for (var i=0,p=self.points,n=p.length; i<n; ++i)
                     {
                         _bbox.top = stdMath.min(_bbox.top, p[i].y);
                         _bbox.bottom = stdMath.max(_bbox.bottom, p[i].y);
@@ -92,15 +83,15 @@ var Polygon = makeClass(Curve, {
             },
             enumerable: false
         });
-        self.isDirty = function(isDirty) {
-            if (true === isDirty)
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
             {
                 _length = null;
                 _area = null;
                 _bbox = null;
                 _hull = null;
             }
-            return self.$super.isDirty.apply(self, arguments);
+            return self.$super.isChanged.apply(self, arguments);
         };
     },
     clone: function() {
@@ -126,9 +117,9 @@ var Polygon = makeClass(Curve, {
             'style': this.style.toSVG()
         }, arguments.length ? svg : false, {
             'id': false,
-            'points': this.isDirty(),
-            'transform': this.isDirty(),
-            'style': this.style.isDirty()
+            'points': this.isChanged(),
+            'transform': this.isChanged(),
+            'style': this.style.isChanged()
         });
     },
     toTex: function() {

@@ -1,14 +1,14 @@
 // 2D Line segment class (equivalent to Linear Bezier curve)
-var Line = makeClass(Bezier, {
-    constructor: function Line(start, end) {
+var Bezier1 = makeClass(Bezier, {
+    constructor: function Bezier1(start, end) {
         var self = this,
             _length = null,
             _bbox = null,
             _hull = null
         ;
 
-        if (start instanceof Line) return start;
-        if (!(self instanceof Line)) return new Line(start, end);
+        if (start instanceof Bezier1) return start;
+        if (!(self instanceof Bezier1)) return new Bezier1(start, end);
 
         Bezier.call(self, [start, end]);
 
@@ -82,18 +82,15 @@ var Line = makeClass(Bezier, {
             },
             enumerable: false
         });
-        self.isDirty = function(isDirty) {
-            if (true === isDirty)
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
             {
                 _length = null;
                 _bbox = null;
                 _hull = null;
             }
-            return self.$super.isDirty.apply(self, arguments);
+            return self.$super.isChanged.apply(self, arguments);
         };
-    },
-    distanceToPoint: function(point) {
-        return point_line_distance(point, this.start, this.end);
     },
     clone: function() {
         return new Line(this.start.clone(), this.end.clone());
@@ -106,6 +103,34 @@ var Line = makeClass(Bezier, {
     },
     getConvexHull: function() {
         return this._hull;
+    },
+    hasPoint: function(point) {
+        return !!point_between(point, this.start, this.end);
+    },
+    intersects: function(other) {
+        if (other instanceof Point)
+        {
+            var p = point_between(other, this.start, this.end);
+            return p ? [p] : false;
+        }
+        else if (other instanceof Line)
+        {
+            var p = line_segments_intersection(this.start, this.end, other.start, other.end);
+            return p ? [Point(p)] : false;
+        }
+        else if (other instanceof Circle || other instanceof Ellipse || other instanceof Arc || other instanceof Bezier2)
+        {
+            return line_quadratic_intersection(this, other);
+        }
+        else if (other instanceof Bezier3)
+        {
+            return line_cubic_intersection(this, other);
+        }
+        else if ((other instanceof Primitive) && is_function(other.intersects))
+        {
+            return other.intersects(this);
+        }
+        return false;
     },
     getPointAt: function(t) {
         t = Num(t);
@@ -124,42 +149,8 @@ var Line = makeClass(Bezier, {
         ;
         return is_almost_zero(dx) ? dyp/dy : dxp/dx;
     },
-    hasPoint: function(point) {
-        return !!point_between(point, this.start, this.end);
-    },
-    intersects: function(other) {
-        if (other instanceof Point)
-        {
-            var p = point_between(other, this.start, this.end);
-            return p ? [p] : false;
-        }
-        else if (other instanceof Line)
-        {
-            var abc = this.toXYEquation(), klm = other.toXYEquation(), p;
-            if ((p=line_line_intersection(abc[0], abc[1], abc[2], klm[0], klm[1], klm[2])) && (!point_between(point, this.start, this.end) || (!point_between(point, other.start, other.end)))
-            {
-                p = false;
-            }
-            return p ? [new Point(p)] : false;
-        }
-        else if (other instanceof Circle || other instanceof Ellipse || other instanceof Bezier2)
-        {
-            return line_quadratic_intersection(this, other);
-        }
-        else if (other instanceof Bezier3)
-        {
-            return line_cubic_intersection(this, other);
-        }
-        else if ((other instanceof Primitive) && is_function(other.intersects))
-        {
-            return other.intersects(this);
-        }
-        return false;
-    },
-    toXYEquation: function() {
-        var p1 = this.start, p2 = this.end;
-        //           a x  +   b  y   +      c                = 0
-        return [p2.y-p1.y, p1.x-p2.x, p2.x*p1.y-p1.x*p2.y];
+    distanceToPoint: function(point) {
+        return point_line_segment_distance(point, this.start, this.end);
     },
     toSVG: function(svg) {
         return SVG('line', {
@@ -172,12 +163,12 @@ var Line = makeClass(Bezier, {
             'style': this.style.toSVG()
         }, arguments.length ? svg : false, {
             'id': false,
-            'x1': this.start.isDirty(),
-            'y1': this.start.isDirty(),
-            'x2': this.end.isDirty(),
-            'y2': this.end.isDirty(),
-            'transform': this.isDirty(),
-            'style': this.style.isDirty()
+            'x1': this.start.isChanged(),
+            'y1': this.start.isChanged(),
+            'x2': this.end.isChanged(),
+            'y2': this.end.isChanged(),
+            'transform': this.isChanged(),
+            'style': this.style.isChanged()
         });
     },
     toTex: function(interval) {
@@ -187,4 +178,4 @@ var Line = makeClass(Bezier, {
         return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';
     }
 });
-var Bezier1 = Line;
+var Line = Bezier1;

@@ -1,6 +1,6 @@
 // 2D Primitive Style class
 // eg stroke, fill, width, ..
-var Style = makeClass(EventEmitter, {
+var Style = makeClass(Changeable, {
     constructor: function Style(style) {
         var self = this, _props = null, _style = null;
         if (style instanceof Style) return style;
@@ -25,16 +25,16 @@ var Style = makeClass(EventEmitter, {
                     if (_style[p] !== val)
                     {
                         _style[p] = val;
-                        if (!self.isDirty())
+                        if (!self.isChanged())
                         {
-                            self.isDirty(true);
+                            self.isChanged(true);
                             self.triggerChange();
                         }
                     }
                 }
             });
         });
-        self.isDirty(true);
+        self.isChanged(true);
     },
     dispose: function() {
         this.$super.dispose.call(this);

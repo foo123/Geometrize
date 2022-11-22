@@ -1,5 +1,5 @@
 // 2D Geometric Primitive base class
-var Primitive = makeClass(EventEmitter, {
+var Primitive = makeClass(Changeable, {
     constructor: function Primitive() {
         var _matrix = null,
             _style = null,
@@ -19,9 +19,9 @@ var Primitive = makeClass(EventEmitter, {
                 if (_matrix !== matrix)
                 {
                     _matrix = matrix;
-                    if (!self.isDirty())
+                    if (!self.isChanged())
                     {
-                        self.isDirty(true);
+                        self.isChanged(true);
                         self.triggerChange();
                     }
                 }
@@ -31,9 +31,9 @@ var Primitive = makeClass(EventEmitter, {
         onStyleChange = function onStyleChange(style) {
             if (_style === style)
             {
-                if (!self.isDirty())
+                if (!self.isChanged())
                 {
-                    self.isDirty(true);
+                    self.isChanged(true);
                     self.triggerChange();
                 }
             }
@@ -51,9 +51,9 @@ var Primitive = makeClass(EventEmitter, {
                     if (_style) _style.onChange(onStyleChange, false);
                     _style = style;
                     if (_style) _style.onChange(onStyleChange);
-                    if (!self.isDirty())
+                    if (!self.isChanged())
                     {
-                        self.isDirty(true);
+                        self.isChanged(true);
                         self.triggerChange();
                     }
                 }
@@ -68,7 +68,7 @@ var Primitive = makeClass(EventEmitter, {
                 _dom = dom;
             }
         });*/
-        self.isDirty(true);
+        self.isChanged(true);
     },
     id: '',
     dispose: function() {
@@ -99,6 +99,9 @@ var Primitive = makeClass(EventEmitter, {
     },
     toSVG: function(svg) {
         return arguments.length ? svg : '';
+    },
+    toSVGPath: function() {
+        return '';
     },
     toTex: function() {
         return '\\text{Primitive}';

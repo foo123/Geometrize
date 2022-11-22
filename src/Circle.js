@@ -29,9 +29,9 @@ var Circle = makeClass(Curve, {
             },
             set(radius) {
                 _radius.val(stdMath.abs(Num(radius)));
-                if (_radius.isDirty() && !self.isDirty())
+                if (_radius.isChanged() && !self.isChanged())
                 {
-                    self.isDirty(true);
+                    self.isChanged(true);
                     self.triggerChange();
                 }
             },
@@ -89,15 +89,15 @@ var Circle = makeClass(Curve, {
             },
             enumerable: false
         });
-        self.isDirty = function(isDirty) {
-            if (true === isDirty)
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
             {
                 _length = null;
                 _area = null;
                 _bbox = null;
                 _hull = null;
             }
-            return self.$super.isDirty.apply(self, arguments);
+            return self.$super.isChanged.apply(self, arguments);
         };
     },
     clone: function() {
@@ -169,11 +169,11 @@ var Circle = makeClass(Curve, {
             'style': this.style.toSVG()
         }, arguments.length ? svg : false, {
             'id': false,
-            'cx': this.center.isDirty(),
-            'cy': this.center.isDirty(),
-            'r': this.values.radius.isDirty(),
-            'transform': this.isDirty(),
-            'style': this.style.isDirty()
+            'cx': this.center.isChanged(),
+            'cy': this.center.isChanged(),
+            'r': this.values.radius.isChanged(),
+            'transform': this.isChanged(),
+            'style': this.style.isChanged()
         });
     },
     toTex: function() {

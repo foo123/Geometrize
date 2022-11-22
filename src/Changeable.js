@@ -1,22 +1,20 @@
-// Event Emitter interface
-var EventEmitter = makeClass(null, {
-    $dirty: false,
-    isDirty: function(isDirty) {
+// Changeable mixin
+var Changeable = makeClass(null, {
+    $changed: false,
+    $cb: null,
+    isChanged: function(isChanged) {
         if (arguments.length)
         {
-            this.$dirty = !!isDirty;
+            this.$changed = !!isChanged;
             return this;
         }
         else
         {
-            return this.$dirty;
+            return this.$changed;
         }
     },
-    $cb: null,
-    $pb: null,
     dispose: function() {
         this.$cb = null;
-        this.$pb = null;
     },
     onChange: function(cb, add) {
         var self = this, index;
@@ -30,14 +28,7 @@ var EventEmitter = makeClass(null, {
         }
         else if (is_function(cb))
         {
-            if (!self.$cb)
-            {
-                self.$cb = [];
-                self.$pb = function() {
-                    self.$cb.forEach(function(cb) {cb(self);});
-                };
-
-            }
+            if (!self.$cb) self.$cb = [];
             index = self.$cb.indexOf(cb);
             if (-1 === index) self.$cb.push(cb);
         }
@@ -45,7 +36,7 @@ var EventEmitter = makeClass(null, {
     },
     triggerChange: function() {
         var self = this;
-        if (self.$cb && self.$pb) self.$pb();
+        if (self.$cb) self.$cb.forEach(function(cb) {cb(self);});
         return self;
     }
 });

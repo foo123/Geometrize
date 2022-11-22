@@ -1,2 +1,2 @@
 // 2D Quadratic Bezier class
-var Bezier2 = makeClass(Curve, {});
+var Bezier2 = makeClass(Bezier, {});

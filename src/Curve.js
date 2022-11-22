@@ -11,18 +11,18 @@ var Curve = makeClass(Primitive, {
         onPointChange = function onPointChange(point) {
             if (is_array(_points) && (-1 !== _points.indexOf(point)))
             {
-                if (!self.isDirty())
+                if (!self.isChanged())
                 {
-                    self.isDirty(true);
+                    self.isChanged(true);
                     self.triggerChange();
                 }
             }
         };
         onPointChange.id = self.id;
         onArrayChange = function onArrayChange(changed) {
-            if (!self.isDirty())
+            if (!self.isChanged())
             {
-                self.isDirty(true);
+                self.isChanged(true);
                 self.triggerChange();
             }
         };
@@ -51,9 +51,9 @@ var Curve = makeClass(Primitive, {
                         _points = observeArray(points.map(Point), Point, function(a, b) {return a.eq(b);});
                         _points.forEach(function(point) {point.onChange(onPointChange);});
                         _points.onChange(onArrayChange);
-                        if (!self.isDirty())
+                        if (!self.isChanged())
                         {
-                            self.isDirty(true);
+                            self.isChanged(true);
                             self.triggerChange();
                         }
                     }
@@ -97,13 +97,14 @@ var Curve = makeClass(Primitive, {
         this.values = null;
         this.$super.dispose.call(this);
     },
-    isDirty: function(isDirty) {
-        if (false === isDirty)
+    isChanged: function(isChanged) {
+        var self = this;
+        if (false === isChanged)
         {
-            this.points.forEach(function(point) {point.isDirty(false);});
-            Object.keys(this.values).forEach(function(k) {this.values[k].isDirty(false);});
+            self.points.forEach(function(point) {point.isChanged(false);});
+            Object.keys(self.values).forEach(function(k) {self.values[k].isChanged(false);});
         }
-        return this.$super.isDirty.apply(this, arguments);
+        return self.$super.isChanged.apply(self, arguments);
     },
     isClosed: function() {
         return false;
@@ -113,9 +114,6 @@ var Curve = makeClass(Primitive, {
     },
     getAtOfPoint: function(p) {
         return -1;
-    },
-    toXYEquation: function() {
-        return null;
     },
     toBezier: function() {
         return this;

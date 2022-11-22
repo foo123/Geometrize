@@ -33,9 +33,9 @@ var Ellipse = makeClass(Curve, {
             },
             set(radiusX) {
                 _radiusX.val(stdMath.abs(Num(radiusX)));
-                if (_radiusX.isDirty() && !self.isDirty())
+                if (_radiusX.isChanged() && !self.isChanged())
                 {
-                    self.isDirty(true);
+                    self.isChanged(true);
                     self.triggerChange();
                 }
             },
@@ -47,9 +47,9 @@ var Ellipse = makeClass(Curve, {
             },
             set(radiusY) {
                 _radiusY.val(stdMath.abs(Num(radiusY)));
-                if (_radiusY.isDirty() && !self.isDirty())
+                if (_radiusY.isChanged() && !self.isChanged())
                 {
-                    self.isDirty(true);
+                    self.isChanged(true);
                     self.triggerChange();
                 }
             },
@@ -61,9 +61,9 @@ var Ellipse = makeClass(Curve, {
             },
             set(theta) {
                 _theta.val(theta);
-                if (_theta.isDirty() && !self.isDirty())
+                if (_theta.isChanged() && !self.isChanged())
                 {
-                    self.isDirty(true);
+                    self.isChanged(true);
                     self.triggerChange();
                 }
             },
@@ -123,15 +123,15 @@ var Ellipse = makeClass(Curve, {
             },
             enumerable: false
         });
-        self.isDirty = function(isDirty) {
-            if (true === isDirty)
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
             {
                 _length = null;
                 _area = null;
                 _bbox = null;
                 _hull = null;
             }
-            return self.$super.isDirty.apply(self, arguments);
+            return self.$super.isChanged.apply(self, arguments);
         };
     },
     clone: function() {
@@ -213,12 +213,12 @@ var Ellipse = makeClass(Curve, {
             'style': this.style.toSVG()
         }, arguments.length ? svg : false, {
             'id': false,
-            'cx': this.center.isDirty(),
-            'cy': this.center.isDirty(),
-            'rx': this.values.radiusX.isDirty(),
-            'ry': this.values.radiusY.isDirty(),
-            'transform': this.isDirty(),
-            'style': this.style.isDirty()
+            'cx': this.center.isChanged(),
+            'cy': this.center.isChanged(),
+            'rx': this.values.radiusX.isChanged(),
+            'ry': this.values.radiusY.isChanged(),
+            'transform': this.isChanged(),
+            'style': this.style.isChanged()
         }, true, {
             'id': this.id,
             'transform': this.matrix.toSVG()

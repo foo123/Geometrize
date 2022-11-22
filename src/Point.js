@@ -1,7 +1,7 @@
 // 2D Point class
 var Point = makeClass(Primitive, {
     constructor: function Point(x, y) {
-        var self = this, _x = 0, _y = 0;
+        var self = this, _x = 0, _y = 0, _n = null;
         if (x instanceof Point)
         {
             return x;
@@ -32,14 +32,12 @@ var Point = makeClass(Primitive, {
             },
             set(x) {
                 x = Num(x);
-                if (_x !== x)
+                var isChanged = !is_almost_equal(x, _x);
+                _x = x;
+                if (isChanged && !self.isChanged())
                 {
-                    _x = x;
-                    if (!self.isDirty())
-                    {
-                        self.isDirty(true);
-                        self.triggerChange();
-                    }
+                    self.isChanged(true);
+                    self.triggerChange();
                 }
             },
             enumerable: true
@@ -50,18 +48,33 @@ var Point = makeClass(Primitive, {
             },
             set(y) {
                 y = Num(y);
-                if (_y !== y)
+                var isChanged = !is_almost_equal(y, _y);
+                _y = y;
+                if (isChanged && !self.isChanged())
                 {
-                    _y = y;
-                    if (!self.isDirty())
-                    {
-                        self.isDirty(true);
-                        self.triggerChange();
-                    }
+                    self.isChanged(true);
+                    self.triggerChange();
                 }
             },
             enumerable: true
         });
+        Object.defineProperty(self, 'norm', {
+            get() {
+                if (null == _n)
+                {
+                    _n = hypot(_x, _y);
+                }
+                return _n;
+            },
+            enumerable: true
+        });
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
+            {
+                _n = null;
+            }
+            return self.$super.isChanged.apply(self, arguments);
+        };
         self.dispose = function() {
             _x = null;
             _y = null;
@@ -83,17 +96,14 @@ var Point = makeClass(Primitive, {
         };
     },
     eq: function(other) {
-        if (other instanceof Point)
-        {
-            return is_almost_equal(this.x, other.x) && is_almost_equal(this.y, other.y);
-        }
-        return false;
+        return other instanceof Point ? p_eq(this, other) : false;
     },
     add: function(other) {
-        return other instanceof Point ? new Point(this.x+other.x, this.y+other.y) : new Point(this.x+other,this.y+other);
+        return other instanceof Point ? new Point(this.x+other.x, this.y+other.y) : new Point(this.x+Num(other), this.y+Num(other));
     },
     mul: function(other) {
-        return new Point(this.x*other,this.y*other);
+        other = Num(other);
+        return new Point(this.x*other, this.y*other);
     },
     dot: function(other) {
         return dotp(this.x, this.y, other.x, other.y);
@@ -131,11 +141,11 @@ var Point = makeClass(Primitive, {
             'style': 'fill:'+Str(this.style['stroke'])+';'
         }, arguments.length ? svg : false, {
             'id': false,
-            'cx': this.isDirty(),
-            'cy': this.isDirty(),
-            'r': this.style.isDirty(),
-            'transform': this.isDirty(),
-            'style': this.style.isDirty()
+            'cx': this.isChanged(),
+            'cy': this.isChanged(),
+            'r': this.style.isChanged(),
+            'transform': this.isChanged(),
+            'style': this.style.isChanged()
         });
     },
     toTex: function() {

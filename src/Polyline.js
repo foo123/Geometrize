@@ -29,11 +29,7 @@ var Polyline = makeClass(Curve, {
             get() {
                 if (null == _length)
                 {
-                    _length = 0;
-                    for (var i=0,p=self.points,n=p.length; i+1<n; ++i)
-                    {
-                        _length += dist(p[i], p[i+1]);
-                    }
+                    _length = curve_length(self.points);
                 }
                 return _length;
             },
@@ -49,7 +45,7 @@ var Polyline = makeClass(Curve, {
                         bottom: -Infinity,
                         right: -Infinity
                     };
-                    for (var i=0,p=self.points,n=p.length; i+1<n; ++i)
+                    for (var i=0,p=self.points,n=p.length; i<n; ++i)
                     {
                         _bbox.top = stdMath.min(_bbox.top, p[i].y);
                         _bbox.bottom = stdMath.max(_bbox.bottom, p[i].y);
@@ -71,24 +67,15 @@ var Polyline = makeClass(Curve, {
             },
             enumerable: false
         });
-        self.isDirty = function(isDirty) {
-            if (true === isDirty)
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
             {
                 _length = null;
                 _bbox = null;
                 _hull = null;
             }
-            return self.$super.isDirty.apply(self, arguments);
+            return self.$super.isChanged.apply(self, arguments);
         };
-    },
-    distanceToPoint: function(point) {
-        return 1 < this.points.length ? this.points.reduce(function(dist, _, i) {
-            if (i+1 < this.points.length)
-            {
-                dist = stdMath.min(dist, point_line_distance(point, this.points[i], this.points[i+1]));
-            }
-            return dist;
-        }, Infinity) : -1;
     },
     clone: function() {
         return new Polyline(this.points.map(function(point) {return point.clone();}));
@@ -105,40 +92,8 @@ var Polyline = makeClass(Curve, {
     getConvexHull: function() {
         return this._hull;
     },
-    intersects: function(other) {
-        if (other instanceof Point)
-        {
-            return this.hasPoint(other) ? [other] : false;
-        }
-        else if (other instanceof Line)
-        {
-            var i = this.lines.reduce(function(i, line) {
-                var p;
-                if (p=line.intersects(other))
-                    i.push.apply(i, p);
-                return i;
-            }, []);
-            return i.length ? i : false;
-        }
-        else if (other instanceof Polyline)
-        {
-            var i = [], n, m, p,
-                l1 = this.lines, l2 = other.lines;
-            for (n=0; n<l1.length; ++n)
-            {
-                for (m=0; m<l2.length; ++m)
-                {
-                    if (p = l1[n].intersects(l2[m]))
-                        i.push.apply(i, p);
-                }
-            }
-            return i.length ? i : false;
-        }
-        else if ((other instanceof Primitive) && is_function(other.intersects))
-        {
-            return other.intersects(this);
-        }
-        return false;
+    hasPoint: function(point) {
+        return point_on_curve(point, this.points);
     },
     getPointAt: function(t) {
         var lines = this.lines, n = lines.length, i;
@@ -148,14 +103,36 @@ var Polyline = makeClass(Curve, {
         i = stdMath.floor(n * t);
         return lines[i].getPoint(n*(t-i/n));
     },
-    hasPoint: function(point) {
-        return 1 < _points.length ? _points.reduce(function(res, _, i) {
-            if (!res && (i+1 < _points.length))
+    intersects: function(other) {
+        if (other instanceof Point)
+        {
+            return this.hasPoint(other) ? [other] : false;
+        }
+        else if (other instanceof Line)
+        {
+            var i = curve_lines_intersection([other.start, other.end], this.points);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Polyline)
+        {
+            var i = curve_lines_intersection(this.points, other.points);
+            return i ? i.map(Point) : false;
+        }
+        else if ((other instanceof Primitive) && is_function(other.intersects))
+        {
+            return other.intersects(this);
+        }
+        return false;
+    },
+    distanceToPoint: function(point) {
+        var points = this.points;
+        return !points.length ? NaN : (1 === points.length ? hypot(point.x, point.y, points[0].x, points[0].y) : points.reduce(function(dist, _, i) {
+            if (i+1 < points.length)
             {
-                res = !!point_between(point, _points[i], _points[i+1]);
+                dist = stdMath.min(dist, point_line_segment_distance(point, points[i], points[i+1]));
             }
-            return res;
-        }, false) : false;
+            return dist;
+        }, Infinity));
     },
     toSVG: function(svg) {
         return SVG('polyline', {
@@ -165,9 +142,9 @@ var Polyline = makeClass(Curve, {
             'style': this.style.toSVG()
         }, arguments.length ? svg : false, {
             'id': false,
-            'points': this.isDirty(),
-            'transform': this.isDirty(),
-            'style': this.style.isDirty()
+            'points': this.isChanged(),
+            'transform': this.isChanged(),
+            'style': this.style.isChanged()
         });
     },
     toTex: function() {
