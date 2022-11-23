@@ -172,7 +172,7 @@ var Polygon = makeClass(Curve, {
         }).join(' L '))+' z';
     },
     toTex: function() {
-        return '\\text{Polygon:}'+'\left( ' + this.vertices.map(Tex).join(',') + ' \right)';
+        return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';
     },
     toString: function() {
         return 'Polygon('+this.vertices.map(Str).join(',')+')';

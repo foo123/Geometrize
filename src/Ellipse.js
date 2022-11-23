@@ -232,7 +232,7 @@ var Ellipse = makeClass(Curve, {
         return 'M '+Str(c.x - rX)+' '+Str(c.y)+' a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(rX + rX)+' 0 a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(-rX - rX)+' 0 z';
     },
     toTex: function() {
-        return '\\text{Ellipse('+Str(deg(this.angle))+'°):}'+'\\frac{(x - '+Str(this.center.x)+')^2}{'+Str(this.radiusX)+'^2} + \\frac{(y - '+Str(this.center.y)+')^2}{'+Str(this.radiusY)+'^2} = 1';
+        return '\\text{Ellipse('+Str(deg(this.angle))+'°): }\\frac{(x - '+Str(this.center.x)+')^2}{'+Str(this.radiusX)+'^2} + \\frac{(y - '+Str(this.center.y)+')^2}{'+Str(this.radiusY)+'^2} = 1';
     },
     toString: function() {
         return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(deg(this.angle))+'°'].join(',')+')';

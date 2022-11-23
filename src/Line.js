@@ -171,7 +171,7 @@ var Bezier1 = makeClass(Bezier, {
         return 'M '+Str(this.start.x)+' '+Str(this.start.y)+' L '+Str(this.end.x)+' '+Str(this.end.y);
     },
     toTex: function(interval) {
-        return '\\text{Line:}'+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }'+(interval||'0 \\le t \\le 1');
+        return '\\text{Line: }'+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }'+(interval||'0 \\le t \\le 1');
     },
     toString: function() {
         return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';

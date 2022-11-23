@@ -379,9 +379,9 @@ var CompositeCurve = makeClass(Curve, {
         }, []);
     },
     toTex: function() {
-        return '\\text{CompositeCurve}';
+        return '\\text{CompositeCurve: }\\begin{cases}&'+this.curves.map(Tex).join('\\\\&')+'\\end{cases}';
     },
     toString: function() {
-        return 'CompositeCurve('+this.id+')';
+        return 'CompositeCurve('+"\n"+this.curves.map(Str).join("\n")+"\n"+')';
     }
 });

@@ -171,7 +171,7 @@ var Polyline = makeClass(Curve, {
     },
     toTex: function() {
         var lines = this.lines, n = lines.length;
-        return '\\text{Polyline:}'+'\\left\\{'+lines.map(function(line, i) {return line.toTex((0 === i ? '0' : '\\frac{'+Str(i)+'}{'+Str(n)+'}')+' \\le t \\le '+('\\frac{'+Str(i+1)+'}{'+Str(n)+'}'));}.join('\\\\')+'\\right\\\\';
+        return '\\text{Polyline: }\\begin{cases}&'+lines.map(Tex).join('\\\\&')+'\\end{cases}';
     },
     toString: function() {
         return 'Polyline('+this.points.map(Str).join(',')+')';
