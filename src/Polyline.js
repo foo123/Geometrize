@@ -140,7 +140,7 @@ var Polyline = makeClass(Curve, {
             p = curve_lines_intersection(this.points, other.points);
             return p ? p.map(Point) : false;
         }
-        else if ((other instanceof Primitive) && is_function(other.intersects))
+        else if (other instanceof Primitive)
         {
             return other.intersects(this);
         }
@@ -148,7 +148,7 @@ var Polyline = makeClass(Curve, {
     },
     distanceToPoint: function(point) {
         var points = this.points;
-        return !points.length ? NaN : (1 === points.length ? hypot(point.x, point.y, points[0].x, points[0].y) : points.reduce(function(dist, _, i) {
+        return !points.length ? NaN : (1 === points.length ? hypot(point.x - points[0].x, point.y - points[0].y) : points.reduce(function(dist, _, i) {
             if (i+1 < points.length)
             {
                 dist = stdMath.min(dist, point_line_segment_distance(point, points[i], points[i+1]));

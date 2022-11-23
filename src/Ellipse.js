@@ -208,7 +208,7 @@ var Ellipse = makeClass(Curve, {
         {
             return ellipse_ellipse_intersection(this, other);
         }
-        else if ((other instanceof Primitive) && is_function(other.intersects))
+        else if (other instanceof Primitive)
         {
             return other.intersects(this);
         }

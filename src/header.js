@@ -21,7 +21,8 @@ else if (!(name in root)) /* Browser/WebWorker/.. */
 
 var HAS = Object.prototype.hasOwnProperty,
     toString = Object.prototype.toString,
-    stdMath = Math, PI = stdMath.PI, TWO_PI = 2 * stdMath.PI,
+    stdMath = Math, PI = stdMath.PI, TWO_PI = 2*PI,
+    sqrt2 = stdMath.sqrt(2), EMPTY_ARR = [], EMPTY_OBJ = {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window))
 ;

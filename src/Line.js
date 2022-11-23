@@ -136,9 +136,9 @@ var Bezier1 = makeClass(Bezier, {
         }
         else if (other instanceof Bezier3)
         {
-            return line_cubic_intersection(this, other);
+            return line_bezier3_intersection(this, other);
         }
-        else if ((other instanceof Primitive) && is_function(other.intersects))
+        else if ((other instanceof Primitive))
         {
             return other.intersects(this);
         }

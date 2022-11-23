@@ -7,10 +7,19 @@ function is_almost_equal(a, b)
 {
     return is_almost_zero(a - b);
 }
-var sqrt2 = stdMath.sqrt(2);
-function hypot(x1, y1, x2, y2)
+function deg(rad)
 {
-    var dx = stdMath.abs(x1 - (x2||0)), dy = stdMath.abs(y1 - (y2||0)), r = 0;
+    return rad * 180 / PI;
+}
+function rad(deg)
+{
+    return deg * PI / 180;
+}
+function hypot(dx, dy)
+{
+    dx = stdMath.abs(dx);
+    dy = stdMath.abs(dy)
+    var r = 0;
     if (dy > dx)
     {
         r = dy/dx;
@@ -35,18 +44,14 @@ function angle(x1, y1, x2, y2)
 {
     return stdMath.acos(dotp(x1 / hypot(x1, y1), y1, x2 / hypot(x2, y2), y2));
 }
-function p_eq(p1, p2)
+function dist(p1, p2)
 {
-    return is_almost_zero(p1.x - p2.x) && is_almost_zero(p1.y - p2.y);
+    return hypot(p1.x - p2.x, p1.y - p2.y);
 }
 function dist2(p1, p2)
 {
     var dx = p1.x - p2.x, dy = p1.y - p2.y;
     return dx*dx + dy*dy;
-}
-function dist(p1, p2)
-{
-    return hypot(p1.x, p1.y, p2.x, p2.y);
 }
 function polar_angle(p1, p2)
 {
@@ -59,29 +64,32 @@ function dir(p1, p2, p3)
         dy1 = p1.y - p3.y, dy2 = p2.y - p3.y;
     return dx1*dy2 - dy1*dx2;
 }
+function p_eq(p1, p2)
+{
+    return is_almost_zero(p1.x - p2.x) && is_almost_zero(p1.y - p2.y);
+}
 function point_line_distance(p0, p1, p2)
 {
     var x1 = p1.x, y1 = p1.y,
         x2 = p2.x, y2 = p2.y,
         x = p0.x, y = p0.y,
-        d = hypot(x1, y1, x2, y2)
+        dx = x2 - x1, dy = y2 - y1,
+        d = hypot(dx, dy)
     ;
-    if (is_almost_zero(d)) return hypot(x, y, x1, y1);
-    return stdMath.abs((x2 - x1)*(y1 - y) - (y2 - y1)*(x1 - x)) / d;
+    if (is_almost_zero(d)) return hypot(x - x1, y - y1);
+    return stdMath.abs(dx*(y1 - y) - dy*(x1 - x)) / d;
 }
 function point_line_segment_distance(p0, p1, p2)
 {
     var x1 = p1.x, y1 = p1.y,
         x2 = p2.x, y2 = p2.y,
         x = p0.x, y = p0.y,
-        d = hypot(x1, y1, x2, y2),
-        dx = 0, dy = 0, t = 0
+        t = 0, dx = x2 - x1, dy = y2 - y1,
+        d = hypot(dx, dy)
     ;
-    if (is_almost_zero(d)) return hypot(x, y, x1, y1);
-    dx = x2 - x1;
-    dy = y2 - y1;
+    if (is_almost_zero(d)) return hypot(x - x1, y - y1);
     t = stdMath.max(0, stdMath.min(1, ((x - x1)*dx + (y - y1)*dy) / d));
-    return hypot(x, y, x1 + t*dx, y1 + t*dy);
+    return hypot(x - x1 - t*dx, y - y1 - t*dy);
 }
 function point_between(p, p1, p2)
 {
@@ -164,10 +172,8 @@ function line_segments_intersection(p1, p2, p3, p4)
         );
     return p && point_between(p, p1, p2) && point_between(p, p3, p4) ? p : false;
 }
-function curve_lines_intersection(curve1_points, curve2_points, get_point1, get_point2)
+function curve_lines_intersection(curve1_points, curve2_points)
 {
-    get_point1 = get_point1 || identity;
-    get_point2 = get_point2 || identity;
     var i = [], j, k, p,
         n1 = curve1_points.length-1,
         n2 = curve2_points.length-1;
@@ -176,8 +182,8 @@ function curve_lines_intersection(curve1_points, curve2_points, get_point1, get_
         for (k=0; k<n2; ++k)
         {
             p = line_segments_intersection(
-                get_point1(curve1_points[j]), get_point1(curve1_points[j+1]),
-                get_point2(curve2_points[k]), get_point2(curve2_points[k+1])
+                curve1_points[j], curve1_points[j+1],
+                curve2_points[k], curve2_points[k+1]
             );
             if (p) i.push(p);
         }
@@ -302,6 +308,9 @@ function line_bezier2_intersection(p1, p2, c)
     p.length = pi;
     return p.length ? p : false;
 }
+function line_bezier3_intersection(p1, p2, c)
+{
+}
 function circle_circle_intersection(c1, r1, c2, r2)
 {
     if (r2 > r1)
@@ -313,7 +322,7 @@ function circle_circle_intersection(c1, r1, c2, r2)
         c1 = c2;
         c2 = tmp;
     }
-    var dx = c2.x - c1.x, dy = c2.y - c1.y, d = hypot(dx, dy, 0, 0);
+    var dx = c2.x - c1.x, dy = c2.y - c1.y, d = hypot(dx, dy);
     if (is_almost_zero(d) && is_almost_equal(r1, r2))
     {
         // same circles, they intersect at all points
@@ -335,79 +344,77 @@ function circle_circle_intersection(c1, r1, c2, r2)
     ;
     return is_almost_zero(h) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
-function curve_ellipse_intersection(ellipse, curve_points, get_point)
+function curve_ellipse_intersection(ellipse, curve_points)
 {
 }
-function curve_length(curve_points, get_point)
+function curve_length(curve_points)
 {
     get_point = get_point || identity;
     for (var p1,p2,length=0,i=0,n=curve_points.length-1; i<n; ++i)
     {
-            p1 = get_point(curve_points[i]);
-            p2 = get_point(curve_points[i+1]);
-            length += hypot(p1.x, p1.y, p2x, p2.y);
+        p1 = curve_points[i];
+        p2 = curve_points[i+1];
+        length += hypot(p1.x - p2.x, p1.y - p2.y);
     }
     return length;
 }
-function curve_area(curve_points, get_point)
+function curve_area(curve_points)
 {
     get_point = get_point || identity;
     for (var p1,p2,area=0,i=0,n=curve_points.length-1; i<n; ++i)
     {
-        p1 = get_point(curve_points[i]);
-        p2 = get_point(curve_points[i+1]);
+        p1 = curve_points[i];
+        p2 = curve_points[i+1];
         // shoelace formula
-        area += crossp(p1.x, p1.y, p2.x, p2.y) / 2;
+        area += crossp(p1.x, p1.y, p2.x, p2.y)/2;
     }
     return area;
 }
-function sample_curve(f, n, do_refine)
+function sample_curve(f, n, pixelSize, do_refine)
 {
-    if (null == n) n = 20;
-    var tolerance = 0.01, depth = 20, i, t, h = 1/n, p, points = [];
+    if (null == n) n = 40;
+    var i, t, h = 1/n, p, points = [];
     if (do_refine)
     {
-        points.push([f(0), 0]);
+        points.push(f(0));
         for (i=0,t=0; i<n; ++i,t+=h)
         {
-            subdivide_curve(points, f, t, t+h, tolerance, depth);
+            subdivide_curve(points, f, t, t+h, pixelSize);
         }
     }
     else
     {
         for (i=0,t=0; i<n; ++i,t+=h)
         {
-            points.push([f(t), t]);
+            points.push(f(t));
         }
     }
     return points;
 }
-function subdivide_curve(points, f, l, r, tolerance, depth, pl, pr)
+function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
 {
     var m = (l + r) / 2, left = pl || f(l), right = pr || f(r), middle = f(m);
-    if ((0 >= depth) || (point_line_distance(middle, left, right) <= tolerance))
+    if (/*(0 >= depth) ||*/ (point_line_distance(middle, left, right) < pixelSize))
     {
         // no more refinement, return linear interpolation
         // simple line segment, include middle as well for better accuracy
-        points.push.apply(p_eq(left, middle) || p_eq(right, middle) ? [[right, r]] : [[middle, m], [right, r]]);
+        points.push(right);
     }
     else
     {
         // recursively subdivide to refine samples with high enough curvature
-        subdivide_curve(f, l, m, tolerance, depth-1, left, middle);
-        subdivide_curve(f, m, r, tolerance, depth-1, middle, right);
+        subdivide_curve(f, l, m, pixelSize, left, middle);
+        subdivide_curve(f, m, r, pixelSize, middle, right);
     }
     return points;
 }
-function bezier0(t, p)
+/*function bezier0(t, p)
 {
     return p[0];
-}
+}*/
 function bezier1(t, p)
 {
-    var b00 = p[0],
-        b01 = p[1],
-        i = 1-t;
+    var b00 = p[0], b01 = p[1], i = 1-t;
     return {
         x: i*b00.x + t*b01.x,
         y: i*b00.y + t*b01.y
@@ -523,57 +530,51 @@ function is_convex(points)
 }
 function ellipse_point(cx, cy, rx, ry, angle, theta, cs)
 {
-    var M = rx * stdMath.cos(theta), N = ry * stdMath.sin(theta);
-
+    var M = rx*stdMath.cos(theta), N = ry*stdMath.sin(theta);
     cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
     return {
-        x: cx + cs[0] * M - cs[1] * N,
-        y: cy + cs[1] * M + cs[0] * N
+        x: cx + cs[0]*M - cs[1]*N,
+        y: cy + cs[1]*M + cs[0]*N
     };
 }
 function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
 {
-    const pow = n => Math.pow(n, 2);
-
     cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
 
     // Step 1: simplify through translation/rotation
-    var x =  cs[0] * (x1 - x2) / 2 + cs[1] * (y1 - y2) / 2,
-        y = -cs[1] * (x1 - x2) / 2 + cs[0] * (y1 - y2) / 2,
+    var x =  cs[0]*(x1 - x2)/2 + cs[1]*(y1 - y2)/2,
+        y = -cs[1]*(x1 - x2)/2 + cs[0]*(y1 - y2)/2,
         px = x*x, py = y^y, prx = rx*rx, pry = ry*ry,
-        // correct of out-of-range radii
-        L = px / prx + py / pry;
+        // correct out-of-range radii
+        L = px/prx + py/pry;
 
     if (L > 1)
     {
-        rx = sqrt(L) * abs(rx);
-        ry = sqrt(L) * abs(ry);
+        rx = stdMath.sqrt(L)*stdMath.abs(rx);
+        ry = stdMath.sqrt(L)*stdMath.abs(ry);
     }
     else
     {
-        rx = abs(rx);
-        ry = abs(ry);
+        rx = stdMath.abs(rx);
+        ry = stdMath.abs(ry);
     }
 
     // Step 2 + 3: compute center
     var sign = fa === fs ? -1 : 1,
-        M = stdMath.sqrt((prx * pry - prx * py - pry * px) / (prx * py + pry * px)) * sign,
-        _cx = M * (rx * y) / ry,
-        _cy = M * (-ry * x) / rx,
+        M = stdMath.sqrt((prx*pry - prx*py - pry*px)/(prx*py + pry*px))*sign,
+        _cx = M*(rx*y)/ry,
+        _cy = M*(-ry*x)/rx,
 
-        cx = cosphi * _cx - sinphi * _cy + (x1 + x2) / 2,
-        cy = sinphi * _cx + cosphi * _cy + (y1 + y2) / 2
+        cx = cs[0]*_cx - cs[1]*_cy + (x1 + x2)/2,
+        cy = cs[1]*_cx + cs[0]*_cy + (y1 + y2)/2
     ;
 
     // Step 4: compute θ and dθ
-    var theta = vector_angle(
-        1, 0,
-        (x - _cx) / rx, (y - _cy) / ry
-    );
+    var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry);
 
     var _dTheta = deg(vector_angle(
-        (x - _cx) / rx, (y - _cy) / ry,
-        (-x - _cx) / rx, (-y - _cy) / ry
+        (x - _cx)/rx, (y - _cy)/ry,
+        (-x - _cx)/rx, (-y - _cy)/ry
     )) % 360;
 
     if (fs === 0 && _dTheta > 0) _dTheta -= 360;
@@ -583,20 +584,11 @@ function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
 }
 function vector_angle(ux, uy, vx, vy)
 {
-    var sign = ux * vy - uy * vx < 0 ? -1 : 1,
-        ua = stdMath.sqrt(ux * ux + uy * uy),
-        va = stdMath.sqrt(vx * vx + vy * vy),
-        dot = ux * vx + uy * vy;
-
-    return sign * stdMath.acos(dot / (ua * va));
-}
-function deg(rad)
-{
-    return rad * 180 / PI;
-}
-function rad(deg)
-{
-    return deg * PI / 180;
+    var sign = ux*vy - uy*vx < 0 ? -1 : 1,
+        ua = stdMath.sqrt(ux*ux + uy*uy),
+        va = stdMath.sqrt(vx*vx + vy*vy),
+        dot = ux*vx + uy*vy;
+    return sign*stdMath.acos(dot/(ua*va));
 }
 
 // ----------------------
@@ -622,7 +614,7 @@ function merge(keys, a, b)
 function SVG(tag, atts, svg, g, ga)
 {
     var setAnyway = false;
-    atts = atts || EMPTYO;
+    atts = atts || EMPTY_OBJ;
     if (false === svg)
     {
         svg = '<'+tag+' '+Object.keys(atts).reduce(function(s, a) {
@@ -630,7 +622,7 @@ function SVG(tag, atts, svg, g, ga)
         }, '')+'/>';
         if (g)
         {
-            svg = '<g '+Object.keys(ga||EMPTYO).reduce(function(s, a) {
+            svg = '<g '+Object.keys(ga||EMPTY_OBJ).reduce(function(s, a) {
                 return s + a+'="'+Str(ga[a][0])+'" ';
             }, '')+'>'+svg+'</g>';
         }
@@ -689,7 +681,7 @@ function observeArray(array, typecaster, equals)
 
     var doNotifyItems = true;
 
-    equals = equals || function(a, b) {return a === b;};
+    equals = equals || equal;
 
     var methodInterceptor = function() {
         var interceptor = function(method) {
@@ -756,7 +748,7 @@ function observeArray(array, typecaster, equals)
 
     var itemInterceptor = function(start, stop) {
         var interceptor = function(index) {
-            var key = String(index), val = array[index];
+            var key = Str(index), val = array[index];
             Object.defineProperty(array, key, {
                 get() {
                     return val;
@@ -822,9 +814,9 @@ function identity(x)
 {
     return x;
 }
-function item0(x)
+function equal(a, b)
 {
-    return x[0];
+    return a === b;
 }
 function sort_asc(a, b)
 {
@@ -845,7 +837,7 @@ function pad(x, n, c, post)
     }
     return s;
 }
-var cnt = 0, Str = String, EMPTYO = {};
+var cnt = 0, Str = String;
 function uuid(ns)
 {
     return Str(ns||'')+'_'+Str(++cnt)+'_'+Str(new Date().getTime())+'_'+Str(stdMath.round(1000*stdMath.random()));

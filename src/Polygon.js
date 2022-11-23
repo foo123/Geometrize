@@ -152,7 +152,7 @@ var Polygon = makeClass(Curve, {
             p = curve_lines_intersection(this.points.concat([this.points[0]]), other.points.concat([other.points[0]]));
             return p ? p.map(Point) : false;
         }
-        else if ((other instanceof Primitive) && is_function(other.intersects))
+        else if (other instanceof Primitive)
         {
             return other.intersects(this);
         }

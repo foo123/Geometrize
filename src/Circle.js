@@ -150,7 +150,7 @@ var Circle = makeClass(Curve, {
             var p = circle_circle_intersection(this.center, this.radius, other.center, other.radius);
             return p ? p.map(Point) : false;
         }
-        else if ((other instanceof Primitive) && is_function(other.intersects))
+        else if (other instanceof Primitive)
         {
             return other.intersects(this);
         }
