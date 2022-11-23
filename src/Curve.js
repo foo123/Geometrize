@@ -88,14 +88,15 @@ var Curve = makeClass(Primitive, {
         });
     },
     dispose: function() {
-        if (this.points)
+        var self = this;
+        if (self.points)
         {
-            unobserveArray(this.points);
-            this.points.forEach(function(point) {point.onChange(this.id, false);});
-            this.points = null;
+            unobserveArray(self.points);
+            self.points.forEach(function(point) {point.onChange(self.id, false);});
+            self.points = null;
         }
-        this.values = null;
-        this.$super.dispose.call(this);
+        self.values = null;
+        self.$super.dispose.call(self);
     },
     isChanged: function(isChanged) {
         var self = this;
@@ -109,10 +110,7 @@ var Curve = makeClass(Primitive, {
     isClosed: function() {
         return false;
     },
-    hasPoint: function(p) {
-        return false;
-    },
-    hasInsidePoint: function(p, strict) {
+    isConvex: function() {
         return false;
     },
     getPointAt: function(t) {
@@ -132,15 +130,14 @@ var Curve = makeClass(Primitive, {
 // 2D generic Bezier curve base class
 var Bezier = makeClass(Curve, {
     constructor: function Bezier(points) {
-        var self = this, degree = 0;
+        var self = this;
 
         if (null == points) points = [];
         Curve.call(self, points);
 
-        degree = self.points.length - 1;
         Object.defineProperty(self, 'degree', {
             get() {
-                return degree;
+                return self.points.length - 1;
             },
             enumerable: true
         });

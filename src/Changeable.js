@@ -2,6 +2,9 @@
 var Changeable = makeClass(null, {
     $changed: false,
     $cb: null,
+    dispose: function() {
+        this.$cb = null;
+    },
     isChanged: function(isChanged) {
         if (arguments.length)
         {
@@ -12,9 +15,6 @@ var Changeable = makeClass(null, {
         {
             return this.$changed;
         }
-    },
-    dispose: function() {
-        this.$cb = null;
     },
     onChange: function(cb, add) {
         var self = this, index;

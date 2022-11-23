@@ -39,7 +39,6 @@ var Value = makeClass(Changeable, {
         };
         self.isChanged(true);
     },
-    dispose: null,
     clone: null,
     val: null,
     valueOf: null,

@@ -50,11 +50,14 @@ var Primitive = makeClass(Changeable, {
                 {
                     if (_style) _style.onChange(onStyleChange, false);
                     _style = style;
-                    if (_style) _style.onChange(onStyleChange);
-                    if (!self.isChanged())
+                    if (_style)
                     {
-                        self.isChanged(true);
-                        self.triggerChange();
+                        _style.onChange(onStyleChange);
+                        if (!self.isChanged())
+                        {
+                            self.isChanged(true);
+                            self.triggerChange();
+                        }
                     }
                 }
             }
@@ -71,20 +74,11 @@ var Primitive = makeClass(Changeable, {
         self.isChanged(true);
     },
     id: '',
-    dispose: function() {
-        this.$super.dispose.call(this);
-    },
     clone: function() {
         return this;
     },
     transform: function() {
         return this;
-    },
-    intersects: function(other) {
-        return false;
-    },
-    hasPoint: function(point) {
-        return false;
     },
     getBoundingBox: function() {
         return {
@@ -96,6 +90,15 @@ var Primitive = makeClass(Changeable, {
     },
     getConvexHull: function() {
         return [];
+    },
+    hasPoint: function(point) {
+        return false;
+    },
+    hasInsidePoint: function(point, strict) {
+        return false;
+    },
+    intersects: function(other) {
+        return false;
     },
     toSVG: function(svg) {
         return arguments.length ? svg : '';

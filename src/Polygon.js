@@ -6,7 +6,8 @@ var Polygon = makeClass(Curve, {
             _length = null,
             _area = null,
             _bbox = null,
-            _hull = null
+            _hull = null,
+            _is_convex = null
         ;
 
         if (vertices instanceof Polygon) return vertices;
@@ -83,6 +84,16 @@ var Polygon = makeClass(Curve, {
             },
             enumerable: false
         });
+        Object.defineProperty(self, '_is_convex', {
+            get() {
+                if (null == _is_convex)
+                {
+                    _is_convex = is_convex(self.points);
+                }
+                return _is_convex;
+            },
+            enumerable: false
+        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
@@ -90,6 +101,7 @@ var Polygon = makeClass(Curve, {
                 _area = null;
                 _bbox = null;
                 _hull = null;
+                _is_convex = null;
             }
             return self.$super.isChanged.apply(self, arguments);
         };
@@ -102,6 +114,9 @@ var Polygon = makeClass(Curve, {
     },
     isClosed: function() {
         return true;
+    },
+    isConvex: function() {
+        return this._is_convex;
     },
     getBoundingBox: function() {
         return this._bbox;
@@ -116,18 +131,45 @@ var Polygon = makeClass(Curve, {
         var inside = point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this.points.concat([this.points[0]]));
         return strict ? 1 === inside : 0 < inside;
     },
+    intersects: function(other) {
+        var p;
+        if (other instanceof Point)
+        {
+            return this.hasPoint(other) ? [other] : false;
+        }
+        else if (other instanceof Line)
+        {
+            p = curve_lines_intersection(this.points.concat([this.points[0]]), [other.start, other.end]);
+            return p ? p.map(Point) : false;
+        }
+        else if (other instanceof Polyline)
+        {
+            p = curve_lines_intersection(this.points.concat([this.points[0]]), other.points);
+            return p ? p.map(Point) : false;
+        }
+        else if (other instanceof Polygon)
+        {
+            p = curve_lines_intersection(this.points.concat([this.points[0]]), other.points.concat([other.points[0]]));
+            return p ? p.map(Point) : false;
+        }
+        else if ((other instanceof Primitive) && is_function(other.intersects))
+        {
+            return other.intersects(this);
+        }
+        return false;
+    },
     toSVG: function(svg) {
         return SVG('polygon', {
-            'id': this.id,
-            'points': this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '),
-            'transform': this.matrix.toSVG(),
-            'style': this.style.toSVG()
-        }, arguments.length ? svg : false, {
-            'id': false,
-            'points': this.isChanged(),
-            'transform': this.isChanged(),
-            'style': this.style.isChanged()
-        });
+            'id': [this.id, false],
+            'points': [this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '), this.isChanged()],
+            'transform': [this.matrix.toSVG(), this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, arguments.length ? svg : false);
+    },
+    toSVGPath: function() {
+        return 'M '+(this.points.concat([this.points[0]]).map(function(p) {
+            return Str(p.x)+' '+Str(p.y);
+        }).join(' L '))+' z';
     },
     toTex: function() {
         return '\\text{Polygon:}'+'\left( ' + this.vertices.map(Tex).join(',') + ' \right)';

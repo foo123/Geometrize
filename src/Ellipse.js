@@ -20,7 +20,7 @@ var Ellipse = makeClass(Curve, {
         _angle = new Value(angle);
         _cos = stdMath.cos(_angle.val());
         _sin = stdMath.sin(_angle.val());
-        
+
         Curve.call(self, [center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle});
 
         Object.defineProperty(self, 'center', {
@@ -168,6 +168,9 @@ var Ellipse = makeClass(Curve, {
     isClosed: function() {
         return true;
     },
+    isConvex: function() {
+        return true;
+    },
     getBoundingBox: function() {
         return this._bbox;
     },
@@ -177,23 +180,23 @@ var Ellipse = makeClass(Curve, {
     getPointAt: function(t) {
         t = Num(t);
         if (0 > t || 1 < t) return null;
-        var ce = this.center,
+        var c = this.center,
             rX = this.radiusX,
             rY = this.radiusY,
             cs = this.sincos,
-            ct = stdMath.cos(t*2*stdMath.PI),
-            st = stdMath.sin(t*2*stdMath.PI)
+            ct = stdMath.cos(t*TWO_PI),
+            st = stdMath.sin(t*TWO_PI)
         ;
         return new Point(
-            ce.x + rX*cs[0]*ct - rY*cs[1]*st,
-            ce.y + rY*cs[0]*st + rX*cs[1]*ct
+            c.x + rX*cs[0]*ct - rY*cs[1]*st,
+            c.y + rY*cs[0]*st + rX*cs[1]*ct
         );
     },
     hasPoint: function(point) {
-        return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.theta);
+        return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.sincos);
     },
     hasInsidePoint: function(point, strict) {
-        var inside = point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.theta);
+        var inside = point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.sincos);
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
@@ -213,29 +216,25 @@ var Ellipse = makeClass(Curve, {
     },
     toSVG: function(svg) {
         return SVG('ellipse', {
-            'cx': this.center.x,
-            'cy': this.center.y,
-            'rx': this.radiusX,
-            'ry': this.radiusY,
-            'transform': 'rotate('+Str(this.angle)+' '+Str(this.center.x)+' '+Str(this.center.y)+')',
-            'style': this.style.toSVG()
-        }, arguments.length ? svg : false, {
-            'id': false,
-            'cx': this.center.isChanged(),
-            'cy': this.center.isChanged(),
-            'rx': this.values.radiusX.isChanged(),
-            'ry': this.values.radiusY.isChanged(),
-            'transform': this.center.isChanged() || this.values.angle.isChanged(),
-            'style': this.style.isChanged()
-        }, true, {
-            'id': this.id,
-            'transform': this.matrix.toSVG()
+            'cx': [this.center.x, this.center.isChanged()],
+            'cy': [this.center.y, this.center.isChanged()],
+            'rx': [this.radiusX, this.values.radiusX.isChanged()],
+            'ry': [this.radiusY, this.values.radiusY.isChanged()],
+            'transform': ['rotate('+Str(this.angle)+' '+Str(this.center.x)+' '+Str(this.center.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, arguments.length ? svg : false,  true, {
+            'id': [this.id, false],
+            'transform': [this.matrix.toSVG(), this.isChanged()]
         });
     },
+    toSVGPath: function() {
+        var c = this.center, rX = this.radiusX, rY = this.radiusY, a = this.angle;
+        return 'M '+Str(c.x - rX)+' '+Str(c.y)+' a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(rX + rX)+' 0 a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(-rX - rX)+' 0 z';
+    },
     toTex: function() {
-        return '\\text{Ellipse('+Str(this.theta*180/stdMath.PI)+'°):}'+'\\frac{(x - '+Str(this.center.x)+')^2}{'+Str(this.radiusX)+'^2} + \\frac{(y - '+Str(this.center.y)+')^2}{'+Str(this.radiusY)+'^2} = 1';
+        return '\\text{Ellipse('+Str(deg(this.angle))+'°):}'+'\\frac{(x - '+Str(this.center.x)+')^2}{'+Str(this.radiusX)+'^2} + \\frac{(y - '+Str(this.center.y)+')^2}{'+Str(this.radiusY)+'^2} = 1';
     },
     toString: function() {
-        return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(this.theta*180/stdMath.PI)+'°'].join(',')+')';
+        return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(deg(this.angle))+'°'].join(',')+')';
     }
 });

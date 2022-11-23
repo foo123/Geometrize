@@ -139,20 +139,13 @@ var Point = makeClass(Primitive, {
     },
     toSVG: function(svg) {
         return SVG('circle', {
-            'id': this.id,
-            'cx': this.x,
-            'cy': this.y,
-            'r': this.style['stroke-width'],
-            'transform': this.matrix.toSVG(),
-            'style': 'fill:'+Str(this.style['stroke'])+';'
-        }, arguments.length ? svg : false, {
-            'id': false,
-            'cx': this.isChanged(),
-            'cy': this.isChanged(),
-            'r': this.style.isChanged(),
-            'transform': this.isChanged(),
-            'style': this.style.isChanged()
-        });
+            'id': [this.id, false]
+            'cx': [this.x, this.isChanged()],
+            'cy': [this.y, this.isChanged()],
+            'r': [this.style['stroke-width'], this.style.isChanged()],
+            'transform': [this.matrix.toSVG(), this.isChanged()],
+            'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
+        }, arguments.length ? svg : false);
     },
     toTex: function() {
         return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';

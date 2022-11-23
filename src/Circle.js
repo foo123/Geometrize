@@ -41,7 +41,7 @@ var Circle = makeClass(Curve, {
             get() {
                 if (null == _length)
                 {
-                    _length = 2 * stdMath.PI * _radius.val();
+                    _length = TWO_PI * _radius.val();
                 }
                 return _length;
             },
@@ -114,6 +114,9 @@ var Circle = makeClass(Curve, {
     isClosed: function() {
         return true;
     },
+    isConvex: function() {
+        return true;
+    },
     getBoundingBox: function() {
         return this._bbox;
     },
@@ -124,7 +127,7 @@ var Circle = makeClass(Curve, {
         t = Num(t);
         if (0 > t || 1 < t) return null;
         var c = this.center, r = this.radius;
-        t = t*2*stdMath.PI;
+        t = t*TWO_PI;
         return new Point(
             c.x + r*stdMath.cos(t),
             c.y + r*stdMath.sin(t)
@@ -155,20 +158,17 @@ var Circle = makeClass(Curve, {
     },
     toSVG: function(svg) {
         return SVG('circle', {
-            'id': this.id,
-            'cx': this.center.x,
-            'cy': this.center.y,
-            'r': this.radius,
-            'transform': this.matrix.toSVG(),
-            'style': this.style.toSVG()
-        }, arguments.length ? svg : false, {
-            'id': false,
-            'cx': this.center.isChanged(),
-            'cy': this.center.isChanged(),
-            'r': this.values.radius.isChanged(),
-            'transform': this.isChanged(),
-            'style': this.style.isChanged()
-        });
+            'id': [this.id, false],
+            'cx': [this.center.x, this.center.isChanged()],
+            'cy': [this.center.y, this.center.isChanged()],
+            'r': [this.radius, this.values.radius.isChanged()],
+            'transform': [this.matrix.toSVG(), this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, arguments.length ? svg : false);
+    },
+    toSVGPath: function() {
+        var c = this.center, r = this.radius;
+        return 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
     },
     toTex: function() {
         return '\\text{Circle:}'+'\\frac{(x - '+Str(this.center.x)+')^2 + (y - '+Str(this.center.y)+')^2}{'+Str(this.radius)+'^2} = 1';

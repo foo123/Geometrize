@@ -5,12 +5,24 @@ var Style = makeClass(Changeable, {
         var self = this, _props = null, _style = null;
         if (style instanceof Style) return style;
         if (!(self instanceof Style)) return new Style(style);
-        _props = ['stroke', 'stroke-width', 'fill'];
+        _props = [
+            'stroke-width',
+            'stroke',
+            'stroke-opacity',
+            'stroke-linecap',
+            'stroke-linejoin',
+            'fill',
+            'fill-opacity'
+        ];
         // defaults
         _style = {
-            'stroke': '#000000',
             'stroke-width': 1,
-            'fill': null
+            'stroke': '#000000',
+            'stroke-opacity': 1,
+            'stroke-linecap': 'butt',
+            'stroke-linejoin': 'miter',
+            'fill': 'none',
+            'fill-opacity': 1
         };
         if (is_object(style))
         {
@@ -34,20 +46,21 @@ var Style = makeClass(Changeable, {
                 }
             });
         });
+        self.toObj = function() {
+            return _props.reduce(function(o, p) {
+                o[p] = _style[p];
+                return o;
+            }, {});
+        };
         self.isChanged(true);
     },
-    dispose: function() {
-        this.$super.dispose.call(this);
-    },
     clone: function() {
-        return new Style({
-            stroke: this.stroke,
-            fill: this.fill,
-            width: this.width
-        });
+        return new Style(this.toObj());
     },
     toSVG: function() {
-        var styl = this;
-        return 'stroke:'+Str(styl['stroke'])+';stroke-width:'+Str(styl['stroke-width'])+';'+(null != styl['fill'] ? 'fill:'+Str(styl['fill'])+';' : '');
+        var style = this.toObj();
+        return Object.keys(style).reduce(function(s, p) {
+            return s + p + ':' + Str(style[p]) + ';';
+        }, '');
     }
 });

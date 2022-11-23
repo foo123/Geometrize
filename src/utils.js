@@ -51,7 +51,7 @@ function dist(p1, p2)
 function polar_angle(p1, p2)
 {
     var a = stdMath.atan2(p2.y - p1.y, p2.x - p1.x);
-    return a < 0 ? a + 2*stdMath.PI : a;
+    return a < 0 ? a + TWO_PI : a;
 }
 function dir(p1, p2, p3)
 {
@@ -223,12 +223,12 @@ function point_inside_circle(p, center, radius)
     if (is_almost_equal(d2, r2)) return 2;
     return d2 < r2 ? 1 : 0;
 }
-function point_inside_ellipse(p, center, radiusX, radiusY, theta)
+function point_inside_ellipse(p, center, radiusX, radiusY, sincos)
 {
     var rX2 = radiusX*radiusX,
         rY2 = radiusY*radiusY,
-        c = stdMath.cos(-theta),
-        s = stdMath.sin(-theta),
+        c = sincos[0],
+        s = -sincos[1],
         dx0 = p.x - center.x,
         dy0 = p.y - center.y,
         dx = c*dx0 - s*dy0,
@@ -313,27 +313,27 @@ function circle_circle_intersection(c1, r1, c2, r2)
         c1 = c2;
         c2 = tmp;
     }
-    if (p_eq(c1, c2) && is_almost_equal(r1, r2))
+    var dx = c2.x - c1.x, dy = c2.y - c1.y, d = hypot(dx, dy, 0, 0);
+    if (is_almost_zero(d) && is_almost_equal(r1, r2))
     {
         // same circles, they intersect at all points
         return false;
     }
-    var d = dist(c1, c2);
-    if (d > r1+r2)
+    if (d > r1+r2 || d+r2 < r1)
     {
         // circle (c2,r2) is outside circle (c1,r1) and does not intersect
-        return false;
-    }
-    else if (d+r2 < r1)
-    {
+        // or
         // circle (c2,r2) is inside circle (c1,r1) and does not intersect
         return false;
     }
-    else
-    {
-        // circles intersect at 1 or 2 points
-        return true;
-    }
+    // circles intersect at 1 or 2 points
+    dx /= d; dy /= d;
+    var a = (r1*r1 - r2*r2 + d*d) / (2 * d),
+        px = c1.x + a*dx,
+        py = c1.y + a*dy,
+        h = stdMath.sqrt(r1*r1 - a*a)
+    ;
+    return is_almost_zero(h) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
 function curve_ellipse_intersection(ellipse, curve_points, get_point)
 {
@@ -477,6 +477,128 @@ function in_convex_hull(convexHull, p, strict)
     }
     return true;
 }
+function is_convex(points)
+{
+    // https://stackoverflow.com/a/45372025/3591273
+    var n = points.length;
+    if (n < 3) return false;
+
+    var old_x = points[n-2].x, old_y = points[n-2].y,
+        new_x = points[n-1].x, new_y = points[n-1].y,
+        old_direction = 0,
+        new_direction = stdMath.atan2(new_y - old_y, new_x - old_x),
+        angle_sum = 0,
+        angle = 0,
+        newpoint = null
+    ;
+    for (ndx=0; ndx<n; ++ndx)
+    {
+        newpoint = points[ndx];
+        old_x = new_x;
+        old_y = new_y;
+        old_direction = new_direction;
+        new_x = newpoints.x;
+        new_y = newpoint.y;
+        new_direction = stdMath.atan2(new_y - old_y, new_x - old_x);
+        angle = new_direction - old_direction;
+        if (angle <= -PI)
+        {
+            angle += TWO_PI
+        }
+        else if (angle > PI)
+        {
+            angle -= TWO_PI
+        }
+        if (0 === ndx)
+        {
+            if (0 === angle) return false;
+            orientation = 0 < angle ? 1 : -1;
+        }
+        else
+        {
+            if (orientation * angle <= 0) return false;
+        }
+        angle_sum += angle;
+    }
+    return 1 === stdMath.abs(stdMath.round(angle_sum / TWO_PI));
+}
+function ellipse_point(cx, cy, rx, ry, angle, theta, cs)
+{
+    var M = rx * stdMath.cos(theta), N = ry * stdMath.sin(theta);
+
+    cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
+    return {
+        x: cx + cs[0] * M - cs[1] * N,
+        y: cy + cs[1] * M + cs[0] * N
+    };
+}
+function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
+{
+    const pow = n => Math.pow(n, 2);
+
+    cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
+
+    // Step 1: simplify through translation/rotation
+    var x =  cs[0] * (x1 - x2) / 2 + cs[1] * (y1 - y2) / 2,
+        y = -cs[1] * (x1 - x2) / 2 + cs[0] * (y1 - y2) / 2,
+        px = x*x, py = y^y, prx = rx*rx, pry = ry*ry,
+        // correct of out-of-range radii
+        L = px / prx + py / pry;
+
+    if (L > 1)
+    {
+        rx = sqrt(L) * abs(rx);
+        ry = sqrt(L) * abs(ry);
+    }
+    else
+    {
+        rx = abs(rx);
+        ry = abs(ry);
+    }
+
+    // Step 2 + 3: compute center
+    var sign = fa === fs ? -1 : 1,
+        M = stdMath.sqrt((prx * pry - prx * py - pry * px) / (prx * py + pry * px)) * sign,
+        _cx = M * (rx * y) / ry,
+        _cy = M * (-ry * x) / rx,
+
+        cx = cosphi * _cx - sinphi * _cy + (x1 + x2) / 2,
+        cy = sinphi * _cx + cosphi * _cy + (y1 + y2) / 2
+    ;
+
+    // Step 4: compute θ and dθ
+    var theta = vector_angle(
+        1, 0,
+        (x - _cx) / rx, (y - _cy) / ry
+    );
+
+    var _dTheta = deg(vector_angle(
+        (x - _cx) / rx, (y - _cy) / ry,
+        (-x - _cx) / rx, (-y - _cy) / ry
+    )) % 360;
+
+    if (fs === 0 && _dTheta > 0) _dTheta -= 360;
+    if (fs === 1 && _dTheta < 0) _dTheta += 360;
+
+    return [cx, cy, theta, rad(_dTheta)];
+}
+function vector_angle(ux, uy, vx, vy)
+{
+    var sign = ux * vy - uy * vx < 0 ? -1 : 1,
+        ua = stdMath.sqrt(ux * ux + uy * uy),
+        va = stdMath.sqrt(vx * vx + vy * vy),
+        dot = ux * vx + uy * vy;
+
+    return sign * stdMath.acos(dot / (ua * va));
+}
+function deg(rad)
+{
+    return rad * 180 / stdMath.PI;
+}
+function rad(deg)
+{
+    return deg * stdMath.PI / 180;
+}
 
 // ----------------------
 function merge(keys, a, b)
@@ -498,19 +620,19 @@ function merge(keys, a, b)
     }
     return a;
 }
-function SVG(tag, atts, svg, isDirty, g, ga)
+function SVG(tag, atts, svg, g, ga)
 {
     var setAnyway = false;
     atts = atts || EMPTYO;
     if (false === svg)
     {
         svg = '<'+tag+' '+Object.keys(atts).reduce(function(s, a) {
-            return s + a+'="'+Str(atts[a])+'" ';
+            return s + a+'="'+Str(atts[a][0])+'" ';
         }, '')+'/>';
         if (g)
         {
             svg = '<g '+Object.keys(ga||EMPTYO).reduce(function(s, a) {
-                return s + a+'="'+Str(ga[a])+'" ';
+                return s + a+'="'+Str(ga[a][0])+'" ';
             }, '')+'>'+svg+'</g>';
         }
     }
@@ -531,14 +653,13 @@ function SVG(tag, atts, svg, isDirty, g, ga)
             g = svg;
             svg = g.firstChild || g;
         }
-        isDirty = isDirty || EMPTYO;
         Object.keys(atts).forEach(function(a) {
-            if (setAnyway || isDirty[a]) svg.setAttribute(a, atts[a]);
+            if (setAnyway || atts[a][1]) svg.setAttribute(a, atts[a][0]);
         });
         if (g && ga)
         {
             Object.keys(ga).forEach(function(a) {
-                if (setAnyway || isDirty[a]) g.setAttribute(a, ga[a]);
+                if (setAnyway || ga[a][1]) g.setAttribute(a, ga[a][0]);
             });
         }
     }

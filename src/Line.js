@@ -158,22 +158,17 @@ var Bezier1 = makeClass(Bezier, {
     },
     toSVG: function(svg) {
         return SVG('line', {
-            'id': this.id,
-            'x1': this.start.x,
-            'y1': this.start.y,
-            'x2': this.end.x,
-            'y2': this.end.y,
-            'transform': this.matrix.toSVG(),
-            'style': this.style.toSVG()
-        }, arguments.length ? svg : false, {
-            'id': false,
-            'x1': this.start.isChanged(),
-            'y1': this.start.isChanged(),
-            'x2': this.end.isChanged(),
-            'y2': this.end.isChanged(),
-            'transform': this.isChanged(),
-            'style': this.style.isChanged()
-        });
+            'id': [this.id, false],
+            'x1': [this.start.x, this.start.isChanged()],
+            'y1': [this.start.y, this.start.isChanged()],
+            'x2': [this.end.x, this.end.isChanged()],
+            'y2': [this.end.y, this.end.isChanged()],
+            'transform': [this.matrix.toSVG(), this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, arguments.length ? svg : false);
+    },
+    toSVGPath: function() {
+        return 'M '+Str(this.start.x)+' '+Str(this.start.y)+' L '+Str(this.end.x)+' '+Str(this.end.y);
     },
     toTex: function(interval) {
         return '\\text{Line:}'+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }'+(interval||'0 \\le t \\le 1');

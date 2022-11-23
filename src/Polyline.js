@@ -5,7 +5,8 @@ var Polyline = makeClass(Curve, {
         var self = this,
             _length = null,
             _bbox = null,
-            _hull = null
+            _hull = null,
+            _is_convex = null
         ;
 
         if (points instanceof Polyline) return points;
@@ -67,12 +68,24 @@ var Polyline = makeClass(Curve, {
             },
             enumerable: false
         });
+        Object.defineProperty(self, '_is_convex', {
+            get() {
+                if (!self.isClosed()) return false;
+                if (null == _is_convex)
+                {
+                    _is_convex = is_convex(self.points);
+                }
+                return _is_convex;
+            },
+            enumerable: false
+        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
                 _length = null;
                 _bbox = null;
                 _hull = null;
+                _is_convex = null;
             }
             return self.$super.isChanged.apply(self, arguments);
         };
@@ -85,6 +98,9 @@ var Polyline = makeClass(Curve, {
     },
     isClosed: function() {
         return 2 < this.points.length ? this.points[0].eq(this.points[this.points.length-1]) : false;
+    },
+    isConvex: function() {
+        return this._is_convex;
     },
     getBoundingBox: function() {
         return this._bbox;
@@ -109,19 +125,20 @@ var Polyline = makeClass(Curve, {
         return lines[i].getPoint(n*(t-i/n));
     },
     intersects: function(other) {
+        var p;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Line)
         {
-            var i = curve_lines_intersection([other.start, other.end], this.points);
-            return i ? i.map(Point) : false;
+            p = curve_lines_intersection(this.points, [other.start, other.end]);
+            return p ? p.map(Point) : false;
         }
         else if (other instanceof Polyline)
         {
-            var i = curve_lines_intersection(this.points, other.points);
-            return i ? i.map(Point) : false;
+            p = curve_lines_intersection(this.points, other.points);
+            return p ? p.map(Point) : false;
         }
         else if ((other instanceof Primitive) && is_function(other.intersects))
         {
@@ -141,16 +158,16 @@ var Polyline = makeClass(Curve, {
     },
     toSVG: function(svg) {
         return SVG('polyline', {
-            'id': this.id,
-            'points': this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '),
-            'transform': this.matrix.toSVG(),
-            'style': this.style.toSVG()
-        }, arguments.length ? svg : false, {
-            'id': false,
-            'points': this.isChanged(),
-            'transform': this.isChanged(),
-            'style': this.style.isChanged()
-        });
+            'id': [this.id, false],
+            'points': [this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '), this.isChanged()],
+            'transform': [this.matrix.toSVG(), this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, arguments.length ? svg : false);
+    },
+    toSVGPath: function() {
+        return 'M '+(this.points.map(function(p) {
+            return Str(p.x)+' '+Str(p.y);
+        }).join(' L '))+(this.isClosed() ? ' z' : '');
     },
     toTex: function() {
         var lines = this.lines, n = lines.length;

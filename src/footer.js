@@ -13,7 +13,6 @@ return {
     Bezier1: Bezier1,
     Bezier2: Bezier2,
     Bezier3: Bezier3,
-    //Polybezier3: Polybezier3,
     Arc: Arc,
     Polygon: Polygon,
     Circle: Circle,

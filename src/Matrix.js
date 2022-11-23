@@ -1,4 +1,4 @@
-// 2D Transformation Matrix class
+// 2D Homogeneous Transformation Matrix class
 var Matrix = makeClass(null, {
     constructor: function Matrix(
         m00, m01, m02,
@@ -113,21 +113,31 @@ var Matrix = makeClass(null, {
             );
         }
     },
-    det: function() {
+    /*det: function() {
         var self = this;
         return self.$00*(self.$11*self.$22 - self.$12*self.$21) + self.$01*(self.$12*self.$20 - self.$10*self.$22) + self.$02*(self.$21*self.$10 - self.$11*self.$20);
-    },
+    },*/
     inv: function() {
-        var self = this, det = self.det();
-        if (is_almost_zero(det)) return null;
+        var self = this,
+            a00 = self.$00, a01 = self.$01, a02 = self.$02,
+            a10 = self.$10, a11 = self.$11, a12 = self.$12,
+            //a20 = self.$20, a21 = self.$21, a22 = self.$22,
+            det2 = a00*a11 - a01*a10,
+            i00 = 0, i01 = 0, i10 = 0, i11 = 0;
 
-        var a00 = self.$00, a01 = self.$01, a02 = self.$02,
-            a10 = self.$10, a11 = self.$11, a12 = self.$12;
-            //a20 = self.$20, a21 = self.$21, a22 = self.$22;
-        return new Matrix(
+        if (is_almost_zero(det2)) return null;
+
+        /*return new Matrix(
         (a11*a22-a12*a21)/det, (a02*a21-a01*a22)/det, (a01*a12-a02*a11)/det,
         (a12*a20-a10*a22)/det, (a00*a22-a02*a20)/det, (a02*a10-a00*a12)/det,
         //(a10*a21-a11*a20)/det, (a01*a20-a00*a21)/det, (a00*a11-a01*a10)/det
+        0, 0, 1
+        );*/
+        i00 = a11/det2; i01 = -a01/det2;
+        i10 = -a10/det2; i11 = a00/det2;
+        return new Matrix(
+        i00, i01, -i00*a02 - i01*a12,
+        i10, i11, -i10*a02 - i11*a12,
         0, 0, 1
         );
     },
