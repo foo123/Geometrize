@@ -232,7 +232,12 @@ var Ellipse = makeClass(Curve, {
         return 'M '+Str(c.x - rX)+' '+Str(c.y)+' a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(rX + rX)+' 0 a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(-rX - rX)+' 0 z';
     },
     toTex: function() {
-        return '\\text{Ellipse('+Str(deg(this.angle))+'°): }\\frac{(x - '+Str(this.center.x)+')^2}{'+Str(this.radiusX)+'^2} + \\frac{(y - '+Str(this.center.y)+')^2}{'+Str(this.radiusY)+'^2} = 1';
+        var a = Str(deg(this.angle))+'\\text{°}',
+            c = this.center,
+            cX = (0 <= c.x ? '-' : '+')+Str(stdMath.abs(c.x)),
+            cY = (0 <= c.y ? '-' : '+')+Str(stdMath.abs(c.y)),
+            rX = Str(this.radiusX), rY = Str(this.radiusY);
+        return '\\text{Ellipse: }\\left|\\begin{pmatrix}\\cos('+a+')&-\\sin('+a+')\\\\sin('+a+')&\\cos('+a+')\\end{pmatrix}\\begin{pmatrix}\\frac{x'+cX+'}{'+rX+'}\\\\\\frac{y'+cY+'}{'+rY+'}\\end{pmatrix}\\right|^2 = 1';
     },
     toString: function() {
         return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(deg(this.angle))+'°'].join(',')+')';

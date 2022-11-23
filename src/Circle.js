@@ -171,7 +171,11 @@ var Circle = makeClass(Curve, {
         return 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
     },
     toTex: function() {
-        return '\\text{Circle: }'+'\\frac{(x - '+Str(this.center.x)+')^2 + (y - '+Str(this.center.y)+')^2}{'+Str(this.radius)+'^2} = 1';
+        var c = this.center,
+            cX = (0 <= c.x ? '-' : '+')+Str(stdMath.abs(c.x)),
+            cY = (0 <= c.y ? '-' : '+')+Str(stdMath.abs(c.y)),
+            r = Str(this.radius);
+        return '\\text{Circle: }\\left|\\begin{pmatrix}\\frac{x'+cX+'}{'+r+'}\\\\\\frac{y'+cY+'}{'+r+'}\\end{pmatrix}\\right|^2 = 1';
     },
     toString: function() {
         return 'Circle('+[Str(this.center), Str(this.radius)].join(',')+')';
