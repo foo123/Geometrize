@@ -51,7 +51,7 @@ var Circle = makeClass(Curve, {
             get() {
                 if (null == _area)
                 {
-                    _area = stdMath.PI * _radius.val() * _radius.val();
+                    _area = PI * _radius.val() * _radius.val();
                 }
                 return _area;
             },

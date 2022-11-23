@@ -487,8 +487,7 @@ function is_convex(points)
         new_x = points[n-1].x, new_y = points[n-1].y,
         old_direction = 0,
         new_direction = stdMath.atan2(new_y - old_y, new_x - old_x),
-        angle_sum = 0,
-        angle = 0,
+        angle_sum = 0, angle = 0, orientation = 0,
         newpoint = null
     ;
     for (ndx=0; ndx<n; ++ndx)
@@ -497,7 +496,7 @@ function is_convex(points)
         old_x = new_x;
         old_y = new_y;
         old_direction = new_direction;
-        new_x = newpoints.x;
+        new_x = newpoint.x;
         new_y = newpoint.y;
         new_direction = stdMath.atan2(new_y - old_y, new_x - old_x);
         angle = new_direction - old_direction;
@@ -593,11 +592,11 @@ function vector_angle(ux, uy, vx, vy)
 }
 function deg(rad)
 {
-    return rad * 180 / stdMath.PI;
+    return rad * 180 / PI;
 }
 function rad(deg)
 {
-    return deg * stdMath.PI / 180;
+    return deg * PI / 180;
 }
 
 // ----------------------

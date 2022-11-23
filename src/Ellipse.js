@@ -87,7 +87,7 @@ var Ellipse = makeClass(Curve, {
                 if (null == _length)
                 {
                     // approximate
-                    _length = stdMath.PI * (3*(_radiusX.val()+_radiusY.val())-stdMath.sqrt((3*_radiusX.val()+_radiusY.val())*(_radiusX.val()+3*_radiusY.val())));
+                    _length = PI * (3*(_radiusX.val()+_radiusY.val())-stdMath.sqrt((3*_radiusX.val()+_radiusY.val())*(_radiusX.val()+3*_radiusY.val())));
                 }
                 return _length;
             },
@@ -97,7 +97,7 @@ var Ellipse = makeClass(Curve, {
             get() {
                 if (null == _area)
                 {
-                    _area = stdMath.PI * _radiusX.val() * _radiusY.val();
+                    _area = PI * _radiusX.val() * _radiusY.val();
                 }
                 return _area;
             },
