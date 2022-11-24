@@ -32,12 +32,12 @@ var Matrix = makeClass(null, {
         }
         else
         {
-            self.$00 = Num(m00);
-            self.$01 = Num(m01);
-            self.$02 = Num(m02);
-            self.$10 = Num(m10);
-            self.$11 = Num(m11);
-            self.$12 = Num(m12);
+            self.$00 = m00;
+            self.$01 = m01;
+            self.$02 = m02;
+            self.$10 = m10;
+            self.$11 = m11;
+            self.$12 = m12;
             self.$20 = 0;
             self.$21 = 0;
             self.$22 = 1;
@@ -113,10 +113,10 @@ var Matrix = makeClass(null, {
             );
         }
     },
-    /*det: function() {
+    det: function() {
         var self = this;
         return self.$00*(self.$11*self.$22 - self.$12*self.$21) + self.$01*(self.$12*self.$20 - self.$10*self.$22) + self.$02*(self.$21*self.$10 - self.$11*self.$20);
-    },*/
+    },
     inv: function() {
         var self = this,
             a00 = self.$00, a01 = self.$01, a02 = self.$02,
@@ -145,7 +145,7 @@ var Matrix = makeClass(null, {
         var self = this, x = point.x, y = point.y,
             nx = self.$00*x + self.$01*y + self.$02,
             ny = self.$10*x + self.$11*y + self.$12;
-        if (newpoint instanceof Point)
+        if (newpoint)
         {
             newpoint.x = nx;
             newpoint.y = ny;
@@ -155,6 +155,26 @@ var Matrix = makeClass(null, {
             newpoint = new Point(nx, ny);
         }
         return newpoint;
+    },
+    getTranslation: function() {
+        var self = this;
+        return {
+            x: self.$02,
+            y: self.$12
+        };
+    },
+    getRotationAngle: function() {
+        var self = this;
+        return stdMath.atan2(-self.$01, self.$00);
+    },
+    getScale: function() {
+        var self = this,
+            a = self.$00, b = self.$01,
+            c = self.$10, d = self.$11;
+        return {
+            x: sign(a)*stdMath.sqrt(a*a + b*b),
+            y: sign(d)*stdMath.sqrt(c*c + d*d)
+        };
     },
     toArray: function() {
         var self = this;
@@ -269,3 +289,4 @@ var Matrix = makeClass(null, {
         return '['+pad(point.x, maxlen)+"]\n["+pad(point.y, maxlen)+"]\n["+pad(1, maxlen)+']';
     }
 });
+var EYE = Matrix.eye();

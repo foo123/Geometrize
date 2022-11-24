@@ -117,21 +117,26 @@ var Circle = makeClass(Curve, {
     isConvex: function() {
         return true;
     },
+    hasMatrix: function() {
+        return false;
+    },
     getBoundingBox: function() {
         return this._bbox;
     },
     getConvexHull: function() {
         return this._hull;
     },
+    f: function(t) {
+        var c = this.center, r = this.radius;
+        t *= TWO_PI;
+        return {
+            x: c.x + r*stdMath.cos(t),
+            y: c.y + r*stdMath.sin(t)
+        };
+    },
     getPointAt: function(t) {
         t = Num(t);
-        if (0 > t || 1 < t) return null;
-        var c = this.center, r = this.radius;
-        t = t*TWO_PI;
-        return new Point(
-            c.x + r*stdMath.cos(t),
-            c.y + r*stdMath.sin(t)
-        );
+        return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     hasPoint: function(point) {
         return 2 === point_inside_circle(point, this.center, this.radius);
@@ -147,8 +152,8 @@ var Circle = makeClass(Curve, {
         }
         else if (other instanceof Circle)
         {
-            var p = circle_circle_intersection(this.center, this.radius, other.center, other.radius);
-            return p ? p.map(Point) : false;
+            var i = circle_circle_intersection(this.center, this.radius, other.center, other.radius);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
@@ -157,12 +162,12 @@ var Circle = makeClass(Curve, {
         return false;
     },
     toSVG: function(svg) {
+        var c = this.center, r = this.radius;
         return SVG('circle', {
             'id': [this.id, false],
-            'cx': [this.center.x, this.center.isChanged()],
-            'cy': [this.center.y, this.center.isChanged()],
-            'r': [this.radius, this.values.radius.isChanged()],
-            'transform': [this.matrix.toSVG(), this.isChanged()],
+            'cx': [c.x, this.center.isChanged()],
+            'cy': [c.y, this.center.isChanged()],
+            'r': [r, this.values.radius.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },

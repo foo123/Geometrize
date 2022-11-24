@@ -44,6 +44,10 @@ function angle(x1, y1, x2, y2)
 {
     return stdMath.acos(dotp(x1 / hypot(x1, y1), y1, x2 / hypot(x2, y2), y2));
 }
+function sign(x)
+{
+    return 0 > x ? -1 : 1;
+}
 function dist(p1, p2)
 {
     return hypot(p1.x - p2.x, p1.y - p2.y);
@@ -372,7 +376,7 @@ function curve_area(curve_points)
 }
 function sample_curve(f, n, pixelSize, do_refine)
 {
-    if (null == n) n = 40;
+    if (null == n) n = 20;
     var i, t, h = 1/n, p, points = [];
     if (do_refine)
     {

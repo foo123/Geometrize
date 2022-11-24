@@ -18,6 +18,7 @@ return {
     Circle: Circle,
     Ellipse: Ellipse,
     CompositeCurve: CompositeCurve,
-    Shape: Shape
+    Shape: Shape,
+    Plane: Plane
 };
 });

@@ -159,11 +159,16 @@ var Ellipse = makeClass(Curve, {
             rX = this.radiusX,
             rY = this.radiusY,
             a = this.angle,
-            ct = c.transform(matrix),
-            pX = new Point(rX, 0).transform(matrix),
-            pY = new Point(0, rY).transform(matrix),
+            t = matrix.getTranslation(),
+            r = matrix.getRotationAngle(),
+            s = matrix.getScale()
         ;
-        return new Ellipse(ct, hypot(pX.x, pX.y), hypot(pY.x, pY.y), a);
+        return new Ellipse(
+            new Point(c.x + t.x, c.y + t.y),
+            rX*s.x,
+            rY*s.y,
+            a+r
+        );
     },
     isClosed: function() {
         return true;
@@ -171,15 +176,16 @@ var Ellipse = makeClass(Curve, {
     isConvex: function() {
         return true;
     },
+    hasMatrix: function() {
+        return false;
+    },
     getBoundingBox: function() {
         return this._bbox;
     },
     getConvexHull: function() {
         return this._hull;
     },
-    getPointAt: function(t) {
-        t = Num(t);
-        if (0 > t || 1 < t) return null;
+    f: function(t) {
         var c = this.center,
             rX = this.radiusX,
             rY = this.radiusY,
@@ -187,10 +193,14 @@ var Ellipse = makeClass(Curve, {
             ct = stdMath.cos(t*TWO_PI),
             st = stdMath.sin(t*TWO_PI)
         ;
-        return new Point(
-            c.x + rX*cs[0]*ct - rY*cs[1]*st,
-            c.y + rY*cs[0]*st + rX*cs[1]*ct
-        );
+        return {
+            x: c.x + rX*cs[0]*ct - rY*cs[1]*st,
+            y: c.y + rY*cs[0]*st + rX*cs[1]*ct
+        };
+    },
+    getPointAt: function(t) {
+        t = Num(t);
+        return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     hasPoint: function(point) {
         return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.sincos);
@@ -206,7 +216,7 @@ var Ellipse = makeClass(Curve, {
         }
         else if (other instanceof Circle || other instanceof Ellipse)
         {
-            return ellipse_ellipse_intersection(this, other);
+            return false;
         }
         else if (other instanceof Primitive)
         {
@@ -215,17 +225,19 @@ var Ellipse = makeClass(Curve, {
         return false;
     },
     toSVG: function(svg) {
+        var c = this.center,
+            rX = this.radiusX,
+            rY = this.radiusY,
+            a = this.angle;
         return SVG('ellipse', {
-            'cx': [this.center.x, this.center.isChanged()],
-            'cy': [this.center.y, this.center.isChanged()],
-            'rx': [this.radiusX, this.values.radiusX.isChanged()],
-            'ry': [this.radiusY, this.values.radiusY.isChanged()],
-            'transform': ['rotate('+Str(this.angle)+' '+Str(this.center.x)+' '+Str(this.center.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
-        }, arguments.length ? svg : false,  true, {
             'id': [this.id, false],
-            'transform': [this.matrix.toSVG(), this.isChanged()]
-        });
+            'cx': [c.x, this.center.isChanged()],
+            'cy': [c.y, this.center.isChanged()],
+            'rx': [rX, this.values.radiusX.isChanged()],
+            'ry': [rY, this.values.radiusY.isChanged()],
+            'transform': ['rotate('+Str(deg(a))+' '+Str(c.x)+' '+Str(c.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, arguments.length ? svg : false);
     },
     toSVGPath: function() {
         var c = this.center, rX = this.radiusX, rY = this.radiusY, a = this.angle;

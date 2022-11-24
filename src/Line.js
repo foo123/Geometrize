@@ -30,11 +30,20 @@ var Bezier1 = makeClass(Bezier, {
             },
             enumerable: true
         });
+        Object.defineProperty(self, '_lines', {
+            get() {
+                return self._points;
+            },
+            set(lines) {
+            },
+            enumerable: false
+        });
         Object.defineProperty(self, 'length', {
             get() {
                 if (null == _length)
                 {
-                    _length = dist(self.start, self.end);
+                    var p = self._points;
+                    _length = dist(p[0], p[1]);
                 }
                 return _length;
             },
@@ -44,7 +53,8 @@ var Bezier1 = makeClass(Bezier, {
             get() {
                 if (null == _bbox)
                 {
-                    var p1 = this.start, p2 = this.end,
+                    var p = self._points,
+                        p1 = p[0], p2 = p[1],
                         x1 = stdMath.min(p1.x, p2.x),
                         x2 = stdMath.max(p1.x, p2.x),
                         y1 = stdMath.min(p1.y, p2.y),
@@ -65,7 +75,8 @@ var Bezier1 = makeClass(Bezier, {
             get() {
                 if (null == _hull)
                 {
-                    var p1 = this.start, p2 = this.end,
+                    var p = self._points,
+                        p1 = p[0], p2 = p[1],
                         x1 = stdMath.min(p1.x, p2.x),
                         x2 = stdMath.max(p1.x, p2.x),
                         y1 = stdMath.min(p1.y, p2.y),
@@ -105,38 +116,46 @@ var Bezier1 = makeClass(Bezier, {
         return this._hull;
     },
     hasPoint: function(point) {
-        return !!point_between(point, this.start, this.end);
+        var p = this._points;
+        return !!point_between(point, p[0], p[1]);
     },
     intersects: function(other) {
-        var p;
+        var i, p;
         if (other instanceof Point)
         {
-            p = point_between(other, this.start, this.end);
-            return p ? [p] : false;
+            p = this._points;
+            i = point_between(other, p[0], p[1]);
+            return i ? [other] : false;
         }
         else if (other instanceof Line)
         {
-            p = line_segments_intersection(this.start, this.end, other.start, other.end);
-            return p ? [Point(p)] : false;
+            p = this._points;
+            i = line_segments_intersection(p[0], p[1], other._points[0], other._points[1]);
+            return i ? [Point(i)] : false;
         }
         else if (other instanceof Circle)
         {
-            p = line_circle_intersection(this.start, this.end, other.center, other.radius);
-            return p ? p.map(Point) : false;
+            p = this._points;
+            i = line_circle_intersection(p[0], p[1], other.center, other.radius);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            p = line_ellipse_intersection(this.start, this.end, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
-            return p ? p.map(Point) : false;
+            p = this._points;
+            i = line_ellipse_intersection(p[0], p[1], other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Arc)
+        {
+            return false;
         }
         else if (other instanceof Bezier2)
         {
-            p = line_bezier2_intersection(this.start, this.end, other.points);
-            return p ? p.map(Point) : false;
+            return false;
         }
         else if (other instanceof Bezier3)
         {
-            return line_bezier3_intersection(this, other);
+            return false;
         }
         else if ((other instanceof Primitive))
         {
@@ -144,34 +163,33 @@ var Bezier1 = makeClass(Bezier, {
         }
         return false;
     },
+    f: function(t) {
+        return bezier1(t, this.points);
+    },
     getPointAt: function(t) {
         t = Num(t);
-        if (0 > t || 1 < t) return null;
-        var p0 = this.start, p1 = this.end;
-        return new Point(
-            p0.x*(1-t) + p1.x*t,
-            p0.y*(1-t) + p1.y*t
-        );
+        return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     distanceToPoint: function(point) {
-        return point_line_segment_distance(point, this.start, this.end);
+        return point_line_segment_distance(point, this._points[0], this._points[1]);
     },
     toSVG: function(svg) {
+        var p = this._points;
         return SVG('line', {
             'id': [this.id, false],
-            'x1': [this.start.x, this.start.isChanged()],
-            'y1': [this.start.y, this.start.isChanged()],
-            'x2': [this.end.x, this.end.isChanged()],
-            'y2': [this.end.y, this.end.isChanged()],
-            'transform': [this.matrix.toSVG(), this.isChanged()],
+            'x1': [p[0].x, this.start.isChanged() || this.values.matrix.isChanged()],
+            'y1': [p[0].y, this.start.isChanged() || this.values.matrix.isChanged()],
+            'x2': [p[1].x, this.end.isChanged() || this.values.matrix.isChanged()],
+            'y2': [p[1].y, this.end.isChanged() || this.values.matrix.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function() {
-        return 'M '+Str(this.start.x)+' '+Str(this.start.y)+' L '+Str(this.end.x)+' '+Str(this.end.y);
+        var p = this._points;
+        return 'M '+Str(p[0].x)+' '+Str(p[0].y)+' L '+Str(p[1].x)+' '+Str(p[1].y);
     },
-    toTex: function(interval) {
-        return '\\text{Line: }\\begin{pmatrix}x\\\\y\\end{pmatrix} = '+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }'+(interval||'0 \\le t \\le 1');
+    toTex: function() {
+        return '\\text{Line: }\\begin{pmatrix}x\\\\y\\end{pmatrix} = '+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }0 \\le t \\le 1';
     },
     toString: function() {
         return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';

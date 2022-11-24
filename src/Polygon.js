@@ -32,11 +32,19 @@ var Polygon = makeClass(Curve, {
             },
             enumerable: true
         });
+        Object.defineProperty(self, '_lines', {
+            get() {
+                return self._points.concat([self._points[0]]);
+            },
+            set(lines) {
+            },
+            enumerable: false
+        });
         Object.defineProperty(self, 'length', {
             get() {
                 if (null == _length)
                 {
-                    _length = curve_length(self.points.concat([self.points[0]]));
+                    _length = curve_length(self._lines);
                 }
                 return _length;
             },
@@ -46,7 +54,7 @@ var Polygon = makeClass(Curve, {
             get() {
                 if (null == _area)
                 {
-                    _area = curve_area(self.points.concat([self.points[0]]));
+                    _area = curve_area(self._lines);
                 }
                 return _area;
             },
@@ -62,7 +70,7 @@ var Polygon = makeClass(Curve, {
                         bottom: -Infinity,
                         right: -Infinity
                     };
-                    for (var i=0,p=self.points,n=p.length; i<n; ++i)
+                    for (var i=0,p=self._points,n=p.length; i<n; ++i)
                     {
                         _bbox.top = stdMath.min(_bbox.top, p[i].y);
                         _bbox.bottom = stdMath.max(_bbox.bottom, p[i].y);
@@ -78,7 +86,7 @@ var Polygon = makeClass(Curve, {
             get() {
                 if (null == _hull)
                 {
-                    _hull = convex_hull(self.points);
+                    _hull = convex_hull(self._points);
                 }
                 return _hull;
             },
@@ -88,7 +96,7 @@ var Polygon = makeClass(Curve, {
             get() {
                 if (null == _is_convex)
                 {
-                    _is_convex = is_convex(self.points);
+                    _is_convex = is_convex(self._points);
                 }
                 return _is_convex;
             },
@@ -125,32 +133,35 @@ var Polygon = makeClass(Curve, {
         return this._hull;
     },
     hasPoint: function(point) {
-        return 2 === point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this.points.concat([this.points[0]]));
+        return 2 === point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this._lines);
     },
     hasInsidePoint: function(point, strict) {
-        var inside = point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this.points.concat([this.points[0]]));
+        var inside = point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this._lines);
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
-        var p;
+        var i, p;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Line)
+        else if ((other instanceof Line) || (other instanceof Polyline) || (other instanceof Polygon))
         {
-            p = curve_lines_intersection(this.points.concat([this.points[0]]), [other.start, other.end]);
-            return p ? p.map(Point) : false;
+            i = curve_lines_intersection(this._lines, other._lines);
+            return i ? i.map(Point) : false;
         }
-        else if (other instanceof Polyline)
+        else if (other instanceof Circle)
         {
-            p = curve_lines_intersection(this.points.concat([this.points[0]]), other.points);
-            return p ? p.map(Point) : false;
-        }
-        else if (other instanceof Polygon)
-        {
-            p = curve_lines_intersection(this.points.concat([this.points[0]]), other.points.concat([other.points[0]]));
-            return p ? p.map(Point) : false;
+            p = this._lines;
+            i = p.reduce(function(i, _, j) {
+                if (j+1 < p.length)
+                {
+                    var ii = line_circle_intersection(p[j], p[j+1], other.center, other.radius);
+                    if (ii) i.push.apply(i, ii);
+                }
+                return i;
+            }, []);
+            return i.length ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
@@ -161,13 +172,12 @@ var Polygon = makeClass(Curve, {
     toSVG: function(svg) {
         return SVG('polygon', {
             'id': [this.id, false],
-            'points': [this.points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '), this.isChanged()],
-            'transform': [this.matrix.toSVG(), this.isChanged()],
+            'points': [this._points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '), this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function() {
-        return 'M '+(this.points.concat([this.points[0]]).map(function(p) {
+        return 'M '+(this._points.concat([this._points[0]]).map(function(p) {
             return Str(p.x)+' '+Str(p.y);
         }).join(' L '))+' z';
     },

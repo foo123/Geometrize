@@ -1,32 +1,9 @@
 // 2D Geometric Primitive base class
 var Primitive = makeClass(Changeable, {
     constructor: function Primitive() {
-        var _matrix = null,
-            _style = null,
-            _dom = null,
-            onStyleChange
-        ;
+        var _style = null, onStyleChange;
 
         this.id = uuid(this.constructor.name);
-
-        _matrix = Matrix.eye();
-        Object.defineProperty(this, 'matrix', {
-            get() {
-                return _matrix;
-            },
-            set(matrix) {
-                matrix = Matrix(matrix);
-                if (_matrix !== matrix)
-                {
-                    _matrix = matrix;
-                    if (!self.isChanged())
-                    {
-                        self.isChanged(true);
-                        self.triggerChange();
-                    }
-                }
-            }
-        });
 
         onStyleChange = function onStyleChange(style) {
             if (_style === style)
@@ -62,15 +39,6 @@ var Primitive = makeClass(Changeable, {
                 }
             }
         });
-
-        /*Object.defineProperty(this, 'dom', {
-            get() {
-                return _dom;
-            },
-            set(dom) {
-                _dom = dom;
-            }
-        });*/
         self.isChanged(true);
     },
     id: '',
@@ -90,6 +58,13 @@ var Primitive = makeClass(Changeable, {
     },
     getConvexHull: function() {
         return [];
+    },
+    getCenter: function() {
+        var box = this.getBoundingBox();
+        return {
+            x: (box.left + box.right)/2,
+            y: (box.top + box.bottom)/2
+        };
     },
     hasPoint: function(point) {
         return false;

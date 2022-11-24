@@ -1,7 +1,12 @@
 // 2D generic Curve base class
 var Curve = makeClass(Primitive, {
     constructor: function Curve(points, values) {
-        var self = this, _points = null, _values = null,
+        var self = this,
+            _matrix = null,
+            _points = null,
+            _points2 = null,
+            _lines = null,
+            _values = null,
             onPointChange, onArrayChange;
 
         if (null == points) points = [];
@@ -33,6 +38,66 @@ var Curve = makeClass(Primitive, {
         _points.onChange(onArrayChange);
         _values = values;
 
+        _matrix = self.hasMatrix() ? Matrix.eye() : null;
+        _values.matrix = new Changeable();
+        _values.matrix.isChanged(self.hasMatrix());
+
+        Object.defineProperty(this, 'matrix', {
+            get() {
+                return _matrix ? _matrix : Matrix.eye();
+            },
+            set(matrix) {
+                if (self.hasMatrix())
+                {
+                    matrix = Matrix(matrix);
+                    var isChanged = !matrix.eq(_matrix);
+                    _matrix = matrix;
+                    if (isChanged && !self.isChanged())
+                    {
+                        _values.matrix.isChanged(true);
+                        self.isChanged(true);
+                        self.triggerChange();
+                    }
+                }
+            }
+        });
+        Object.defineProperty(self, '_points', {
+            get() {
+                if (null == _points2)
+                {
+                    _points2 = !_matrix || _matrix.eq(EYE) ? _points : _points.map(function(p) {
+                        return _matrix.transform(p);
+                    });
+                }
+                return _points2;
+            },
+            set(points) {
+                if (null == points)
+                {
+                    _points2 = null;
+                }
+            },
+            enumerable: false
+        });
+        Object.defineProperty(self, '_lines', {
+            get() {
+                if (null == _lines)
+                {
+                    _lines = sample_curve(function(t) {
+                        var pt = self.f(t);
+                        return _matrix ? _matrix.transform(pt, pt) : pt;
+                    }, 20, 0.001, true);
+                }
+                return _lines;
+            },
+            set(lines) {
+                if (null == lines)
+                {
+                    _lines = null;
+                }
+            },
+            enumerable: false
+        });
         Object.defineProperty(self, 'points', {
             get() {
                 return _points;
@@ -70,7 +135,10 @@ var Curve = makeClass(Primitive, {
                 return _values;
             },
             set(values) {
-                if (null == values) _values = null;
+                if (null == values)
+                {
+                    _values = null;
+                }
             },
             enumerable: false
         });
@@ -104,6 +172,12 @@ var Curve = makeClass(Primitive, {
         {
             self.points.forEach(function(point) {point.isChanged(false);});
             Object.keys(self.values).forEach(function(k) {self.values[k].isChanged(false);});
+            self.style.isChanged(false);
+        }
+        if (true === isChanged)
+        {
+            self._points = null;
+            self._lines = null;
         }
         return self.$super.isChanged.apply(self, arguments);
     },
@@ -113,11 +187,17 @@ var Curve = makeClass(Primitive, {
     isConvex: function() {
         return false;
     },
+    hasMatrix: function() {
+        return true;
+    },
+    f: function(t) {
+        return null;
+    },
     getPointAt: function(t) {
         return null;
     },
     toLines: function() {
-        return [];
+        return this._lines;
     },
     toBezier: function() {
         return this;
@@ -177,15 +257,32 @@ var CompositeCurve = makeClass(Curve, {
         };
         onCurveChange.id = self.id;
         onArrayChange = function onArrayChange(changed) {
-            if (!self.isChanged())
+            if (null != changed.from && null != changed.to)
             {
-                self.isChanged(true);
-                self.triggerChange();
+                for (var i=changed.from; i<=changed.to; ++i)
+                {
+                    if (!(_curves[i] instanceof Curve) || _curves[i].isClosed())
+                    {
+                        unobserveArray(_curves);
+                        _curves = observeArray(curves.filter(is_not_closed_curve));
+                        self.isChanged(true);
+                        self.triggerChange();
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                if (!self.isChanged())
+                {
+                    self.isChanged(true);
+                    self.triggerChange();
+                }
             }
         };
         onArrayChange.id = self.id;
 
-        _curves = observeArray(curves);
+        _curves = observeArray(curves.filter(is_not_closed_curve));
         _curves.forEach(function(curve) {curve.onChange(onCurveChange);});
         _curves.onChange(onArrayChange);
 
@@ -194,10 +291,7 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _points)
                 {
                     _points = _curves.reduce(function(points, curve) {
-                        if (curve instanceof Curve)
-                        {
-                            points.push.apply(points, curve.points);
-                        }
+                        points.push.apply(points, curve.points);
                         return points;
                     }, []);
                 }
@@ -226,7 +320,7 @@ var CompositeCurve = makeClass(Curve, {
 
                     if (is_array(curves))
                     {
-                        _curves = observeArray(curves);
+                        _curves = observeArray(curves.filter(is_not_closed_curve));
                         _curves.forEach(function(curve) {curve.onChange(onCurveChange);});
                         _curves.onChange(onArrayChange);
                         if (!self.isChanged())
@@ -248,10 +342,7 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _length)
                 {
                     _length = _curves.reduce(function(l, curve) {
-                        if (curve instanceof Curve)
-                        {
-                            l += curve.length;
-                        }
+                        l += curve.length;
                         return l;
                     }, 0);
                 }
@@ -270,14 +361,11 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _bbox)
                 {
                     _bbox = _curves.reduce(function(_bbox, curve) {
-                        if (curve instanceof Curve)
-                        {
-                            var box = curve.getBoundingBox();
-                            _bbox.top = stdMath.min(_bbox.top, box.top);
-                            _bbox.left = stdMath.min(_bbox.left, box.left);
-                            _bbox.bottom = stdMath.max(_bbox.bottom, box.bottom);
-                            _bbox.right = stdMath.max(_bbox.right, box.right);
-                        }
+                        var box = curve.getBoundingBox();
+                        _bbox.top = stdMath.min(_bbox.top, box.top);
+                        _bbox.left = stdMath.min(_bbox.left, box.left);
+                        _bbox.bottom = stdMath.max(_bbox.bottom, box.bottom);
+                        _bbox.right = stdMath.max(_bbox.right, box.right);
                         return _bbox;
                     }, {
                         top: Infinity,
@@ -295,10 +383,7 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _hull)
                 {
                     _hull = convex_hull(_curves.reduce(function(hulls, curve) {
-                        if (curve instanceof Curve)
-                        {
-                            hulls.push.apply(hulls, curve.getConvexHull());
-                        }
+                        hulls.push.apply(hulls, curve.getConvexHull());
                         return hulls;
                     }, []));
                 }
@@ -336,8 +421,17 @@ var CompositeCurve = makeClass(Curve, {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.transform(matrix);}));
     },
     isClosed: function() {
-        var p = this.points;
-        return p[0].eq(p[p.length-1]);
+        var c = this.curves, p1, p2, n = c.length, i;
+        for (i=0; i<n; ++i)
+        {
+            p1 = c[i].points;
+            p2 = c[(i+1) % n].points;
+            if (!p1[p1.length-1].eq(p2[0]))
+            {
+                return false;
+            }
+        }
+        return true;
     },
     getBoundingBox: function() {
         return this._bbox;
@@ -360,21 +454,18 @@ var CompositeCurve = makeClass(Curve, {
         }
         else if (other instanceof Primitive)
         {
-            for (var pp,p=[],c=this.curves, n=c.length, i=0; i<n; ++i)
+            for (var ii,i=[],c=this.curves,n=c.length,j=0; j<n; ++j)
             {
-                pp = c[i].intersects(other);
-                if (pp) p.push.apply(p, pp);
+                ii = c[j].intersects(other);
+                if (ii) i.push.apply(i, ii);
             }
-            return p ? p.map(Point) : false;
+            return i ? i.map(Point) : false;
         }
         return false;
     },
     toLines: function() {
         return this.curves.reduce(function(lines, curve) {
-            if (curve instanceof Curve)
-            {
-                lines.push.apply(lines, curve.toLines());
-            }
+            lines.push.apply(lines, curve.toLines());
             return lines;
         }, []);
     },
@@ -385,3 +476,7 @@ var CompositeCurve = makeClass(Curve, {
         return 'CompositeCurve('+"\n"+this.curves.map(Str).join("\n")+"\n"+')';
     }
 });
+function is_not_closed_curve(curve)
+{
+    return (curve instanceof Curve) && !curve.isClosed();
+}
