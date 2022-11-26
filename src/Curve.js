@@ -7,12 +7,28 @@ var Curve = makeClass(Primitive, {
             _points2 = null,
             _lines = null,
             _values = null,
-            onPointChange, onArrayChange;
+            onPointChange,
+            onArrayChange,
+            point_add,
+            point_del,
+            point_eq;
 
         if (null == points) points = [];
         if (null == values) values = {};
         Primitive.call(self);
 
+        point_add = function(p) {
+            p = Point(p);
+            p.onChange(onPointChange);
+            return p;
+        };
+        point_del = function(p) {
+            p.onChange(onPointChange, false);
+            return p;
+        };
+        point_eq = function(p1, p2) {
+            return p1.eq(p2);
+        };
         onPointChange = function onPointChange(point) {
             if (is_array(_points) && (-1 !== _points.indexOf(point)))
             {
@@ -33,8 +49,7 @@ var Curve = makeClass(Primitive, {
         };
         onArrayChange.id = self.id;
 
-        _points = observeArray(points.map(Point), Point, function(a, b) {return a.eq(b);});
-        _points.forEach(function(point) {point.onChange(onPointChange);});
+        _points = observeArray(points.map(point_add), point_add, point_del, point_eq);
         _points.onChange(onArrayChange);
         _values = values;
 
@@ -108,13 +123,12 @@ var Curve = makeClass(Primitive, {
                     if (is_array(_points))
                     {
                         unobserveArray(_points);
-                        _points.forEach(function(point) {point.onChange(onPointChange, false);});
+                        _points.forEach(point_del);
                     }
 
                     if (is_array(points))
                     {
-                        _points = observeArray(points.map(Point), Point, function(a, b) {return a.eq(b);});
-                        _points.forEach(function(point) {point.onChange(onPointChange);});
+                        _points = observeArray(points.map(point_add), point_add, point_del, point_eq);
                         _points.onChange(onArrayChange);
                         if (!self.isChanged())
                         {
@@ -181,6 +195,9 @@ var Curve = makeClass(Primitive, {
         }
         return self.$super.isChanged.apply(self, arguments);
     },
+    isConnected: function() {
+        return true;
+    },
     isClosed: function() {
         return false;
     },
@@ -240,11 +257,28 @@ var CompositeCurve = makeClass(Curve, {
             _curves = null,
             _points = null,
             _length = null,
-            onCurveChange, onArrayChange;
+            onCurveChange,
+            onArrayChange,
+            curve_add,
+            curve_del;
 
         if (null == curves) curves = [];
         Primitive.call(self);
 
+        curve_add = function(c) {
+            if (c instanceof Curve)
+            {
+                c.onChange(onCurveChange);
+            }
+            return c;
+        };
+        curve_del = function(c) {
+            if (c instanceof Curve)
+            {
+                c.onChange(onCurveChange, false);
+            }
+            return c;
+        };
         onCurveChange = function onCurveChange(curve) {
             if (is_array(_curves) && (-1 !== _curves.indexOf(curve)))
             {
@@ -257,33 +291,15 @@ var CompositeCurve = makeClass(Curve, {
         };
         onCurveChange.id = self.id;
         onArrayChange = function onArrayChange(changed) {
-            if (null != changed.from && null != changed.to)
+            if (!self.isChanged())
             {
-                for (var i=changed.from; i<=changed.to; ++i)
-                {
-                    if (!(_curves[i] instanceof Curve) || _curves[i].isClosed())
-                    {
-                        unobserveArray(_curves);
-                        _curves = observeArray(curves.filter(is_not_closed_curve));
-                        self.isChanged(true);
-                        self.triggerChange();
-                        return;
-                    }
-                }
-            }
-            else
-            {
-                if (!self.isChanged())
-                {
-                    self.isChanged(true);
-                    self.triggerChange();
-                }
+                self.isChanged(true);
+                self.triggerChange();
             }
         };
         onArrayChange.id = self.id;
 
-        _curves = observeArray(curves.filter(is_not_closed_curve));
-        _curves.forEach(function(curve) {curve.onChange(onCurveChange);});
+        _curves = observeArray(curves.map(curve_add), curve_add, curve_del);
         _curves.onChange(onArrayChange);
 
         Object.defineProperty(self, 'points', {
@@ -315,13 +331,12 @@ var CompositeCurve = makeClass(Curve, {
                     if (is_array(_curves))
                     {
                         unobserveArray(_curves);
-                        _curves.forEach(function(curve) {curve.onChange(onCurveChange, false);});
+                        _curves.forEach(curve_del);
                     }
 
                     if (is_array(curves))
                     {
-                        _curves = observeArray(curves.filter(is_not_closed_curve));
-                        _curves.forEach(function(curve) {curve.onChange(onCurveChange);});
+                        _curves = observeArray(curves.map(curve_add), curve_add, curve_del);
                         _curves.onChange(onArrayChange);
                         if (!self.isChanged())
                         {
@@ -420,18 +435,26 @@ var CompositeCurve = makeClass(Curve, {
     transform: function(matrix) {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.transform(matrix);}));
     },
-    isClosed: function() {
-        var c = this.curves, p1, p2, n = c.length, i;
+    isConnected: function() {
+        var c = this.curves, p1, p2, n = c.length-1, i;
+        if (0 > n) return false;
+        if (!c[0].isConnected()) return false;
         for (i=0; i<n; ++i)
         {
+            if (!c[i+1].isConnected()) return false;
             p1 = c[i].points;
-            p2 = c[(i+1) % n].points;
+            p2 = c[i+1].points;
             if (!p1[p1.length-1].eq(p2[0]))
             {
                 return false;
             }
         }
         return true;
+    },
+    isClosed: function() {
+        if (!this.isConnected()) return false;
+        var c = this.curves;
+        return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
     },
     getBoundingBox: function() {
         return this._bbox;
@@ -476,7 +499,3 @@ var CompositeCurve = makeClass(Curve, {
         return 'CompositeCurve('+"\n"+this.curves.map(Str).join("\n")+"\n"+')';
     }
 });
-function is_not_closed_curve(curve)
-{
-    return (curve instanceof Curve) && !curve.isClosed();
-}

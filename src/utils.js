@@ -675,7 +675,7 @@ function debounce(func, wait, immediate)
         if (callNow) func.apply(context, args);
     };
 }
-function observeArray(array, typecaster, equals)
+function observeArray(array, onAdd, onDel, equals)
 {
     if (is_function(array.onChange)) return array;
 
@@ -691,28 +691,40 @@ function observeArray(array, typecaster, equals)
         var interceptor = function(method) {
             return function() {
                 var args = arguments, result = null,
-                    index = 0,
+                    index = 0, deleted = null,
                     initialLength = array.length,
                     finalLength = 0;
 
-                if (typecaster)
+                if (onAdd)
                 {
                     if ('push' === method || 'unshift' === method)
                     {
-                        args = Array.prototype.map.apply(args, typecaster);
+                        args = Array.prototype.map.apply(args, onAdd);
                     }
                     if ('splice' === method && 2 < args.length)
                     {
-                        args = Array.prototype.slice.call(args, 0, 2).concat(Array.prototype.slice.call(args, 2).map(typecaster));
+                        args = Array.prototype.slice.call(args, 0, 2).concat(Array.prototype.slice.call(args, 2).map(onAdd));
                     }
                 }
 
-                if ('unshift' === method || 'splice' === method)
+                if ('shift' === method || 'unshift' === method || 'splice' === method)
                 {
                     // avoid superfluous notifications
                     doNotifyItems = false;
                 }
                 result = Array.prototype[method].apply(array, args);
+                if ('splice' === method && result.length)
+                {
+                    deleted = result;
+                }
+                else if (0 < initialLength && 'pop' === method || 'shift' === method)
+                {
+                    deleted = [result];
+                }
+                if (deleted && onDel)
+                {
+                    deleted.forEach(onDel);
+                }
                 if ('unshift' === method || 'splice' === method)
                 {
                     // restore notifications
@@ -727,19 +739,19 @@ function observeArray(array, typecaster, equals)
 
                 if ('push' === method)
                 {
-                    notify({target:array, method:method, from:initialLength, to:finalLength});
+                    notify({target:array, method:method, added:{from:initialLength, to:finalLength}});
                 }
                 else if ('unshift' === method)
                 {
-                    notify({target:array, method:method, from:0, to:finalLength-initialLength-1});
+                    notify({target:array, method:method, added:{from:0, to:finalLength-initialLength-1}});
                 }
                 else if ('splice' === method && 2 < args.length)
                 {
-                    notify({target:array, method:method, from:args[0], to:args[0]+args.length-3});
+                    notify({target:array, method:method, added:{from:args[0], to:args[0]+args.length-3}}, deleted:deleted);
                 }
                 else
                 {
-                    notify({target:array, method:method});
+                    notify({target:array, method:method, deleted:deleted});
                 }
 
                 return result;
@@ -753,17 +765,19 @@ function observeArray(array, typecaster, equals)
     var itemInterceptor = function(start, stop) {
         var interceptor = function(index) {
             var key = Str(index), val = array[index];
+            //if (onAdd) val = onAdd(val);
             Object.defineProperty(array, key, {
                 get() {
                     return val;
                 },
                 set(value) {
-                    if (typecaster) value = typecaster(value);
+                    if (onAdd) value = onAdd(value);
                     var doNotify = !equals(val, value);
+                    if (onDel) onDel(val);
                     val = value;
                     if (doNotify && doNotifyItems)
                     {
-                        notify({target:array, method:'set', from:index, to:index});
+                        notify({target:array, method:'set', added:{from:index, to:index}});
                     }
                 },
                 enumerable: true
