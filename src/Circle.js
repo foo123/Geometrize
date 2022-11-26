@@ -107,7 +107,7 @@ var Circle = makeClass(Curve, {
         var c = this.center,
             r = this.radius,
             ct = c.transform(matrix),
-            pt = new Point(c.x+r, c.y).transform(matrix)
+            pt = new Point(c.x+r, c.y+r).transform(matrix)
         ;
         return new Circle(ct, dist(ct, pt));
     },

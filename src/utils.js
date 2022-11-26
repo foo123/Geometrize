@@ -168,32 +168,6 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
         return [{x:-(k + n*((-m*D - F)/R))/m, y:(-m*D - F)/R},{x:-(k + n*((m*D - F)/R))/m, y:(m*D - F)/R}];
     }
 }
-function line_segments_intersection(p1, p2, p3, p4)
-{
-    var p = line_line_intersection(
-        p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
-        p4.y - p3.y, p3.x - p4.x, p4.x*p3.y - p3.x*p4.y
-        );
-    return p && point_between(p, p1, p2) && point_between(p, p3, p4) ? p : false;
-}
-function curve_lines_intersection(curve1_points, curve2_points)
-{
-    var i = [], j, k, p,
-        n1 = curve1_points.length-1,
-        n2 = curve2_points.length-1;
-    for (j=0; j<n1; ++j)
-    {
-        for (k=0; k<n2; ++k)
-        {
-            p = line_segments_intersection(
-                curve1_points[j], curve1_points[j+1],
-                curve2_points[k], curve2_points[k+1]
-            );
-            if (p) i.push(p);
-        }
-    }
-    return i.length ? i : false;
-}
 function point_on_curve(p, curve_points, get_point)
 {
     get_point = get_point || identity;
@@ -247,6 +221,14 @@ function point_inside_ellipse(p, center, radiusX, radiusY, sincos)
     ;
     if (is_almost_equal(d2, 1)) return 2;
     return d2 < 1 ? 1 : 0;
+}
+function line_segments_intersection(p1, p2, p3, p4)
+{
+    var p = line_line_intersection(
+        p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
+        p4.y - p3.y, p3.x - p4.x, p4.x*p3.y - p3.x*p4.y
+        );
+    return p && point_between(p, p1, p2) && point_between(p, p3, p4) ? p : false;
 }
 function line_circle_intersection(p1, p2, center, radius)
 {
@@ -348,8 +330,43 @@ function circle_circle_intersection(c1, r1, c2, r2)
     ;
     return is_almost_zero(h) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
-function curve_ellipse_intersection(ellipse, curve_points)
+function curve_circle_intersection(curve_points, center, radius)
 {
+    var i = [], j, k, p, n = curve_points.length-1;
+    for (j=0; j<n; ++j)
+    {
+        p = line_circle_intersection(curve_points[j], curve_points[j+1], center, radius);
+        if (p) i.push(p);
+    }
+    return i.length ? i : false;
+}
+function curve_ellipse_intersection(curve_points, center, radiusX, radiusY, angle, cossin)
+{
+    var i = [], j, k, p, n = curve_points.length-1;
+    for (j=0; j<n; ++j)
+    {
+        p = line_ellipse_intersection(curve_points[j], curve_points[j+1], center, radiusX, radiusY, angle, cossin);
+        if (p) i.push(p);
+    }
+    return i.length ? i : false;
+}
+function curve_curve_intersection(curve1_points, curve2_points)
+{
+    var i = [], j, k, p,
+        n1 = curve1_points.length-1,
+        n2 = curve2_points.length-1;
+    for (j=0; j<n1; ++j)
+    {
+        for (k=0; k<n2; ++k)
+        {
+            p = line_segments_intersection(
+                curve1_points[j], curve1_points[j+1],
+                curve2_points[k], curve2_points[k+1]
+            );
+            if (p) i.push(p);
+        }
+    }
+    return i.length ? i : false;
 }
 function curve_length(curve_points)
 {
@@ -407,8 +424,8 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
     else
     {
         // recursively subdivide to refine samples with high enough curvature
-        subdivide_curve(f, l, m, pixelSize, left, middle);
-        subdivide_curve(f, m, r, pixelSize, middle, right);
+        subdivide_curve(points, f, l, m, pixelSize, left, middle);
+        subdivide_curve(points, f, m, r, pixelSize, middle, right);
     }
     return points;
 }

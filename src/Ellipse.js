@@ -124,11 +124,11 @@ var Ellipse = makeClass(Curve, {
                 if (null == _hull)
                 {
                     var c = self.center, rX = _radiusX.val(), rX = _radiusY.val(),
-                        m = Matrix.translate(c.x, c.y).mul(new Matrix(
-                            _cos, -_sin, 0,
-                            _sin, _cos, 0,
+                        m = new Matrix(
+                            _cos, -_sin, c.x,
+                            _sin, _cos, c.y,
                             0, 0, 1
-                        ));
+                        );
                     _hull = [
                         new Point(-rX, -rY).transform(m),
                         new Point(rX, -rY).transform(m),
@@ -165,9 +165,9 @@ var Ellipse = makeClass(Curve, {
         ;
         return new Ellipse(
             new Point(c.x + t.x, c.y + t.y),
-            rX*s.x,
-            rY*s.y,
-            a+r
+            rX * s.x,
+            rY * s.y,
+            a + r
         );
     },
     isClosed: function() {
@@ -210,13 +210,20 @@ var Ellipse = makeClass(Curve, {
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
+        var i;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Circle || other instanceof Ellipse)
+        else if (other instanceof Circle)
         {
-            return false;
+            i = curve_circle_intersection(this._lines, other.center, other.radius);
+            return i ? i.map(Point) : false
+        }
+        else if (other instanceof Ellipse)
+        {
+            i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            return i ? i.map(Point) : false
         }
         else if (other instanceof Primitive)
         {
