@@ -119,8 +119,8 @@ function quad_solve(a, b, c)
 {
     if (is_almost_zero(a)) return lin_solve(b, c);
     var D = b*b - 4*a*c;
-    if (0 > D) return false;
     if (is_almost_zero(D)) return [-b / (2*a)];
+    if (0 > D) return false;
     D = stdMath.sqrt(D);
     return [(-b-D) / (2*a), (-b+D) / (2*a)];
 }
@@ -168,28 +168,6 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
         return [{x:-(k + n*((-m*D - F)/R))/m, y:(-m*D - F)/R},{x:-(k + n*((m*D - F)/R))/m, y:(m*D - F)/R}];
     }
 }
-function point_on_curve(p, curve_points, get_point)
-{
-    get_point = get_point || identity;
-    for (var i=0,n=curve_points.length-1; i<n; ++i)
-    {
-        if (point_between(p, get_point(curve_points[i]), get_point(curve_points[i+1])))
-            return true;
-    }
-    return false;
-}
-function point_inside_curve(p, maxp, curve_points, get_point)
-{
-    get_point = get_point || identity;
-    for (var p1,p2,i=0,intersects=0,n=curve_points.length-1; i<n; ++i)
-    {
-        p1 = get_point(curve_points[i]);
-        p2 = get_point(curve_points[i+1]);
-        if (point_between(p, p1, p2)) return 2;
-        if (line_segments_intersection(p, maxp, p1, p2)) ++intersects;
-    }
-    return intersects & 1 ? 1 : 0;
-}
 function point_inside_rect(p, top, left, bottom, right)
 {
     if (is_almost_equal(p.x, left) && p.y >= top && p.y <= bottom) return 2;
@@ -207,12 +185,12 @@ function point_inside_circle(p, center, radius)
     if (is_almost_equal(d2, r2)) return 2;
     return d2 < r2 ? 1 : 0;
 }
-function point_inside_ellipse(p, center, radiusX, radiusY, sincos)
+function point_inside_ellipse(p, center, radiusX, radiusY, cs)
 {
     var rX2 = radiusX*radiusX,
         rY2 = radiusY*radiusY,
-        c = sincos[0],
-        s = -sincos[1],
+        c = cs[0],
+        s = cs[1],
         dx0 = p.x - center.x,
         dy0 = p.y - center.y,
         dx = c*dx0 - s*dy0,
@@ -222,6 +200,48 @@ function point_inside_ellipse(p, center, radiusX, radiusY, sincos)
     if (is_almost_equal(d2, 1)) return 2;
     return d2 < 1 ? 1 : 0;
 }
+function point_on_curve(p, curve_points)
+{
+    get_point = get_point || identity;
+    for (var i=0,n=curve_points.length-1; i<n; ++i)
+    {
+        if (point_between(p, curve_points[i], curve_points[i+1]))
+            return true;
+    }
+    return false;
+}
+function point_inside_curve(p, maxp, curve_points)
+{
+    get_point = get_point || identity;
+    for (var p1,p2,i=0,intersects=0,n=curve_points.length-1; i<n; ++i)
+    {
+        p1 = curve_points[i];
+        p2 = curve_points[i+1];
+        if (point_between(p, p1, p2)) return 2;
+        if (line_segments_intersection(p, maxp, p1, p2)) ++intersects;
+    }
+    return intersects & 1 ? 1 : 0;
+}
+function line2linear(p1, p2)
+{
+    return [p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y];
+}
+function circle2quadratic(center, radius)
+{
+    var x0 = center.x, y0 = center.y;
+    return [1, 1, 0, -2*x0, -2*y0, x0*x0 + y0*y0 - radius*radius];
+}
+function ellipse2quadratic(center, radiusX, radiusY, angle, cs)
+{
+    cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
+    var x0 = center.x, y0 = center.y,
+        a = radiusX, b = radiusY,
+        cos_a = cs[0], sin_a = cs[1],
+        A = a*a*sin_a*sin_a + b*b*cos_a*cos_a,
+        C = a*a*cos_a*cos_a + b*b*sin_a*sin_a,
+        B = 2*(b*b - a*a)*sin_a*cos_a;
+    return [A, C, B, -2*A*x0 - B*y0, -B*x0 - 2*C*y0, A*x0*x0 + B*x0*y0 + C*y0*y0 - a*a*b*b];
+}
 function line_segments_intersection(p1, p2, p3, p4)
 {
     var p = line_line_intersection(
@@ -230,13 +250,13 @@ function line_segments_intersection(p1, p2, p3, p4)
         );
     return p && point_between(p, p1, p2) && point_between(p, p3, p4) ? p : false;
 }
-function line_circle_intersection(p1, p2, center, radius)
+function line_circle_intersection(p1, p2, abcdef)
 {
+    if (3 < arguments.length) abcdef = circle2quadratic(abcdef, arguments[3]);
     var p = new Array(2), pi = 0, i, n,
-        ir2 = 1/radius/radius,
         s = line_quadratic_intersection(
         p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
-        ir2, ir2, 0, -2*center.x*ir2, -2*center.y*ir2, center.x*center.x*ir2+center.y*center.y*ir2-1
+        abcdef[0], abcdef[1], abcdef[2], abcdef[3], abcdef[4], abcdef[5]
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
@@ -247,18 +267,13 @@ function line_circle_intersection(p1, p2, center, radius)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_ellipse_intersection(p1, p2, center, radiusX, radiusY, angle, cossin)
+function line_ellipse_intersection(p1, p2, abcdef)
 {
+    if (6 < arguments.length) abcdef = ellipse2quadratic(abcdef, arguments[3], arguments[4], arguments[5], arguments[6]);
     var p = new Array(2), pi = 0, i, n,
-        x0 = center.x, y0 = center.y,
-        a = radiusX, b = radiusY,
-        cos_a = cossin[0], sin_a = cossin[1],
-        A = a*a*sin_a*sin_a + b*b*cos_a*cos_a,
-        C = a*a*cos_a*cos_a + b*b*sin_a*sin_a,
-        B = 2*(b*b - a*a)*sin_a*cos_a,
         s = line_quadratic_intersection(
         p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
-        A, C, B, -2*A*x0 - B*y0, -B*x0 - 2*C*y0, A*x0*x0 + B*x0*y0 + C*y0*y0 - a*a*b*b
+        abcdef[0], abcdef[1], abcdef[2], abcdef[3], abcdef[4], abcdef[5]
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
@@ -332,20 +347,22 @@ function circle_circle_intersection(c1, r1, c2, r2)
 }
 function curve_circle_intersection(curve_points, center, radius)
 {
-    var i = [], j, k, p, n = curve_points.length-1;
+    var i = [], j, k, p, n = curve_points.length-1,
+        abcdef = circle2quadratic(center, radius);
     for (j=0; j<n; ++j)
     {
-        p = line_circle_intersection(curve_points[j], curve_points[j+1], center, radius);
+        p = line_circle_intersection(curve_points[j], curve_points[j+1], abcdef);
         if (p) i.push(p);
     }
     return i.length ? i : false;
 }
-function curve_ellipse_intersection(curve_points, center, radiusX, radiusY, angle, cossin)
+function curve_ellipse_intersection(curve_points, center, radiusX, radiusY, angle, cs)
 {
-    var i = [], j, k, p, n = curve_points.length-1;
+    var i = [], j, k, p, n = curve_points.length-1,
+        abcdef = ellipse2quadratic(center, radiusX, radiusY, angle, cs);
     for (j=0; j<n; ++j)
     {
-        p = line_ellipse_intersection(curve_points[j], curve_points[j+1], center, radiusX, radiusY, angle, cossin);
+        p = line_ellipse_intersection(curve_points[j], curve_points[j+1], abcdef);
         if (p) i.push(p);
     }
     return i.length ? i : false;
@@ -782,7 +799,6 @@ function observeArray(array, onAdd, onDel, equals)
     var itemInterceptor = function(start, stop) {
         var interceptor = function(index) {
             var key = Str(index), val = array[index];
-            //if (onAdd) val = onAdd(val);
             Object.defineProperty(array, key, {
                 get() {
                     return val;
@@ -823,12 +839,19 @@ function observeArray(array, onAdd, onDel, equals)
             }
         }
     };
+    if (onAdd && array.length)
+    {
+        for (var i=0,n=array.length; i<n; ++i)
+        {
+            array[i] = onAdd(array[i]);
+        }
+    }
     methodInterceptor();
     itemInterceptor(0, array.length);
 
     return array;
 }
-function unobserveArray(array)
+function unobserveArray(array, onDel)
 {
     if (!is_function(array.onChange)) return array;
 
@@ -839,7 +862,7 @@ function unobserveArray(array)
         array[method] = Array.prototype[method];
     });
 
-    var values = array.slice();
+    var values = onDel ? array.map(onDel) : array.slice();
     array.length = 0;
     array.push.apply(array, values);
 

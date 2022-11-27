@@ -49,7 +49,7 @@ var Curve = makeClass(Primitive, {
         };
         onArrayChange.id = self.id;
 
-        _points = observeArray(points.map(point_add), point_add, point_del, point_eq);
+        _points = observeArray(points, point_add, point_del, point_eq);
         _points.onChange(onArrayChange);
         _values = values;
 
@@ -122,13 +122,12 @@ var Curve = makeClass(Primitive, {
                 {
                     if (is_array(_points))
                     {
-                        unobserveArray(_points);
-                        _points.forEach(point_del);
+                        unobserveArray(_points, point_del);
                     }
 
                     if (is_array(points))
                     {
-                        _points = observeArray(points.map(point_add), point_add, point_del, point_eq);
+                        _points = observeArray(points, point_add, point_del, point_eq);
                         _points.onChange(onArrayChange);
                         if (!self.isChanged())
                         {
@@ -173,8 +172,10 @@ var Curve = makeClass(Primitive, {
         var self = this;
         if (self.points)
         {
-            unobserveArray(self.points);
-            self.points.forEach(function(point) {point.onChange(self.id, false);});
+            unobserveArray(self.points, function(p) {
+                p.onChange(self.id, false);
+                return p;
+            });
             self.points = null;
         }
         self.values = null;
@@ -266,17 +267,11 @@ var CompositeCurve = makeClass(Curve, {
         Primitive.call(self);
 
         curve_add = function(c) {
-            if (c instanceof Curve)
-            {
-                c.onChange(onCurveChange);
-            }
+            if (c instanceof Curve) c.onChange(onCurveChange);
             return c;
         };
         curve_del = function(c) {
-            if (c instanceof Curve)
-            {
-                c.onChange(onCurveChange, false);
-            }
+            if (c instanceof Curve) c.onChange(onCurveChange, false);
             return c;
         };
         onCurveChange = function onCurveChange(curve) {
@@ -299,7 +294,7 @@ var CompositeCurve = makeClass(Curve, {
         };
         onArrayChange.id = self.id;
 
-        _curves = observeArray(curves.map(curve_add), curve_add, curve_del);
+        _curves = observeArray(curves, curve_add, curve_del);
         _curves.onChange(onArrayChange);
 
         Object.defineProperty(self, 'points', {
@@ -330,13 +325,12 @@ var CompositeCurve = makeClass(Curve, {
                 {
                     if (is_array(_curves))
                     {
-                        unobserveArray(_curves);
-                        _curves.forEach(curve_del);
+                        unobserveArray(_curves, curve_del);
                     }
 
                     if (is_array(curves))
                     {
-                        _curves = observeArray(curves.map(curve_add), curve_add, curve_del);
+                        _curves = observeArray(curves, curve_add, curve_del);
                         _curves.onChange(onArrayChange);
                         if (!self.isChanged())
                         {
@@ -422,8 +416,10 @@ var CompositeCurve = makeClass(Curve, {
         var self = this;
         if (self.curves)
         {
-            unobserveArray(self.curves);
-            self.curves.forEach(function(curve) {curve.onChange(self.id, false);});
+            unobserveArray(self.curves, function(c) {
+                if (c instanceof Curve) c.onChange(self.id, false);
+                return c;
+            });
             self.curves = null;
             self.points = null;
         }
