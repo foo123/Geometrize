@@ -15,7 +15,7 @@ var Curve = makeClass(Primitive, {
 
         if (null == points) points = [];
         if (null == values) values = {};
-        Primitive.call(self);
+        superCall(Primitive, self)();
 
         point_add = function(p) {
             p = Point(p);
@@ -234,7 +234,7 @@ var Bezier = makeClass(Curve, {
         var self = this;
 
         if (null == points) points = [];
-        Curve.call(self, points);
+        superCall(Curve, self)(points);
 
         def(self, 'degree', {
             get: function() {
@@ -264,7 +264,7 @@ var CompositeCurve = makeClass(Curve, {
             curve_del;
 
         if (null == curves) curves = [];
-        Primitive.call(self);
+        superCall(Primitive, self)();
 
         curve_add = function(c) {
             if (c instanceof Curve) c.onChange(onCurveChange);

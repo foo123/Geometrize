@@ -10,7 +10,7 @@ var Point = makeClass(Primitive, {
         {
             return new Point(x, y);
         }
-        Primitive.call(self);
+        superCall(Primitive, self)();
         if (is_array(x))
         {
             _x = Num(x[0]);

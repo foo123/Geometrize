@@ -4,7 +4,7 @@ var Plane = makeClass(null, {
     constructor: function Plane(dom, width, height) {
         var self = this,
             svg = null,
-            svgEl = {},
+            svgEl = null,
             objects = null,
             isChanged = true,
             render, raf;
@@ -14,6 +14,7 @@ var Plane = makeClass(null, {
         width = stdMath.abs(Num(width));
         height = stdMath.abs(Num(height));
         objects = [];
+        svgEl = {};
 
         def(self, 'width', {
             get: function() {

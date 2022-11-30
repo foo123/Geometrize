@@ -11,7 +11,7 @@ var Polyline = makeClass(Curve, {
 
         if (points instanceof Polyline) return points;
         if (!(self instanceof Polyline)) return new Polyline(points);
-        Curve.call(self, points);
+        superCall(Curve)(self, points);
 
         def(self, 'lines', {
             get: function() {

@@ -12,7 +12,7 @@ var Polygon = makeClass(Curve, {
 
         if (vertices instanceof Polygon) return vertices;
         if (!(self instanceof Polygon)) return new Polygon(vertices);
-        Curve.call(self, vertices);
+        superCall(Curve, self)(vertices);
 
         def(self, 'vertices', {
             get: function() {

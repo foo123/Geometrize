@@ -10,7 +10,7 @@ var Bezier1 = makeClass(Bezier, {
         if (start instanceof Bezier1) return start;
         if (!(self instanceof Bezier1)) return new Bezier1(start, end);
 
-        Bezier.call(self, [start, end]);
+        superCall(Bezier, self)([start, end]);
 
         def(self, 'start', {
             get: function() {

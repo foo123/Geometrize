@@ -21,7 +21,7 @@ var Ellipse = makeClass(Curve, {
         _cos = stdMath.cos(_angle.val());
         _sin = stdMath.sin(_angle.val());
 
-        Curve.call(self, [center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle});
+        superCall(Curve, self)([center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle});
 
         def(self, 'center', {
             get: function() {

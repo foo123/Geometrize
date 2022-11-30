@@ -36,7 +36,6 @@ function makeClass(superklass, klass, statiks)
     {
         if (Object.setPrototypeOf)
         {
-            //Object.setPrototypeOf(C.prototype, superklass.prototype);
             Object.setPrototypeOf(C, superklass.prototype);
             C.prototype.constructor = C;
         }
@@ -64,6 +63,10 @@ function makeClass(superklass, klass, statiks)
             }
         }
     }
-    console.log(C.name, is_function(C), superklass ? superklass.name : null, is_function(superklass));
+    //console.log(C.name, is_function(C), superklass ? [Object.getPrototypeOf(C).constructor.name, superklass.name] : null, is_function(superklass));
     return C;
+}
+function superCall(superklass, self)
+{
+    return Function.prototype.bind.call(superklass, self);
 }

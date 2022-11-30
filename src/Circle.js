@@ -12,7 +12,7 @@ var Circle = makeClass(Curve, {
         if (center instanceof Circle) return center;
         if (!(self instanceof Circle)) return new Circle(center, radius);
         _radius = new Value(stdMath.abs(Num(radius)));
-        Curve.call(self, [center], {radius:_radius});
+        superCall(Curve)(self, [center], {radius:_radius});
 
         def(self, 'center', {
             get: function() {
