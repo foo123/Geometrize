@@ -54,14 +54,14 @@ var Curve = makeClass(Primitive, {
         _values = values;
 
         _matrix = self.hasMatrix() ? Matrix.eye() : null;
-        _values.matrix = new Changeable();
+        _values.matrix = new Value(0);
         _values.matrix.isChanged(self.hasMatrix());
 
-        Object.defineProperty(this, 'matrix', {
-            get() {
+        def(this, 'matrix', {
+            get: function() {
                 return _matrix ? _matrix : Matrix.eye();
             },
-            set(matrix) {
+            set: function(matrix) {
                 if (self.hasMatrix())
                 {
                     matrix = Matrix(matrix);
@@ -76,8 +76,8 @@ var Curve = makeClass(Primitive, {
                 }
             }
         });
-        Object.defineProperty(self, '_points', {
-            get() {
+        def(self, '_points', {
+            get: function() {
                 if (null == _points2)
                 {
                     _points2 = !_matrix || _matrix.eq(EYE) ? _points : _points.map(function(p) {
@@ -86,7 +86,7 @@ var Curve = makeClass(Primitive, {
                 }
                 return _points2;
             },
-            set(points) {
+            set: function(points) {
                 if (null == points)
                 {
                     _points2 = null;
@@ -94,8 +94,8 @@ var Curve = makeClass(Primitive, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_lines', {
-            get() {
+        def(self, '_lines', {
+            get: function() {
                 if (null == _lines)
                 {
                     _lines = sample_curve(function(t) {
@@ -105,7 +105,7 @@ var Curve = makeClass(Primitive, {
                 }
                 return _lines;
             },
-            set(lines) {
+            set: function(lines) {
                 if (null == lines)
                 {
                     _lines = null;
@@ -113,11 +113,11 @@ var Curve = makeClass(Primitive, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, 'points', {
-            get() {
+        def(self, 'points', {
+            get: function() {
                 return _points;
             },
-            set(points) {
+            set: function(points) {
                 if (_points !== points)
                 {
                     if (is_array(_points))
@@ -143,11 +143,11 @@ var Curve = makeClass(Primitive, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'values', {
-            get() {
+        def(self, 'values', {
+            get: function() {
                 return _values;
             },
-            set(values) {
+            set: function(values) {
                 if (null == values)
                 {
                     _values = null;
@@ -155,14 +155,14 @@ var Curve = makeClass(Primitive, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, 'length', {
-            get() {
+        def(self, 'length', {
+            get: function() {
                 return 0;
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'area', {
-            get() {
+        def(self, 'area', {
+            get: function() {
                 return 0;
             },
             enumerable: true
@@ -236,8 +236,8 @@ var Bezier = makeClass(Curve, {
         if (null == points) points = [];
         Curve.call(self, points);
 
-        Object.defineProperty(self, 'degree', {
-            get() {
+        def(self, 'degree', {
+            get: function() {
                 return self.points.length - 1;
             },
             enumerable: true
@@ -297,8 +297,8 @@ var CompositeCurve = makeClass(Curve, {
         _curves = observeArray(curves, curve_add, curve_del);
         _curves.onChange(onArrayChange);
 
-        Object.defineProperty(self, 'points', {
-            get() {
+        def(self, 'points', {
+            get: function() {
                 if (null == _points)
                 {
                     _points = _curves.reduce(function(points, curve) {
@@ -308,7 +308,7 @@ var CompositeCurve = makeClass(Curve, {
                 }
                 return _points;
             },
-            set(points) {
+            set: function(points) {
                 if (null == points)
                 {
                     _points = null;
@@ -316,11 +316,11 @@ var CompositeCurve = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'curves', {
-            get() {
+        def(self, 'curves', {
+            get: function() {
                 return _curves;
             },
-            set(curves) {
+            set: function(curves) {
                 if (_curves !== curves)
                 {
                     if (is_array(_curves))
@@ -346,8 +346,8 @@ var CompositeCurve = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'length', {
-            get() {
+        def(self, 'length', {
+            get: function() {
                 if (null == _length)
                 {
                     _length = _curves.reduce(function(l, curve) {
@@ -359,14 +359,14 @@ var CompositeCurve = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'area', {
-            get() {
+        def(self, 'area', {
+            get: function() {
                 return 0;
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_bbox', {
-            get() {
+        def(self, '_bbox', {
+            get: function() {
                 if (null == _bbox)
                 {
                     _bbox = _curves.reduce(function(_bbox, curve) {
@@ -387,8 +387,8 @@ var CompositeCurve = makeClass(Curve, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_hull', {
-            get() {
+        def(self, '_hull', {
+            get: function() {
                 if (null == _hull)
                 {
                     _hull = convex_hull(_curves.reduce(function(hulls, curve) {

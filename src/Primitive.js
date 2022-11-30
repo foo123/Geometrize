@@ -1,5 +1,5 @@
 // 2D Geometric Primitive base class
-var Primitive = makeClass(Changeable, {
+var Primitive = makeClass(null, merge(null, {
     constructor: function Primitive() {
         var _style = null, onStyleChange;
 
@@ -17,11 +17,11 @@ var Primitive = makeClass(Changeable, {
         };
         _style = new Style();
         _style.onChange(onStyleChange);
-        Object.defineProperty(this, 'style', {
-            get() {
+        def(this, 'style', {
+            get: function() {
                 return _style;
             },
-            set(style) {
+            set: function(style) {
                 style = Style(style);
                 if (_style !== style)
                 {
@@ -87,4 +87,4 @@ var Primitive = makeClass(Changeable, {
     toString: function() {
         return 'Primitive()';
     }
-});
+}, Changeable));

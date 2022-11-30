@@ -12,34 +12,34 @@ var Bezier1 = makeClass(Bezier, {
 
         Bezier.call(self, [start, end]);
 
-        Object.defineProperty(self, 'start', {
-            get() {
+        def(self, 'start', {
+            get: function() {
                 return self.points[0];
             },
-            set(start) {
+            set: function(start) {
                 self.points[0] = start;
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'end', {
-            get() {
+        def(self, 'end', {
+            get: function() {
                 return self.points[1];
             },
-            set(end) {
+            set: function(end) {
                 self.points[1] = end;
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_lines', {
-            get() {
+        def(self, '_lines', {
+            get: function() {
                 return self._points;
             },
-            set(lines) {
+            set: function(lines) {
             },
             enumerable: false
         });
-        Object.defineProperty(self, 'length', {
-            get() {
+        def(self, 'length', {
+            get: function() {
                 if (null == _length)
                 {
                     var p = self._points;
@@ -49,8 +49,8 @@ var Bezier1 = makeClass(Bezier, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_bbox', {
-            get() {
+        def(self, '_bbox', {
+            get: function() {
                 if (null == _bbox)
                 {
                     var p = self._points,
@@ -71,8 +71,8 @@ var Bezier1 = makeClass(Bezier, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_hull', {
-            get() {
+        def(self, '_hull', {
+            get: function() {
                 if (null == _hull)
                 {
                     var p = self._points,

@@ -1,5 +1,5 @@
 // Changeable mixin
-var Changeable = makeClass(null, {
+var Changeable = {
     $changed: false,
     $cb: null,
     dispose: function() {
@@ -22,7 +22,7 @@ var Changeable = makeClass(null, {
         {
             if (self.$cb)
             {
-                index = is_string(cb) ? self.$cb.map(function(c){return Str(c.id);}).indexOf(cb); : self.$cb.indexOf(cb);
+                index = is_string(cb) ? self.$cb.map(function(c) {return Str(c.id);}).indexOf(cb) : self.$cb.indexOf(cb);
                 if (-1 !== index) self.$cb.splice(index, 1);
             }
         }
@@ -39,4 +39,4 @@ var Changeable = makeClass(null, {
         if (self.$cb) self.$cb.forEach(function(cb) {cb(self);});
         return self;
     }
-});
+};

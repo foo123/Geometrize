@@ -23,20 +23,20 @@ var Ellipse = makeClass(Curve, {
 
         Curve.call(self, [center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle});
 
-        Object.defineProperty(self, 'center', {
-            get() {
+        def(self, 'center', {
+            get: function() {
                 return self.points[0];
             },
-            set(center) {
+            set: function(center) {
                 self.points[0] = center;
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'radiusX', {
-            get() {
+        def(self, 'radiusX', {
+            get: function() {
                 return _radiusX.val();
             },
-            set(radiusX) {
+            set: function(radiusX) {
                 _radiusX.val(stdMath.abs(Num(radiusX)));
                 if (_radiusX.isChanged() && !self.isChanged())
                 {
@@ -46,11 +46,11 @@ var Ellipse = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'radiusY', {
-            get() {
+        def(self, 'radiusY', {
+            get: function() {
                 return _radiusY.val();
             },
-            set(radiusY) {
+            set: function(radiusY) {
                 _radiusY.val(stdMath.abs(Num(radiusY)));
                 if (_radiusY.isChanged() && !self.isChanged())
                 {
@@ -60,11 +60,11 @@ var Ellipse = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'angle', {
-            get() {
+        def(self, 'angle', {
+            get: function() {
                 return _angle.val();
             },
-            set(angle) {
+            set: function(angle) {
                 _angle.val(angle);
                 _cos = stdMath.cos(_angle.val());
                 _sin = stdMath.sin(_angle.val());
@@ -76,14 +76,14 @@ var Ellipse = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'sincos', {
-            get() {
+        def(self, 'sincos', {
+            get: function() {
                 return [_cos, _sin];
             },
             enumerable: false
         });
-        Object.defineProperty(self, 'length', {
-            get() {
+        def(self, 'length', {
+            get: function() {
                 if (null == _length)
                 {
                     // approximate
@@ -93,8 +93,8 @@ var Ellipse = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'area', {
-            get() {
+        def(self, 'area', {
+            get: function() {
                 if (null == _area)
                 {
                     _area = PI * _radiusX.val() * _radiusY.val();
@@ -103,8 +103,8 @@ var Ellipse = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_bbox', {
-            get() {
+        def(self, '_bbox', {
+            get: function() {
                 if (null == _bbox)
                 {
                     var ch = self._hull;
@@ -119,8 +119,8 @@ var Ellipse = makeClass(Curve, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_hull', {
-            get() {
+        def(self, '_hull', {
+            get: function() {
                 if (null == _hull)
                 {
                     var c = self.center, rX = _radiusX.val(), rX = _radiusY.val(),

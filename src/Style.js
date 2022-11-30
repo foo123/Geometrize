@@ -1,6 +1,6 @@
-// 2D Primitive Style class
+// 2D Style class
 // eg stroke, fill, width, ..
-var Style = makeClass(Changeable, {
+var Style = makeClass(null, merge(null, {
     constructor: function Style(style) {
         var self = this, _props = null, _style = null;
         if (style instanceof Style) return style;
@@ -30,10 +30,10 @@ var Style = makeClass(Changeable, {
         }
         _props.forEach(function(p) {
             Object.defineProperty(self, p, {
-                get() {
+                get: function() {
                     return _style[p];
                 },
-                set(val) {
+                set: function(val) {
                     if (_style[p] !== val)
                     {
                         _style[p] = val;
@@ -63,4 +63,4 @@ var Style = makeClass(Changeable, {
             return s + p + ':' + Str(style[p]) + ';';
         }, '');
     }
-});
+}, Changeable));

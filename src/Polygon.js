@@ -14,17 +14,17 @@ var Polygon = makeClass(Curve, {
         if (!(self instanceof Polygon)) return new Polygon(vertices);
         Curve.call(self, vertices);
 
-        Object.defineProperty(self, 'vertices', {
-            get() {
+        def(self, 'vertices', {
+            get: function() {
                 return self.points;
             },
-            set(vertices) {
+            set: function(vertices) {
                 self.points = vertices;
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'edges', {
-            get() {
+        def(self, 'edges', {
+            get: function() {
                 var v = self.points;
                 return 1 < v.length ? v.map(function(vertex, i) {
                     return new Line(vertex, v[(i+1) % v.length]);
@@ -32,16 +32,14 @@ var Polygon = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_lines', {
-            get() {
+        def(self, '_lines', {
+            get: function() {
                 return self._points.concat([self._points[0]]);
-            },
-            set(lines) {
             },
             enumerable: false
         });
-        Object.defineProperty(self, 'length', {
-            get() {
+        def(self, 'length', {
+            get: function() {
                 if (null == _length)
                 {
                     _length = curve_length(self._lines);
@@ -50,8 +48,8 @@ var Polygon = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'area', {
-            get() {
+        def(self, 'area', {
+            get: function() {
                 if (null == _area)
                 {
                     _area = curve_area(self._lines);
@@ -60,8 +58,8 @@ var Polygon = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_bbox', {
-            get() {
+        def(self, '_bbox', {
+            get: function() {
                 if (null == _bbox)
                 {
                     _bbox = {
@@ -82,8 +80,8 @@ var Polygon = makeClass(Curve, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_hull', {
-            get() {
+        def(self, '_hull', {
+            get: function() {
                 if (null == _hull)
                 {
                     _hull = convex_hull(self._points);
@@ -92,8 +90,8 @@ var Polygon = makeClass(Curve, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_is_convex', {
-            get() {
+        def(self, '_is_convex', {
+            get: function() {
                 if (null == _is_convex)
                 {
                     _is_convex = is_convex(self._points);

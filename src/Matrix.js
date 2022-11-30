@@ -43,7 +43,7 @@ var Matrix = makeClass(null, {
             self.$22 = 1;
         }
     },
-    $00: 1
+    $00: 1,
     $01: 0,
     $02: 0,
     $10: 0,
@@ -278,7 +278,7 @@ var Matrix = makeClass(null, {
             if (i+1 < rows) str += "\n";
         }
         return str;
-    }
+    },
     pointTex: function(point) {
         return '\\begin{pmatrix}'+Str(point.x)+'\\\\'+Str(point.y)+'\\\\1\\end{pmatrix}';
     },

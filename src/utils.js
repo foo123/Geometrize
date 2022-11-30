@@ -160,7 +160,7 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
     {
         R = 2*(a*n*n + b*m*m - c*m*n);
         if (is_almost_zero(R)) return false;
-        D = -4*a*b*k*k + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m*m + c*c*k*k - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d*d*n*n - 2*d*e*m*n + e*e*m*m;
+        D = -4*a*b*k*k + 4*a*e*k*n - 4*a*f*n*n + 4*b*d*k*m - 4*b*f*m*m + c*c*k*k - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d*d*n*n - 2*d*e*m*n + e*e*m*m;
         if (0 > D) return false;
         F = 2*a*k*n - c*k*m - d*m*n + e*m*m;
         if (is_almost_zero(D)) return [{x:-(k + n*(-F/R))/m, y:-F/R}];
@@ -781,7 +781,7 @@ function observeArray(array, onAdd, onDel, equals)
                 }
                 else if ('splice' === method && 2 < args.length)
                 {
-                    notify({target:array, method:method, added:{from:args[0], to:args[0]+args.length-3}}, deleted:deleted);
+                    notify({target:array, method:method, added:{from:args[0], to:args[0]+args.length-3}, deleted:deleted});
                 }
                 else
                 {
@@ -799,11 +799,11 @@ function observeArray(array, onAdd, onDel, equals)
     var itemInterceptor = function(start, stop) {
         var interceptor = function(index) {
             var key = Str(index), val = array[index];
-            Object.defineProperty(array, key, {
-                get() {
+            def(array, key, {
+                get: function() {
                     return val;
                 },
-                set(value) {
+                set: function(value) {
                     if (onAdd) value = onAdd(value);
                     var doNotify = !equals(val, value);
                     if (onDel) onDel(val);

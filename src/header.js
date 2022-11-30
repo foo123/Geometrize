@@ -21,6 +21,7 @@ else if (!(name in root)) /* Browser/WebWorker/.. */
 
 var HAS = Object.prototype.hasOwnProperty,
     toString = Object.prototype.toString,
+    def = Object.defineProperty,
     stdMath = Math, PI = stdMath.PI, TWO_PI = 2*PI,
     sqrt2 = stdMath.sqrt(2), EMPTY_ARR = [], EMPTY_OBJ = {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
@@ -30,29 +31,39 @@ var HAS = Object.prototype.hasOwnProperty,
 // basic backwards-compatible "class" construction
 function makeClass(superklass, klass, statiks)
 {
-    var constructor = klass.constructor || function(){}, p;
+    var C = HAS.call(klass, 'constructor') ? klass.constructor : function() {}, p;
     if (superklass)
     {
-        constructor.prototype = Object.create(superklass.prototype);
-        constructor.prototype.$super = superklass.prototype;
+        if (Object.setPrototypeOf)
+        {
+            //Object.setPrototypeOf(C.prototype, superklass.prototype);
+            Object.setPrototypeOf(C, superklass.prototype);
+            C.prototype.constructor = C;
+        }
+        else
+        {
+            C.prototype = Object.create(superklass.prototype);
+            C.prototype.constructor = C;
+        }
+        C.prototype.$super = superklass.prototype;
     }
     for (p in klass)
     {
-        if (HAS.call(klass, p))
+        if (HAS.call(klass, p) && ('constructor' !== p))
         {
-            constructor.prototype[p] = klass[p];
+            C.prototype[p] = klass[p];
         }
     }
-    constructor.prototype.constructor = constructor;
     if (statiks)
     {
         for (p in statiks)
         {
             if (HAS.call(statiks, p))
             {
-                constructor[p] = statiks[p];
+                C[p] = statiks[p];
             }
         }
     }
-    return constructor;
+    console.log(C.name, is_function(C), superklass ? superklass.name : null, is_function(superklass));
+    return C;
 }

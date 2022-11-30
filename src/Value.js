@@ -1,5 +1,5 @@
 // generic scalar Value class
-var Value = makeClass(Changeable, {
+var Value = makeClass(null, merge(null, {
     constructor: function Value(v) {
         var self = this;
         if (v instanceof Value) return v;
@@ -8,7 +8,7 @@ var Value = makeClass(Changeable, {
         v = Num(v);
         self.dispose = function() {
             v = null;
-            self.$super.dispose.call(self);
+            Value.prototype.dispose.call(self);
         };
         self.clone = function() {
             return new Value(v);
@@ -43,4 +43,4 @@ var Value = makeClass(Changeable, {
     val: null,
     valueOf: null,
     toString: null
-});
+}, Changeable));

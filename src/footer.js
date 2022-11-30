@@ -1,13 +1,11 @@
 // export it
 return {
     VERSION: "@@VERSION@@",
-    Style: Style,
-    Matrix: Matrix,
     Value: Value,
+    Matrix: Matrix,
+    Style: Style,
     Primitive: Primitive,
     Point: Point,
-    Curve: Curve,
-    Bezier: Bezier,
     Line: Line,
     Polyline: Polyline,
     Bezier1: Bezier1,

@@ -26,11 +26,11 @@ var Point = makeClass(Primitive, {
             _x = Num(x);
             _y = Num(y);
         }
-        Object.defineProperty(self, 'x', {
-            get() {
+        def(self, 'x', {
+            get: function() {
                 return _x;
             },
-            set(x) {
+            set: function(x) {
                 x = Num(x);
                 var isChanged = !is_almost_equal(x, _x);
                 _x = x;
@@ -42,11 +42,11 @@ var Point = makeClass(Primitive, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'y', {
-            get() {
+        def(self, 'y', {
+            get: function() {
                 return _y;
             },
-            set(y) {
+            set: function(y) {
                 y = Num(y);
                 var isChanged = !is_almost_equal(y, _y);
                 _y = y;
@@ -58,8 +58,8 @@ var Point = makeClass(Primitive, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'norm', {
-            get() {
+        def(self, 'norm', {
+            get: function() {
                 if (null == _n)
                 {
                     _n = hypot(_x, _y);
@@ -139,11 +139,11 @@ var Point = makeClass(Primitive, {
     },
     toSVG: function(svg) {
         return SVG('circle', {
-            'id': [this.id, false]
+            'id': [this.id, false],
             'cx': [this.x, this.isChanged()],
             'cy': [this.y, this.isChanged()],
             'r': [this.style['stroke-width'], this.style.isChanged()],
-            'transform': [this.matrix.toSVG(), this.isChanged()],
+            //'transform': [this.matrix.toSVG(), this.isChanged()],
             'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
         }, arguments.length ? svg : false);
     },

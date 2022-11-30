@@ -14,20 +14,20 @@ var Circle = makeClass(Curve, {
         _radius = new Value(stdMath.abs(Num(radius)));
         Curve.call(self, [center], {radius:_radius});
 
-        Object.defineProperty(self, 'center', {
-            get() {
+        def(self, 'center', {
+            get: function() {
                 return self.points[0];
             },
-            set(center) {
+            set: function(center) {
                 self.points[0] = center;
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'radius', {
-            get() {
+        def(self, 'radius', {
+            get: function() {
                 return _radius.val();
             },
-            set(radius) {
+            set: function(radius) {
                 _radius.val(stdMath.abs(Num(radius)));
                 if (_radius.isChanged() && !self.isChanged())
                 {
@@ -37,8 +37,8 @@ var Circle = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'length', {
-            get() {
+        def(self, 'length', {
+            get: function() {
                 if (null == _length)
                 {
                     _length = TWO_PI * _radius.val();
@@ -47,8 +47,8 @@ var Circle = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, 'area', {
-            get() {
+        def(self, 'area', {
+            get: function() {
                 if (null == _area)
                 {
                     _area = PI * _radius.val() * _radius.val();
@@ -57,8 +57,8 @@ var Circle = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_bbox', {
-            get() {
+        def(self, '_bbox', {
+            get: function() {
                 if (null == _bbox)
                 {
                     var c = self.center, r = _radius.val();
@@ -73,8 +73,8 @@ var Circle = makeClass(Curve, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_hull', {
-            get() {
+        def(self, '_hull', {
+            get: function() {
                 if (null == _hull)
                 {
                     var c = self.center, r = _radius.val();

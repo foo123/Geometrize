@@ -13,8 +13,8 @@ var Polyline = makeClass(Curve, {
         if (!(self instanceof Polyline)) return new Polyline(points);
         Curve.call(self, points);
 
-        Object.defineProperty(self, 'lines', {
-            get() {
+        def(self, 'lines', {
+            get: function() {
                 var p = self.points;
                 return 1 < p.length ? p.reduce(function(lines, point, i) {
                     if (i+1 < p.length)
@@ -26,16 +26,14 @@ var Polyline = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_lines', {
-            get() {
+        def(self, '_lines', {
+            get: function() {
                 return self._points;
-            },
-            set(lines) {
             },
             enumerable: false
         });
-        Object.defineProperty(self, 'length', {
-            get() {
+        def(self, 'length', {
+            get: function() {
                 if (null == _length)
                 {
                     _length = curve_length(self._points);
@@ -44,8 +42,8 @@ var Polyline = makeClass(Curve, {
             },
             enumerable: true
         });
-        Object.defineProperty(self, '_bbox', {
-            get() {
+        def(self, '_bbox', {
+            get: function() {
                 if (null == _bbox)
                 {
                     _bbox = {
@@ -66,8 +64,8 @@ var Polyline = makeClass(Curve, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_hull', {
-            get() {
+        def(self, '_hull', {
+            get: function() {
                 if (null == _hull)
                 {
                     _hull = convex_hull(self._points);
@@ -76,8 +74,8 @@ var Polyline = makeClass(Curve, {
             },
             enumerable: false
         });
-        Object.defineProperty(self, '_is_convex', {
-            get() {
+        def(self, '_is_convex', {
+            get: function() {
                 if (!self.isClosed()) return false;
                 if (null == _is_convex)
                 {
