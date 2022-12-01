@@ -1,17 +1,18 @@
+
 // ---- utilities -----
 function is_strictly_zero(x)
 {
-    return stdMath.abs(x) < Number.EPSILON;
+    return abs(x) < Number.EPSILON;
 }
 function is_almost_zero(x, eps)
 {
     if (null == eps) eps = EPS;
-    return stdMath.abs(x) < eps;
+    return abs(x) < eps;
 }
 function is_almost_equal(a, b, eps)
 {
     if (null == eps) eps = EPS;
-    return stdMath.abs(a - b) < eps;
+    return abs(a - b) < eps;
 }
 function deg(rad)
 {
@@ -23,18 +24,18 @@ function rad(deg)
 }
 function hypot(dx, dy)
 {
-    dx = stdMath.abs(dx);
-    dy = stdMath.abs(dy)
+    dx = abs(dx);
+    dy = abs(dy)
     var r = 0;
     if (dy > dx)
     {
         r = dy/dx;
-        return dx*stdMath.sqrt(1 + r*r);
+        return dx*sqrt(1 + r*r);
     }
     else if (dx > dy)
     {
         r = dx/dy;
-        return dy*stdMath.sqrt(1 + r*r);
+        return dy*sqrt(1 + r*r);
     }
     return dx*sqrt2;
 }
@@ -87,7 +88,7 @@ function point_line_distance(p0, p1, p2)
         d = hypot(dx, dy)
     ;
     if (is_strictly_zero(d)) return hypot(x - x1, y - y1);
-    return stdMath.abs(dx*(y1 - y) - dy*(x1 - x)) / d;
+    return abs(dx*(y1 - y) - dy*(x1 - x)) / d;
 }
 function point_line_segment_distance(p0, p1, p2)
 {
@@ -119,16 +120,51 @@ function point_between(p, p1, p2)
 }
 function lin_solve(a, b)
 {
-    return is_strictly_zero(a) ? false : [-b / a];
+    return is_strictly_zero(a) ? false : [-b/a];
 }
 function quad_solve(a, b, c)
 {
     if (is_strictly_zero(a)) return lin_solve(b, c);
-    var D = b*b - 4*a*c;
-    if (is_strictly_zero(D)) return [-b / (2*a)];
+    var D = b*b - 4*a*c, DS = 0;
+    if (is_almost_zero(D)) return [-b/(2*a)];
     if (0 > D) return false;
-    D = stdMath.sqrt(D);
-    return [(-b-D) / (2*a), (-b+D) / (2*a)];
+    DS = sqrt(D);
+    return [(-b-DS)/(2*a), (-b+DS)/(2*a)];
+}
+function cub_solve(a, b, c, d)
+{
+    if (is_strictly_zero(a)) return quad_solve(b, c, d);
+    var A = b/a, B = c/a, C = d/a,
+        Q = (3*B - A*A)/9, QS = 0,
+        R = (9*A*B - 27*C - 2*pow(A, 3))/54,
+        D = pow(Q, 3) + pow(R, 2), DS = 0,
+        S = 0, T = 0, Im = 0, th = 0
+    ;
+    if (D >= 0)
+    {
+        // complex or duplicate roots
+        DS = sqrt(D);
+        S = sign(R + DS)*pow(abs(R + DS), 1/3);
+        T = sign(R - DS)*pow(abs(R - DS), 1/3);
+        Im = abs(sqrt3*(S - T)/2); // imaginary part
+        return is_almost_zero(Im) ? [
+        -A/3 + (S + T),
+        -A/3 - (S + T)/2
+        ] : [
+        -A/3 + (S + T)
+        ];
+    }
+    else
+    {
+        // distinct real roots
+        th = stdMath.acos(R/sqrt(-pow(Q, 3)));
+        QS = 2*sqrt(-Q);
+        return [
+        QS*stdMath.cos(th/3) - A/3,
+        QS*stdMath.cos((th + TWO_PI)/3) - A/3,
+        QS*stdMath.cos((th + 2*TWO_PI)/3) - A/3
+        ];
+    }
 }
 function line_line_intersection(a, b, c, k, l, m)
 {
@@ -170,7 +206,7 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
         if (0 > D) return false;
         F = 2*a*k*n - c*k*m - d*m*n + e*m*m;
         if (is_strictly_zero(D)) return [{x:-(k + n*(-F/R))/m, y:-F/R}];
-        D = stdMath.sqrt(D);
+        D = sqrt(D);
         return [{x:-(k + n*((-m*D - F)/R))/m, y:(-m*D - F)/R},{x:-(k + n*((m*D - F)/R))/m, y:(m*D - F)/R}];
     }
 }
@@ -347,7 +383,7 @@ function circle_circle_intersection(c1, r1, c2, r2)
     var a = (r1*r1 - r2*r2 + d*d) / (2 * d),
         px = c1.x + a*dx,
         py = c1.y + a*dy,
-        h = stdMath.sqrt(r1*r1 - a*a)
+        h = sqrt(r1*r1 - a*a)
     ;
     return is_strictly_zero(h) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
@@ -571,7 +607,7 @@ function is_convex(points)
         }
         angle_sum += angle;
     }
-    return 1 === stdMath.abs(stdMath.round(angle_sum / TWO_PI));
+    return 1 === abs(stdMath.round(angle_sum / TWO_PI));
 }
 function ellipse_point(cx, cy, rx, ry, angle, theta, cs)
 {
@@ -595,18 +631,18 @@ function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
 
     if (L > 1)
     {
-        rx = stdMath.sqrt(L)*stdMath.abs(rx);
-        ry = stdMath.sqrt(L)*stdMath.abs(ry);
+        rx = sqrt(L)*abs(rx);
+        ry = sqrt(L)*abs(ry);
     }
     else
     {
-        rx = stdMath.abs(rx);
-        ry = stdMath.abs(ry);
+        rx = abs(rx);
+        ry = abs(ry);
     }
 
     // Step 2 + 3: compute center
     var sign = fa === fs ? -1 : 1,
-        M = stdMath.sqrt((prx*pry - prx*py - pry*px)/(prx*py + pry*px))*sign,
+        M = sqrt((prx*pry - prx*py - pry*px)/(prx*py + pry*px))*sign,
         _cx = M*(rx*y)/ry,
         _cy = M*(-ry*x)/rx,
 
@@ -629,11 +665,11 @@ function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
 }
 function vector_angle(ux, uy, vx, vy)
 {
-    var sign = ux*vy - uy*vx < 0 ? -1 : 1,
-        ua = stdMath.sqrt(ux*ux + uy*uy),
-        va = stdMath.sqrt(vx*vx + vy*vy),
+    var sgn = sign(ux*vy - uy*vx),
+        ua = sqrt(ux*ux + uy*uy),
+        va = sqrt(vx*vx + vy*vy),
         dot = ux*vx + uy*vy;
-    return sign*stdMath.acos(dot/(ua*va));
+    return sgn*stdMath.acos(dot/(ua*va));
 }
 
 // ----------------------

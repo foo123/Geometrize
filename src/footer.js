@@ -1,6 +1,11 @@
 // export it
 return {
     VERSION: "@@VERSION@@",
+    Util: {
+        hypot: hypot,
+        deg: deg,
+        rad: rad
+    },
     Value: Value,
     Matrix: Matrix,
     Style: Style,

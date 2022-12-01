@@ -12,7 +12,7 @@ var Circle = makeClass(Curve, {
         if (center instanceof Circle) return center;
         if (!(self instanceof Circle)) return new Circle(center, radius);
         _radius = new Value(stdMath.abs(Num(radius)));
-        superCall(Curve, self)([center], {radius:_radius});
+        self.$super('constructor', [[center], {radius:_radius}]);
 
         def(self, 'center', {
             get: function() {
@@ -103,7 +103,7 @@ var Circle = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return Curve.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Circle',
@@ -178,9 +178,14 @@ var Circle = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        var c = this.center, r = this.radius;
-        return 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+    toSVGPath: function(svg) {
+        var c = this.center, r = this.radius,
+            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         var c = this.center,

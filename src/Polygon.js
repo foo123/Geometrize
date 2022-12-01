@@ -12,7 +12,7 @@ var Polygon = makeClass(Curve, {
 
         if (vertices instanceof Polygon) return vertices;
         if (!(self instanceof Polygon)) return new Polygon(vertices);
-        superCall(Curve, self)(vertices);
+        self.$super('constructor', [vertices]);
 
         def(self, 'vertices', {
             get: function() {
@@ -117,7 +117,7 @@ var Polygon = makeClass(Curve, {
                 _hull = null;
                 _is_convex = null;
             }
-            return Curve.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Polygon',
@@ -147,28 +147,25 @@ var Polygon = makeClass(Curve, {
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
-        var i, p;
+        var i;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
         }
         else if ((other instanceof Line) || (other instanceof Polyline) || (other instanceof Polygon))
         {
-            i = curve_lines_intersection(this._lines, other._lines);
+            i = curve_curve_intersection(this._lines, other._lines);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
         {
-            p = this._lines;
-            i = p.reduce(function(i, _, j) {
-                if (j+1 < p.length)
-                {
-                    var ii = line_circle_intersection(p[j], p[j+1], other.center, other.radius);
-                    if (ii) i.push.apply(i, ii);
-                }
-                return i;
-            }, []);
-            return i.length ? i.map(Point) : false;
+            i = curve_circle_intersection(this._lines, other.center, other.radius);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Ellipse)
+        {
+            i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
@@ -183,10 +180,15 @@ var Polygon = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        return 'M '+(this._points.concat([this._points[0]]).map(function(p) {
+    toSVGPath: function(svg) {
+        var path = 'M '+(this._points.concat([this._points[0]]).map(function(p) {
             return Str(p.x)+' '+Str(p.y);
         }).join(' L '))+' z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';

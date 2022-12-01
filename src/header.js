@@ -22,8 +22,11 @@ else if (!(name in root)) /* Browser/WebWorker/.. */
 var HAS = Object.prototype.hasOwnProperty,
     toString = Object.prototype.toString,
     def = Object.defineProperty,
-    stdMath = Math, PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-10/*Number.EPSILON*/,
-    sqrt2 = stdMath.sqrt(2), EMPTY_ARR = [], EMPTY_OBJ = {},
+    stdMath = Math, abs = stdMath.abs,
+    sqrt = stdMath.sqrt, pow = stdMath.pow,
+    PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-10/*Number.EPSILON*/,
+    sqrt2 = sqrt(2), sqrt3 = sqrt(3),
+    EMPTY_ARR = [], EMPTY_OBJ = {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window))
 ;
@@ -32,6 +35,7 @@ var HAS = Object.prototype.hasOwnProperty,
 function makeClass(superklass, klass, statiks)
 {
     var C = HAS.call(klass, 'constructor') ? klass.constructor : function() {}, p;
+    C.prototype.$super = function(method, args) {};
     if (superklass)
     {
         /*if (Object.setPrototypeOf)
@@ -42,7 +46,18 @@ function makeClass(superklass, klass, statiks)
         {*/
             C.prototype = Object.create(superklass.prototype);
         /*}*/
+        C.prototype.$super = (function(superklass) {
+            return function $super(method, args) {
+                var self = this, ret;
+                self.$super = superklass.prototype.$super;
+                //return Function.prototype.bind.call('constructor' === method ? superklass : superklass.prototype[method], self);
+                ret = ('constructor' === method ? superklass : superklass.prototype[method]).apply(self, args || []);
+                self.$super = $super;
+                return ret;
+            };
+        })(superklass);
     }
+    C.prototype.constructor = C;
     for (p in klass)
     {
         if (HAS.call(klass, p) && ('constructor' !== p))
@@ -50,7 +65,6 @@ function makeClass(superklass, klass, statiks)
             C.prototype[p] = klass[p];
         }
     }
-    C.prototype.constructor = C;
     if (statiks)
     {
         for (p in statiks)
@@ -62,11 +76,4 @@ function makeClass(superklass, klass, statiks)
         }
     }
     return C;
-}
-function superCall(superklass, self)
-{
-    return Function.prototype.bind.call(superklass, self);
-    /*return function() {
-        superklass.apply(self, arguments);
-    };*/
 }

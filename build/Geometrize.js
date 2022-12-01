@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.1.0 (2022-12-01 13:38:33)
+*   @version 0.1.0 (2022-12-01 19:33:21)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.1.0 (2022-12-01 13:38:33)
+*   @version 0.1.0 (2022-12-01 19:33:21)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -29,8 +29,11 @@ else if (!(name in root)) /* Browser/WebWorker/.. */
 var HAS = Object.prototype.hasOwnProperty,
     toString = Object.prototype.toString,
     def = Object.defineProperty,
-    stdMath = Math, PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-10/*Number.EPSILON*/,
-    sqrt2 = stdMath.sqrt(2), EMPTY_ARR = [], EMPTY_OBJ = {},
+    stdMath = Math, abs = stdMath.abs,
+    sqrt = stdMath.sqrt, pow = stdMath.pow,
+    PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-10/*Number.EPSILON*/,
+    sqrt2 = sqrt(2), sqrt3 = sqrt(3),
+    EMPTY_ARR = [], EMPTY_OBJ = {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window))
 ;
@@ -39,6 +42,7 @@ var HAS = Object.prototype.hasOwnProperty,
 function makeClass(superklass, klass, statiks)
 {
     var C = HAS.call(klass, 'constructor') ? klass.constructor : function() {}, p;
+    C.prototype.$super = function(method, args) {};
     if (superklass)
     {
         /*if (Object.setPrototypeOf)
@@ -49,7 +53,18 @@ function makeClass(superklass, klass, statiks)
         {*/
             C.prototype = Object.create(superklass.prototype);
         /*}*/
+        C.prototype.$super = (function(superklass) {
+            return function $super(method, args) {
+                var self = this, ret;
+                self.$super = superklass.prototype.$super;
+                //return Function.prototype.bind.call('constructor' === method ? superklass : superklass.prototype[method], self);
+                ret = ('constructor' === method ? superklass : superklass.prototype[method]).apply(self, args || []);
+                self.$super = $super;
+                return ret;
+            };
+        })(superklass);
     }
+    C.prototype.constructor = C;
     for (p in klass)
     {
         if (HAS.call(klass, p) && ('constructor' !== p))
@@ -57,7 +72,6 @@ function makeClass(superklass, klass, statiks)
             C.prototype[p] = klass[p];
         }
     }
-    C.prototype.constructor = C;
     if (statiks)
     {
         for (p in statiks)
@@ -69,13 +83,6 @@ function makeClass(superklass, klass, statiks)
         }
     }
     return C;
-}
-function superCall(superklass, self)
-{
-    return Function.prototype.bind.call(superklass, self);
-    /*return function() {
-        superklass.apply(self, arguments);
-    };*/
 }
 // Changeable mixin
 var Changeable = {
@@ -606,8 +613,8 @@ var Primitive = makeClass(null, merge(null, {
     toSVG: function(svg) {
         return arguments.length ? svg : '';
     },
-    toSVGPath: function() {
-        return '';
+    toSVGPath: function(svg) {
+        return arguments.length ? svg : '';
     },
     toTex: function() {
         return '\\text{Primitive}';
@@ -628,7 +635,7 @@ var Point = makeClass(Primitive, {
         {
             return new Point(x, y);
         }
-        superCall(Primitive, self)();
+        self.$super('constructor');
         if (is_array(x))
         {
             _x = Num(x[0]);
@@ -769,6 +776,15 @@ var Point = makeClass(Primitive, {
             'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
+    toSVGPath: function(svg) {
+        var c = this, r = this.style['stroke-width'],
+            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
+        }, svg) : path;
+    },
     toTex: function() {
         return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';
     },
@@ -793,7 +809,7 @@ var Curve = makeClass(Primitive, {
 
         if (null == points) points = [];
         if (null == values) values = {};
-        superCall(Primitive, self)();
+        self.$super('constructor');
 
         point_add = function(p) {
             p = Point(p);
@@ -1020,7 +1036,7 @@ var Bezier = makeClass(Curve, {
         var self = this;
 
         if (null == points) points = [];
-        superCall(Curve, self)(points);
+        self.$super('constructor', [points]);
 
         def(self, 'degree', {
             get: function() {
@@ -1051,7 +1067,7 @@ var CompositeCurve = makeClass(Curve, {
             curve_del;
 
         if (null == curves) curves = [];
-        superCall(Primitive, self)();
+        Primitive.call(self);
 
         curve_add = function(c) {
             if (c instanceof Curve) c.onChange(onCurveChange);
@@ -1300,7 +1316,7 @@ var Bezier1 = makeClass(Bezier, {
         if (start instanceof Bezier1) return start;
         if (!(self instanceof Bezier1)) return new Bezier1(start, end);
 
-        superCall(Bezier, self)([start, end]);
+        self.$super('constructor', [[start, end]]);
 
         def(self, 'start', {
             get: function() {
@@ -1396,7 +1412,7 @@ var Bezier1 = makeClass(Bezier, {
                 _bbox = null;
                 _hull = null;
             }
-            return Bezier.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Line',
@@ -1481,9 +1497,14 @@ var Bezier1 = makeClass(Bezier, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        var p = this._points;
-        return 'M '+Str(p[0].x)+' '+Str(p[0].y)+' L '+Str(p[1].x)+' '+Str(p[1].y);
+    toSVGPath: function(svg) {
+        var p = this._points,
+            path = 'M '+Str(p[0].x)+' '+Str(p[0].y)+' L '+Str(p[1].x)+' '+Str(p[1].y);
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         return '\\text{Line: }\\begin{pmatrix}x\\\\y\\end{pmatrix} = '+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }0 \\le t \\le 1';
@@ -1506,7 +1527,7 @@ var Polyline = makeClass(Curve, {
 
         if (points instanceof Polyline) return points;
         if (!(self instanceof Polyline)) return new Polyline(points);
-        superCall(Curve, self)(points);
+        self.$super('constructor', [points]);
 
         def(self, 'lines', {
             get: function() {
@@ -1594,7 +1615,7 @@ var Polyline = makeClass(Curve, {
                 _hull = null;
                 _is_convex = null;
             }
-            return Curve.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Polyline',
@@ -1636,43 +1657,25 @@ var Polyline = makeClass(Curve, {
         return Point(this.f(t, stdMath.floor(n * t)));
     },
     intersects: function(other) {
-        var i, p, abcdef;
+        var i;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
         }
         else if ((other instanceof Line) || (other instanceof Polyline))
         {
-            i = curve_lines_intersection(this._points, other._points);
+            i = curve_curve_intersection(this._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
         {
-            p = this._points;
-            abcdef = circle2quadratic(other.center, other.radius);
-            i = p.reduce(function(i, _, j) {
-                if (j+1 < p.length)
-                {
-                    var ii = line_circle_intersection(p[j], p[j+1], abcdef);
-                    if (ii) i.push.apply(i, ii);
-                }
-                return i;
-            }, []);
-            return i.length ? i.map(Point) : false;
+            i = curve_circle_intersection(this._points, other.center, other.radius);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            p = this._points;
-            abcdef = ellipse2quadratic(other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
-            i = p.reduce(function(i, _, j) {
-                if (j+1 < p.length)
-                {
-                    var ii = line_ellipse_intersection(p[j], p[j+1], abcdef);
-                    if (ii) i.push.apply(i, ii);
-                }
-                return i;
-            }, []);
-            return i.length ? i.map(Point) : false;
+            i = curve_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
@@ -1697,10 +1700,15 @@ var Polyline = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        return 'M '+(this._points.map(function(p) {
+    toSVGPath: function(svg) {
+        var path = 'M '+(this._points.map(function(p) {
             return Str(p.x)+' '+Str(p.y);
-        }).join(' L '))+(this.isClosed() ? ' z' : '');
+        }).join(' L '));
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         var lines = this.lines, n = lines.length;
@@ -1727,7 +1735,7 @@ var Polygon = makeClass(Curve, {
 
         if (vertices instanceof Polygon) return vertices;
         if (!(self instanceof Polygon)) return new Polygon(vertices);
-        superCall(Curve, self)(vertices);
+        self.$super('constructor', [vertices]);
 
         def(self, 'vertices', {
             get: function() {
@@ -1832,7 +1840,7 @@ var Polygon = makeClass(Curve, {
                 _hull = null;
                 _is_convex = null;
             }
-            return Curve.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Polygon',
@@ -1862,28 +1870,25 @@ var Polygon = makeClass(Curve, {
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
-        var i, p;
+        var i;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
         }
         else if ((other instanceof Line) || (other instanceof Polyline) || (other instanceof Polygon))
         {
-            i = curve_lines_intersection(this._lines, other._lines);
+            i = curve_curve_intersection(this._lines, other._lines);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
         {
-            p = this._lines;
-            i = p.reduce(function(i, _, j) {
-                if (j+1 < p.length)
-                {
-                    var ii = line_circle_intersection(p[j], p[j+1], other.center, other.radius);
-                    if (ii) i.push.apply(i, ii);
-                }
-                return i;
-            }, []);
-            return i.length ? i.map(Point) : false;
+            i = curve_circle_intersection(this._lines, other.center, other.radius);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Ellipse)
+        {
+            i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
@@ -1898,10 +1903,15 @@ var Polygon = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        return 'M '+(this._points.concat([this._points[0]]).map(function(p) {
+    toSVGPath: function(svg) {
+        var path = 'M '+(this._points.concat([this._points[0]]).map(function(p) {
             return Str(p.x)+' '+Str(p.y);
         }).join(' L '))+' z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';
@@ -1924,7 +1934,7 @@ var Circle = makeClass(Curve, {
         if (center instanceof Circle) return center;
         if (!(self instanceof Circle)) return new Circle(center, radius);
         _radius = new Value(stdMath.abs(Num(radius)));
-        superCall(Curve, self)([center], {radius:_radius});
+        self.$super('constructor', [[center], {radius:_radius}]);
 
         def(self, 'center', {
             get: function() {
@@ -2015,7 +2025,7 @@ var Circle = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return Curve.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Circle',
@@ -2090,9 +2100,14 @@ var Circle = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        var c = this.center, r = this.radius;
-        return 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+    toSVGPath: function(svg) {
+        var c = this.center, r = this.radius,
+            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         var c = this.center,
@@ -2124,11 +2139,11 @@ var Ellipse = makeClass(Curve, {
         if (!(self instanceof Ellipse)) return new Ellipse(center, radiusX, radiusY, angle);
         _radiusX = new Value(stdMath.abs(Num(radiusX)));
         _radiusY = new Value(stdMath.abs(Num(radiusY)));
-        _angle = new Value(angle);
+        _angle = new Value(rad(angle));
         _cos = stdMath.cos(_angle.val());
         _sin = stdMath.sin(_angle.val());
 
-        superCall(Curve, self)([center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle});
+        self.$super('constructor', [[center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle}]);
 
         def(self, 'center', {
             get: function() {
@@ -2172,10 +2187,10 @@ var Ellipse = makeClass(Curve, {
         });
         def(self, 'angle', {
             get: function() {
-                return _angle.val();
+                return deg(_angle.val());
             },
             set: function(angle) {
-                _angle.val(angle);
+                _angle.val(rad(angle));
                 _cos = stdMath.cos(_angle.val());
                 _sin = stdMath.sin(_angle.val());
                 if (_angle.isChanged() && !self.isChanged())
@@ -2264,7 +2279,7 @@ var Ellipse = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return Curve.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Ellipse',
@@ -2277,7 +2292,7 @@ var Ellipse = makeClass(Curve, {
             rY = this.radiusY,
             a = this.angle,
             t = matrix.getTranslation(),
-            r = matrix.getRotationAngle(),
+            r = deg(matrix.getRotationAngle()),
             s = matrix.getScale()
         ;
         return new Ellipse(
@@ -2359,13 +2374,19 @@ var Ellipse = makeClass(Curve, {
             'cy': [c.y, this.center.isChanged()],
             'rx': [rX, this.values.radiusX.isChanged()],
             'ry': [rY, this.values.radiusY.isChanged()],
-            'transform': ['rotate('+Str(deg(a))+' '+Str(c.x)+' '+Str(c.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
+            'transform': ['rotate('+Str(a)+' '+Str(c.x)+' '+Str(c.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        var c = this.center, rX = this.radiusX, rY = this.radiusY, a = this.angle;
-        return 'M '+Str(c.x - rX)+' '+Str(c.y)+' a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(rX + rX)+' 0 a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(-rX - rX)+' 0 z';
+    toSVGPath: function(svg) {
+        var c = this.center, rX = this.radiusX, rY = this.radiusY, a = this.angle,
+            p1 = this.f(0), p2 = this.f(0.5),
+            path = 'M '+Str(p1.x)+' '+Str(p1.y)+' A '+Str(rX)+' '+Str(rY)+' '+Str(a)+' 0 1 '+Str(p2.x)+' '+Str(p2.y)+' A '+Str(rX)+' '+Str(rY)+' '+Str(a)+' 0 1 '+Str(p1.x)+' '+Str(p1.y)+' z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         var a = Str(deg(this.angle))+'\\text{°}',
@@ -2446,12 +2467,12 @@ var Plane = makeClass(null, {
                 if (o instanceof Primitive)
                 {
                     var el = svgEl[o.id];
-                    if (!el)
+                    if (undef === el)
                     {
                         svgEl[o.id] = el = o.toSVG(null);
-                        svg.appendChild(el);
+                        if (el) svg.appendChild(el);
                     }
-                    else if (o.isChanged())
+                    else if (el && o.isChanged())
                     {
                         o.toSVG(el);
                     }
@@ -2466,7 +2487,7 @@ var Plane = makeClass(null, {
             {
                 if (!HAS.call(svgEl, o.id))
                 {
-                    svgEl[o.id] = null;
+                    svgEl[o.id] = undef;
                     objects.push(o);
                     isChanged = true;
                 }
@@ -2498,20 +2519,21 @@ var Plane = makeClass(null, {
     dispose: null,
     add: null,
     remove: null
-});// ---- utilities -----
+});
+// ---- utilities -----
 function is_strictly_zero(x)
 {
-    return stdMath.abs(x) < Number.EPSILON;
+    return abs(x) < Number.EPSILON;
 }
 function is_almost_zero(x, eps)
 {
     if (null == eps) eps = EPS;
-    return stdMath.abs(x) < eps;
+    return abs(x) < eps;
 }
 function is_almost_equal(a, b, eps)
 {
     if (null == eps) eps = EPS;
-    return stdMath.abs(a - b) < eps;
+    return abs(a - b) < eps;
 }
 function deg(rad)
 {
@@ -2523,18 +2545,18 @@ function rad(deg)
 }
 function hypot(dx, dy)
 {
-    dx = stdMath.abs(dx);
-    dy = stdMath.abs(dy)
+    dx = abs(dx);
+    dy = abs(dy)
     var r = 0;
     if (dy > dx)
     {
         r = dy/dx;
-        return dx*stdMath.sqrt(1 + r*r);
+        return dx*sqrt(1 + r*r);
     }
     else if (dx > dy)
     {
         r = dx/dy;
-        return dy*stdMath.sqrt(1 + r*r);
+        return dy*sqrt(1 + r*r);
     }
     return dx*sqrt2;
 }
@@ -2587,7 +2609,7 @@ function point_line_distance(p0, p1, p2)
         d = hypot(dx, dy)
     ;
     if (is_strictly_zero(d)) return hypot(x - x1, y - y1);
-    return stdMath.abs(dx*(y1 - y) - dy*(x1 - x)) / d;
+    return abs(dx*(y1 - y) - dy*(x1 - x)) / d;
 }
 function point_line_segment_distance(p0, p1, p2)
 {
@@ -2619,16 +2641,51 @@ function point_between(p, p1, p2)
 }
 function lin_solve(a, b)
 {
-    return is_strictly_zero(a) ? false : [-b / a];
+    return is_strictly_zero(a) ? false : [-b/a];
 }
 function quad_solve(a, b, c)
 {
     if (is_strictly_zero(a)) return lin_solve(b, c);
-    var D = b*b - 4*a*c;
-    if (is_strictly_zero(D)) return [-b / (2*a)];
+    var D = b*b - 4*a*c, DS = 0;
+    if (is_almost_zero(D)) return [-b/(2*a)];
     if (0 > D) return false;
-    D = stdMath.sqrt(D);
-    return [(-b-D) / (2*a), (-b+D) / (2*a)];
+    DS = sqrt(D);
+    return [(-b-DS)/(2*a), (-b+DS)/(2*a)];
+}
+function cub_solve(a, b, c, d)
+{
+    if (is_strictly_zero(a)) return quad_solve(b, c, d);
+    var A = b/a, B = c/a, C = d/a,
+        Q = (3*B - A*A)/9, QS = 0,
+        R = (9*A*B - 27*C - 2*pow(A, 3))/54,
+        D = pow(Q, 3) + pow(R, 2), DS = 0,
+        S = 0, T = 0, Im = 0, th = 0
+    ;
+    if (D >= 0)
+    {
+        // complex or duplicate roots
+        DS = sqrt(D);
+        S = sign(R + DS)*pow(abs(R + DS), 1/3);
+        T = sign(R - DS)*pow(abs(R - DS), 1/3);
+        Im = abs(sqrt3*(S - T)/2); // imaginary part
+        return is_almost_zero(Im) ? [
+        -A/3 + (S + T),
+        -A/3 - (S + T)/2
+        ] : [
+        -A/3 + (S + T)
+        ];
+    }
+    else
+    {
+        // distinct real roots
+        th = stdMath.acos(R/sqrt(-pow(Q, 3)));
+        QS = 2*sqrt(-Q);
+        return [
+        QS*stdMath.cos(th/3) - A/3,
+        QS*stdMath.cos((th + TWO_PI)/3) - A/3,
+        QS*stdMath.cos((th + 2*TWO_PI)/3) - A/3
+        ];
+    }
 }
 function line_line_intersection(a, b, c, k, l, m)
 {
@@ -2670,7 +2727,7 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
         if (0 > D) return false;
         F = 2*a*k*n - c*k*m - d*m*n + e*m*m;
         if (is_strictly_zero(D)) return [{x:-(k + n*(-F/R))/m, y:-F/R}];
-        D = stdMath.sqrt(D);
+        D = sqrt(D);
         return [{x:-(k + n*((-m*D - F)/R))/m, y:(-m*D - F)/R},{x:-(k + n*((m*D - F)/R))/m, y:(m*D - F)/R}];
     }
 }
@@ -2847,7 +2904,7 @@ function circle_circle_intersection(c1, r1, c2, r2)
     var a = (r1*r1 - r2*r2 + d*d) / (2 * d),
         px = c1.x + a*dx,
         py = c1.y + a*dy,
-        h = stdMath.sqrt(r1*r1 - a*a)
+        h = sqrt(r1*r1 - a*a)
     ;
     return is_strictly_zero(h) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
@@ -3071,7 +3128,7 @@ function is_convex(points)
         }
         angle_sum += angle;
     }
-    return 1 === stdMath.abs(stdMath.round(angle_sum / TWO_PI));
+    return 1 === abs(stdMath.round(angle_sum / TWO_PI));
 }
 function ellipse_point(cx, cy, rx, ry, angle, theta, cs)
 {
@@ -3095,18 +3152,18 @@ function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
 
     if (L > 1)
     {
-        rx = stdMath.sqrt(L)*stdMath.abs(rx);
-        ry = stdMath.sqrt(L)*stdMath.abs(ry);
+        rx = sqrt(L)*abs(rx);
+        ry = sqrt(L)*abs(ry);
     }
     else
     {
-        rx = stdMath.abs(rx);
-        ry = stdMath.abs(ry);
+        rx = abs(rx);
+        ry = abs(ry);
     }
 
     // Step 2 + 3: compute center
     var sign = fa === fs ? -1 : 1,
-        M = stdMath.sqrt((prx*pry - prx*py - pry*px)/(prx*py + pry*px))*sign,
+        M = sqrt((prx*pry - prx*py - pry*px)/(prx*py + pry*px))*sign,
         _cx = M*(rx*y)/ry,
         _cy = M*(-ry*x)/rx,
 
@@ -3129,11 +3186,11 @@ function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
 }
 function vector_angle(ux, uy, vx, vy)
 {
-    var sign = ux*vy - uy*vx < 0 ? -1 : 1,
-        ua = stdMath.sqrt(ux*ux + uy*uy),
-        va = stdMath.sqrt(vx*vx + vy*vy),
+    var sgn = sign(ux*vy - uy*vx),
+        ua = sqrt(ux*ux + uy*uy),
+        va = sqrt(vx*vx + vy*vy),
         dot = ux*vx + uy*vy;
-    return sign*stdMath.acos(dot/(ua*va));
+    return sgn*stdMath.acos(dot/(ua*va));
 }
 
 // ----------------------
@@ -3438,6 +3495,11 @@ function is_function(x)
 // export it
 return {
     VERSION: "0.1.0",
+    Util: {
+        hypot: hypot,
+        deg: deg,
+        rad: rad
+    },
     Value: Value,
     Matrix: Matrix,
     Style: Style,

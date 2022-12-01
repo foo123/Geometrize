@@ -81,8 +81,8 @@ var Primitive = makeClass(null, merge(null, {
     toSVG: function(svg) {
         return arguments.length ? svg : '';
     },
-    toSVGPath: function() {
-        return '';
+    toSVGPath: function(svg) {
+        return arguments.length ? svg : '';
     },
     toTex: function() {
         return '\\text{Primitive}';

@@ -63,12 +63,12 @@ var Plane = makeClass(null, {
                 if (o instanceof Primitive)
                 {
                     var el = svgEl[o.id];
-                    if (!el)
+                    if (undef === el)
                     {
                         svgEl[o.id] = el = o.toSVG(null);
-                        svg.appendChild(el);
+                        if (el) svg.appendChild(el);
                     }
-                    else if (o.isChanged())
+                    else if (el && o.isChanged())
                     {
                         o.toSVG(el);
                     }
@@ -83,7 +83,7 @@ var Plane = makeClass(null, {
             {
                 if (!HAS.call(svgEl, o.id))
                 {
-                    svgEl[o.id] = null;
+                    svgEl[o.id] = undef;
                     objects.push(o);
                     isChanged = true;
                 }

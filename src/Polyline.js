@@ -11,7 +11,7 @@ var Polyline = makeClass(Curve, {
 
         if (points instanceof Polyline) return points;
         if (!(self instanceof Polyline)) return new Polyline(points);
-        superCall(Curve, self)(points);
+        self.$super('constructor', [points]);
 
         def(self, 'lines', {
             get: function() {
@@ -99,7 +99,7 @@ var Polyline = makeClass(Curve, {
                 _hull = null;
                 _is_convex = null;
             }
-            return Curve.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Polyline',
@@ -141,43 +141,25 @@ var Polyline = makeClass(Curve, {
         return Point(this.f(t, stdMath.floor(n * t)));
     },
     intersects: function(other) {
-        var i, p, abcdef;
+        var i;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
         }
         else if ((other instanceof Line) || (other instanceof Polyline))
         {
-            i = curve_lines_intersection(this._points, other._points);
+            i = curve_curve_intersection(this._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
         {
-            p = this._points;
-            abcdef = circle2quadratic(other.center, other.radius);
-            i = p.reduce(function(i, _, j) {
-                if (j+1 < p.length)
-                {
-                    var ii = line_circle_intersection(p[j], p[j+1], abcdef);
-                    if (ii) i.push.apply(i, ii);
-                }
-                return i;
-            }, []);
-            return i.length ? i.map(Point) : false;
+            i = curve_circle_intersection(this._points, other.center, other.radius);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            p = this._points;
-            abcdef = ellipse2quadratic(other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
-            i = p.reduce(function(i, _, j) {
-                if (j+1 < p.length)
-                {
-                    var ii = line_ellipse_intersection(p[j], p[j+1], abcdef);
-                    if (ii) i.push.apply(i, ii);
-                }
-                return i;
-            }, []);
-            return i.length ? i.map(Point) : false;
+            i = curve_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
@@ -202,10 +184,15 @@ var Polyline = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        return 'M '+(this._points.map(function(p) {
+    toSVGPath: function(svg) {
+        var path = 'M '+(this._points.map(function(p) {
             return Str(p.x)+' '+Str(p.y);
-        }).join(' L '))+(this.isClosed() ? ' z' : '');
+        }).join(' L '));
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         var lines = this.lines, n = lines.length;

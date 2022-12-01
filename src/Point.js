@@ -10,7 +10,7 @@ var Point = makeClass(Primitive, {
         {
             return new Point(x, y);
         }
-        superCall(Primitive, self)();
+        self.$super('constructor');
         if (is_array(x))
         {
             _x = Num(x[0]);
@@ -150,6 +150,15 @@ var Point = makeClass(Primitive, {
             //'transform': [this.matrix.toSVG(), this.isChanged()],
             'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
         }, arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var c = this, r = this.style['stroke-width'],
+            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';

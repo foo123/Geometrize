@@ -17,11 +17,11 @@ var Ellipse = makeClass(Curve, {
         if (!(self instanceof Ellipse)) return new Ellipse(center, radiusX, radiusY, angle);
         _radiusX = new Value(stdMath.abs(Num(radiusX)));
         _radiusY = new Value(stdMath.abs(Num(radiusY)));
-        _angle = new Value(angle);
+        _angle = new Value(rad(angle));
         _cos = stdMath.cos(_angle.val());
         _sin = stdMath.sin(_angle.val());
 
-        superCall(Curve, self)([center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle});
+        self.$super('constructor', [[center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle}]);
 
         def(self, 'center', {
             get: function() {
@@ -65,10 +65,10 @@ var Ellipse = makeClass(Curve, {
         });
         def(self, 'angle', {
             get: function() {
-                return _angle.val();
+                return deg(_angle.val());
             },
             set: function(angle) {
-                _angle.val(angle);
+                _angle.val(rad(angle));
                 _cos = stdMath.cos(_angle.val());
                 _sin = stdMath.sin(_angle.val());
                 if (_angle.isChanged() && !self.isChanged())
@@ -157,7 +157,7 @@ var Ellipse = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return Curve.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Ellipse',
@@ -170,7 +170,7 @@ var Ellipse = makeClass(Curve, {
             rY = this.radiusY,
             a = this.angle,
             t = matrix.getTranslation(),
-            r = matrix.getRotationAngle(),
+            r = deg(matrix.getRotationAngle()),
             s = matrix.getScale()
         ;
         return new Ellipse(
@@ -252,13 +252,19 @@ var Ellipse = makeClass(Curve, {
             'cy': [c.y, this.center.isChanged()],
             'rx': [rX, this.values.radiusX.isChanged()],
             'ry': [rY, this.values.radiusY.isChanged()],
-            'transform': ['rotate('+Str(deg(a))+' '+Str(c.x)+' '+Str(c.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
+            'transform': ['rotate('+Str(a)+' '+Str(c.x)+' '+Str(c.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        var c = this.center, rX = this.radiusX, rY = this.radiusY, a = this.angle;
-        return 'M '+Str(c.x - rX)+' '+Str(c.y)+' a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(rX + rX)+' 0 a '+Str(rX)+' '+Str(rY)+' '+Str(/*a*/0)+' 0 0 '+Str(-rX - rX)+' 0 z';
+    toSVGPath: function(svg) {
+        var c = this.center, rX = this.radiusX, rY = this.radiusY, a = this.angle,
+            p1 = this.f(0), p2 = this.f(0.5),
+            path = 'M '+Str(p1.x)+' '+Str(p1.y)+' A '+Str(rX)+' '+Str(rY)+' '+Str(a)+' 0 1 '+Str(p2.x)+' '+Str(p2.y)+' A '+Str(rX)+' '+Str(rY)+' '+Str(a)+' 0 1 '+Str(p1.x)+' '+Str(p1.y)+' z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         var a = Str(deg(this.angle))+'\\text{°}',

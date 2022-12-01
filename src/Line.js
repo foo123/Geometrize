@@ -10,7 +10,7 @@ var Bezier1 = makeClass(Bezier, {
         if (start instanceof Bezier1) return start;
         if (!(self instanceof Bezier1)) return new Bezier1(start, end);
 
-        superCall(Bezier, self)([start, end]);
+        self.$super('constructor', [[start, end]]);
 
         def(self, 'start', {
             get: function() {
@@ -106,7 +106,7 @@ var Bezier1 = makeClass(Bezier, {
                 _bbox = null;
                 _hull = null;
             }
-            return Bezier.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
     },
     name: 'Line',
@@ -191,9 +191,14 @@ var Bezier1 = makeClass(Bezier, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
-    toSVGPath: function() {
-        var p = this._points;
-        return 'M '+Str(p[0].x)+' '+Str(p[0].y)+' L '+Str(p[1].x)+' '+Str(p[1].y);
+    toSVGPath: function(svg) {
+        var p = this._points,
+            path = 'M '+Str(p[0].x)+' '+Str(p[0].y)+' L '+Str(p[1].x)+' '+Str(p[1].y);
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
     },
     toTex: function() {
         return '\\text{Line: }\\begin{pmatrix}x\\\\y\\end{pmatrix} = '+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }0 \\le t \\le 1';
