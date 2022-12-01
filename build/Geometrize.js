@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.1.0 (2022-12-01 12:53:16)
+*   @version 0.1.0 (2022-12-01 13:38:33)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.1.0 (2022-12-01 12:53:16)
+*   @version 0.1.0 (2022-12-01 13:38:33)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -29,7 +29,7 @@ else if (!(name in root)) /* Browser/WebWorker/.. */
 var HAS = Object.prototype.hasOwnProperty,
     toString = Object.prototype.toString,
     def = Object.defineProperty,
-    stdMath = Math, PI = stdMath.PI, TWO_PI = 2*PI,
+    stdMath = Math, PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-10/*Number.EPSILON*/,
     sqrt2 = stdMath.sqrt(2), EMPTY_ARR = [], EMPTY_OBJ = {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window))
@@ -528,7 +528,7 @@ var Primitive = makeClass(null, merge(null, {
     constructor: function Primitive() {
         var self = this, _style = null, onStyleChange;
 
-        self.id = uuid(self.constructor.name);
+        self.id = uuid(self.name);
 
         onStyleChange = function onStyleChange(style) {
             if (_style === style)
@@ -569,6 +569,7 @@ var Primitive = makeClass(null, merge(null, {
         self.isChanged(true);
     },
     id: '',
+    name: 'Primitive',
     clone: function() {
         return this;
     },
@@ -701,6 +702,7 @@ var Point = makeClass(Primitive, {
             Primitive.prototype.dispose.call(self);
         };
     },
+    name: 'Point',
     clone: function() {
         return new Point(this.x, this.y);
     },
@@ -1397,6 +1399,7 @@ var Bezier1 = makeClass(Bezier, {
             return Bezier.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Line',
     clone: function() {
         return new Line(this.start.clone(), this.end.clone());
     },
@@ -1594,6 +1597,7 @@ var Polyline = makeClass(Curve, {
             return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Polyline',
     clone: function() {
         return new Polyline(this.points.map(function(point) {return point.clone();}));
     },
@@ -1632,7 +1636,7 @@ var Polyline = makeClass(Curve, {
         return Point(this.f(t, stdMath.floor(n * t)));
     },
     intersects: function(other) {
-        var i, p;
+        var i, p, abcdef;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
@@ -1645,11 +1649,26 @@ var Polyline = makeClass(Curve, {
         else if (other instanceof Circle)
         {
             p = this._points;
+            abcdef = circle2quadratic(other.center, other.radius);
             i = p.reduce(function(i, _, j) {
                 if (j+1 < p.length)
                 {
-                    var ii = line_circle_intersection(p[j], p[j+1], other.center, other.radius);
-                    if (ii) i.puch.apply(i, ii);
+                    var ii = line_circle_intersection(p[j], p[j+1], abcdef);
+                    if (ii) i.push.apply(i, ii);
+                }
+                return i;
+            }, []);
+            return i.length ? i.map(Point) : false;
+        }
+        else if (other instanceof Ellipse)
+        {
+            p = this._points;
+            abcdef = ellipse2quadratic(other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            i = p.reduce(function(i, _, j) {
+                if (j+1 < p.length)
+                {
+                    var ii = line_ellipse_intersection(p[j], p[j+1], abcdef);
+                    if (ii) i.push.apply(i, ii);
                 }
                 return i;
             }, []);
@@ -1816,6 +1835,7 @@ var Polygon = makeClass(Curve, {
             return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Polygon',
     clone: function() {
         return new Polygon(this.vertices.map(function(vertex) {return vertex.clone();}));
     },
@@ -1998,6 +2018,7 @@ var Circle = makeClass(Curve, {
             return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Circle',
     clone: function() {
         return new Circle(this.center.clone(), this.radius);
     },
@@ -2246,6 +2267,7 @@ var Ellipse = makeClass(Curve, {
             return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Ellipse',
     clone: function() {
         return new Ellipse(this.center.clone(), this.radiusX, this.radiusY, this.angle);
     },
@@ -2477,13 +2499,19 @@ var Plane = makeClass(null, {
     add: null,
     remove: null
 });// ---- utilities -----
-function is_almost_zero(x)
+function is_strictly_zero(x)
 {
     return stdMath.abs(x) < Number.EPSILON;
 }
-function is_almost_equal(a, b)
+function is_almost_zero(x, eps)
 {
-    return is_almost_zero(a - b);
+    if (null == eps) eps = EPS;
+    return stdMath.abs(x) < eps;
+}
+function is_almost_equal(a, b, eps)
+{
+    if (null == eps) eps = EPS;
+    return stdMath.abs(a - b) < eps;
 }
 function deg(rad)
 {
@@ -2558,7 +2586,7 @@ function point_line_distance(p0, p1, p2)
         dx = x2 - x1, dy = y2 - y1,
         d = hypot(dx, dy)
     ;
-    if (is_almost_zero(d)) return hypot(x - x1, y - y1);
+    if (is_strictly_zero(d)) return hypot(x - x1, y - y1);
     return stdMath.abs(dx*(y1 - y) - dy*(x1 - x)) / d;
 }
 function point_line_segment_distance(p0, p1, p2)
@@ -2569,7 +2597,7 @@ function point_line_segment_distance(p0, p1, p2)
         t = 0, dx = x2 - x1, dy = y2 - y1,
         d = hypot(dx, dy)
     ;
-    if (is_almost_zero(d)) return hypot(x - x1, y - y1);
+    if (is_strictly_zero(d)) return hypot(x - x1, y - y1);
     t = stdMath.max(0, stdMath.min(1, ((x - x1)*dx + (y - y1)*dy) / d));
     return hypot(x - x1 - t*dx, y - y1 - t*dy);
 }
@@ -2581,23 +2609,23 @@ function point_between(p, p1, p2)
         dyp = p.y - p1.y,
         dy = p2.y - p1.y
     ;
-    if (is_almost_zero(dyp*dx - dy*dxp))
+    if (is_almost_equal(dyp*dx, dy*dxp))
     {
         // colinear and inside line segment of p1-p2
-        t = is_almost_zero(dx) ? dyp/dy : dxp/dx;
-        return (0 <= t) && (t <= 1);
+        t = is_strictly_zero(dx) ? dyp/dy : dxp/dx;
+        return (t >= 0) && (t <= 1);
     }
     return false;
 }
 function lin_solve(a, b)
 {
-    return is_almost_zero(a) ? false : [-b / a];
+    return is_strictly_zero(a) ? false : [-b / a];
 }
 function quad_solve(a, b, c)
 {
-    if (is_almost_zero(a)) return lin_solve(b, c);
+    if (is_strictly_zero(a)) return lin_solve(b, c);
     var D = b*b - 4*a*c;
-    if (is_almost_zero(D)) return [-b / (2*a)];
+    if (is_strictly_zero(D)) return [-b / (2*a)];
     if (0 > D) return false;
     D = stdMath.sqrt(D);
     return [(-b-D) / (2*a), (-b+D) / (2*a)];
@@ -2612,7 +2640,7 @@ function line_line_intersection(a, b, c, k, l, m)
     */
     var D = a*l - b*k;
     // zero, infinite or one point
-    return is_almost_zero(D) ? false : {x:(b*m - c*l)/D, y:(c*k - a*m)/D};
+    return is_strictly_zero(D) ? false : {x:(b*m - c*l)/D, y:(c*k - a*m)/D};
 }
 function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
 {
@@ -2625,7 +2653,7 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
     x,y={(-(k + n*(-m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))))/m, -m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))), (-(k + n*(m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n))))/m, m*sqrt(-4*a*b*k**2 + 4*a*e*k*n - 4*a*f*n**2 + 4*b*d*k*m - 4*b*f*m**2 + c**2*k**2 - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d**2*n**2 - 2*d*e*m*n + e**2*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)) - (2*a*k*n - c*k*m - d*m*n + e*m**2)/(2*(a*n**2 + b*m**2 - c*m*n)))}
     */
     var x, y, x1 = 0, y1 = 0, x2 = 0, y2 = 0, D = 0, R = 0, F = 0;
-    if (is_almost_zero(m))
+    if (is_strictly_zero(m))
     {
         y = lin_solve(n, k);
         if (!y) return false;
@@ -2637,11 +2665,11 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
     else
     {
         R = 2*(a*n*n + b*m*m - c*m*n);
-        if (is_almost_zero(R)) return false;
+        if (is_strictly_zero(R)) return false;
         D = -4*a*b*k*k + 4*a*e*k*n - 4*a*f*n*n + 4*b*d*k*m - 4*b*f*m*m + c*c*k*k - 2*c*d*k*n - 2*c*e*k*m + 4*c*f*m*n + d*d*n*n - 2*d*e*m*n + e*e*m*m;
         if (0 > D) return false;
         F = 2*a*k*n - c*k*m - d*m*n + e*m*m;
-        if (is_almost_zero(D)) return [{x:-(k + n*(-F/R))/m, y:-F/R}];
+        if (is_strictly_zero(D)) return [{x:-(k + n*(-F/R))/m, y:-F/R}];
         D = stdMath.sqrt(D);
         return [{x:-(k + n*((-m*D - F)/R))/m, y:(-m*D - F)/R},{x:-(k + n*((m*D - F)/R))/m, y:(m*D - F)/R}];
     }
@@ -2802,7 +2830,7 @@ function circle_circle_intersection(c1, r1, c2, r2)
         c2 = tmp;
     }
     var dx = c2.x - c1.x, dy = c2.y - c1.y, d = hypot(dx, dy);
-    if (is_almost_zero(d) && is_almost_equal(r1, r2))
+    if (is_strictly_zero(d) && is_almost_equal(r1, r2))
     {
         // same circles, they intersect at all points
         return false;
@@ -2821,7 +2849,7 @@ function circle_circle_intersection(c1, r1, c2, r2)
         py = c1.y + a*dy,
         h = stdMath.sqrt(r1*r1 - a*a)
     ;
-    return is_almost_zero(h) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
+    return is_strictly_zero(h) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
 function curve_circle_intersection(curve_points, center, radius)
 {
@@ -2830,7 +2858,7 @@ function curve_circle_intersection(curve_points, center, radius)
     for (j=0; j<n; ++j)
     {
         p = line_circle_intersection(curve_points[j], curve_points[j+1], abcdef);
-        if (p) i.push(p);
+        if (p) i.push.apply(i, p);
     }
     return i.length ? i : false;
 }
@@ -2841,7 +2869,7 @@ function curve_ellipse_intersection(curve_points, center, radiusX, radiusY, angl
     for (j=0; j<n; ++j)
     {
         p = line_ellipse_intersection(curve_points[j], curve_points[j+1], abcdef);
-        if (p) i.push(p);
+        if (p) i.push.apply(i, p);
     }
     return i.length ? i : false;
 }

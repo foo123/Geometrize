@@ -3,7 +3,7 @@ var Primitive = makeClass(null, merge(null, {
     constructor: function Primitive() {
         var self = this, _style = null, onStyleChange;
 
-        self.id = uuid(self.constructor.name);
+        self.id = uuid(self.name);
 
         onStyleChange = function onStyleChange(style) {
             if (_style === style)
@@ -44,6 +44,7 @@ var Primitive = makeClass(null, merge(null, {
         self.isChanged(true);
     },
     id: '',
+    name: 'Primitive',
     clone: function() {
         return this;
     },

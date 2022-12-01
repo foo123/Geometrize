@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html><head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>Geometrize</title>
+<style type="text/css">
+#test {
+    position: relative;
+    width: 100%;
+    min-height: 400px;
+    padding: 0;
+    margin: 0 auto;
+    overflow: visible;
+}
+</style>
+</head><body>
+<h1>Geometrize</h1>
+<div id="test"></div>
+<script src="../build/Geometrize.js"></script>
+<script>
+(function() {
+    var plane = Geometrize.Plane(document.getElementById('test'), 400, 400);
+    var ellipse = Geometrize.Ellipse([40,40], 30, 10, -Math.PI/4);
+    //var pellipse = Geometrize.Polyline(ellipse._lines);
+    var circle = Geometrize.Circle([30,30], 20);
+    var line = Geometrize.Line([20,20], [60,60]);
+    var line2 = Geometrize.Line([50,2], [20,70]);
+    var dx = 12, dy = 1;
+    var i1 = line.intersects(ellipse),
+        i2 = line2.intersects(ellipse),
+        i3 = line.intersects(circle),
+        i4 = line2.intersects(circle),
+        i5 = ellipse.intersects(circle),
+        i6 = line.intersects(line2)
+    ;
+    /*console.log('line-ellipse', i1);
+    console.log('line2-ellipse', i2);
+    console.log('line-circle', i3);
+    console.log('line2-circle', i4);
+    console.log('ellipse-circle', i5);
+    console.log('line-line2', i6);*/
+    var intersections = [].concat(i1 ? i1 : []).concat(i2 ? i2 : []).concat(i3 ? i3 : []).concat(i4 ? i4 : []).concat(i5 ? i5 : []).concat(i6 ? i6 : []);
+
+    line.style['stroke'] = 'blue';
+    line2.style['stroke'] = 'green';
+    plane.add(line);
+    plane.add(line2);
+    plane.add(ellipse);
+    plane.add(circle);
+    intersections.forEach(function(p) {
+        p.style['stroke'] = 'red';
+        p.style['stroke-width'] = 2;
+        plane.add(p);
+    });
+    return;
+    setTimeout(function animate() {
+        intersections.forEach(function(p) {
+            plane.remove(p);
+        });
+        if (0 > line.start.x+dx || line.start.x+dx > plane.width) dx = -dx;
+        if (0 > line.start.y+dy || line.start.y+dy > plane.height) dy = -dy;
+        line.start.x += dx;
+        line.start.y += dy;
+        line.end.x += dx;
+        line.end.y += dy;
+        var i1 = line.intersects(ellipse), i2 = line2.intersects(ellipse), i3 = line.intersects(line2);
+        intersections = [].concat(i1 ? i1 : []).concat(i2 ? i2 : []).concat(i3 ? i3 : []);
+        intersections.forEach(function(p) {
+            p.style['stroke'] = 'red';
+            p.style['stroke-width'] = 2;
+            plane.add(p);
+        });
+        //setTimeout(animate, 500);
+    }, 500);
+})();
+</script>
+</body></html>

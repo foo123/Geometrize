@@ -109,6 +109,7 @@ var Bezier1 = makeClass(Bezier, {
             return Bezier.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Line',
     clone: function() {
         return new Line(this.start.clone(), this.end.clone());
     },

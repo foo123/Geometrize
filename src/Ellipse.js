@@ -160,6 +160,7 @@ var Ellipse = makeClass(Curve, {
             return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Ellipse',
     clone: function() {
         return new Ellipse(this.center.clone(), this.radiusX, this.radiusY, this.angle);
     },

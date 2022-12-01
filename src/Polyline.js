@@ -102,6 +102,7 @@ var Polyline = makeClass(Curve, {
             return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Polyline',
     clone: function() {
         return new Polyline(this.points.map(function(point) {return point.clone();}));
     },
@@ -140,7 +141,7 @@ var Polyline = makeClass(Curve, {
         return Point(this.f(t, stdMath.floor(n * t)));
     },
     intersects: function(other) {
-        var i, p;
+        var i, p, abcdef;
         if (other instanceof Point)
         {
             return this.hasPoint(other) ? [other] : false;
@@ -153,11 +154,26 @@ var Polyline = makeClass(Curve, {
         else if (other instanceof Circle)
         {
             p = this._points;
+            abcdef = circle2quadratic(other.center, other.radius);
             i = p.reduce(function(i, _, j) {
                 if (j+1 < p.length)
                 {
-                    var ii = line_circle_intersection(p[j], p[j+1], other.center, other.radius);
-                    if (ii) i.puch.apply(i, ii);
+                    var ii = line_circle_intersection(p[j], p[j+1], abcdef);
+                    if (ii) i.push.apply(i, ii);
+                }
+                return i;
+            }, []);
+            return i.length ? i.map(Point) : false;
+        }
+        else if (other instanceof Ellipse)
+        {
+            p = this._points;
+            abcdef = ellipse2quadratic(other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            i = p.reduce(function(i, _, j) {
+                if (j+1 < p.length)
+                {
+                    var ii = line_ellipse_intersection(p[j], p[j+1], abcdef);
+                    if (ii) i.push.apply(i, ii);
                 }
                 return i;
             }, []);

@@ -106,6 +106,7 @@ var Circle = makeClass(Curve, {
             return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Circle',
     clone: function() {
         return new Circle(this.center.clone(), this.radius);
     },

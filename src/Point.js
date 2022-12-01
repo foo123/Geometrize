@@ -84,6 +84,7 @@ var Point = makeClass(Primitive, {
             Primitive.prototype.dispose.call(self);
         };
     },
+    name: 'Point',
     clone: function() {
         return new Point(this.x, this.y);
     },

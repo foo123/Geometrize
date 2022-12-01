@@ -120,6 +120,7 @@ var Polygon = makeClass(Curve, {
             return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'Polygon',
     clone: function() {
         return new Polygon(this.vertices.map(function(vertex) {return vertex.clone();}));
     },
