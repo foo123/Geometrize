@@ -40,7 +40,8 @@ var Point = makeClass(Primitive, {
                     self.triggerChange();
                 }
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'y', {
             get: function() {
@@ -56,7 +57,8 @@ var Point = makeClass(Primitive, {
                     self.triggerChange();
                 }
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'norm', {
             get: function() {
@@ -66,19 +68,20 @@ var Point = makeClass(Primitive, {
                 }
                 return _n;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
                 _n = null;
             }
-            return self.$super.isChanged.apply(self, arguments);
+            return Primitive.prototype.isChanged.apply(self, arguments);
         };
         self.dispose = function() {
             _x = null;
             _y = null;
-            self.$super.dispose.call(self);
+            Primitive.prototype.dispose.call(self);
         };
     },
     clone: function() {

@@ -57,7 +57,7 @@ var Curve = makeClass(Primitive, {
         _values.matrix = new Value(0);
         _values.matrix.isChanged(self.hasMatrix());
 
-        def(this, 'matrix', {
+        def(self, 'matrix', {
             get: function() {
                 return _matrix ? _matrix : Matrix.eye();
             },
@@ -74,7 +74,9 @@ var Curve = makeClass(Primitive, {
                         self.triggerChange();
                     }
                 }
-            }
+            },
+            enumerable: true,
+            configurable: true
         });
         def(self, '_points', {
             get: function() {
@@ -92,7 +94,8 @@ var Curve = makeClass(Primitive, {
                     _points2 = null;
                 }
             },
-            enumerable: false
+            enumerable: false,
+            configurable: true
         });
         def(self, '_lines', {
             get: function() {
@@ -101,7 +104,7 @@ var Curve = makeClass(Primitive, {
                     _lines = sample_curve(function(t) {
                         var pt = self.f(t);
                         return _matrix ? _matrix.transform(pt, pt) : pt;
-                    }, 20, 0.001, true);
+                    }, 20, 0.1, true);
                 }
                 return _lines;
             },
@@ -111,7 +114,8 @@ var Curve = makeClass(Primitive, {
                     _lines = null;
                 }
             },
-            enumerable: false
+            enumerable: false,
+            configurable: true
         });
         def(self, 'points', {
             get: function() {
@@ -141,7 +145,8 @@ var Curve = makeClass(Primitive, {
                     }
                 }
             },
-            enumerable: true
+            enumerable: true,
+            configurable: true
         });
         def(self, 'values', {
             get: function() {
@@ -153,19 +158,22 @@ var Curve = makeClass(Primitive, {
                     _values = null;
                 }
             },
-            enumerable: false
+            enumerable: false,
+            configurable: true
         });
         def(self, 'length', {
             get: function() {
                 return 0;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: true
         });
         def(self, 'area', {
             get: function() {
                 return 0;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: true
         });
     },
     dispose: function() {
@@ -179,7 +187,7 @@ var Curve = makeClass(Primitive, {
             self.points = null;
         }
         self.values = null;
-        self.$super.dispose.call(self);
+        Primitive.prototype.dispose.call(self);
     },
     isChanged: function(isChanged) {
         var self = this;
@@ -194,7 +202,7 @@ var Curve = makeClass(Primitive, {
             self._points = null;
             self._lines = null;
         }
-        return self.$super.isChanged.apply(self, arguments);
+        return Primitive.prototype.isChanged.apply(self, arguments);
     },
     isConnected: function() {
         return true;
@@ -240,7 +248,8 @@ var Bezier = makeClass(Curve, {
             get: function() {
                 return self.points.length - 1;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
     },
     toTex: function() {
@@ -314,7 +323,8 @@ var CompositeCurve = makeClass(Curve, {
                     _points = null;
                 }
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'curves', {
             get: function() {
@@ -344,7 +354,8 @@ var CompositeCurve = makeClass(Curve, {
                     }
                 }
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'length', {
             get: function() {
@@ -357,13 +368,15 @@ var CompositeCurve = makeClass(Curve, {
                 }
                 return _length;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'area', {
             get: function() {
                 return 0;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, '_bbox', {
             get: function() {
@@ -385,7 +398,8 @@ var CompositeCurve = makeClass(Curve, {
                 }
                 return _bbox;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, '_hull', {
             get: function() {
@@ -398,7 +412,8 @@ var CompositeCurve = makeClass(Curve, {
                 }
                 return _hull;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         self.isChanged = function(isChanged) {
             if (true === isChanged)

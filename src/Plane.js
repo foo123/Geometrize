@@ -25,7 +25,8 @@ var Plane = makeClass(null, {
                 if (width !== w) isChanged = true;
                 width = w;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'height', {
             get: function() {
@@ -36,7 +37,8 @@ var Plane = makeClass(null, {
                 if (height !== h) isChanged = true;
                 height = h;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         render = function render() {
             if (!objects) return;
@@ -44,6 +46,9 @@ var Plane = makeClass(null, {
             {
                 svg = SVG('svg', {
                 'xmlns': ['http://www.w3.org/2000/svg', false],
+                'style': ['position:relative;', false],
+                'width': ['100%', false],
+                'height': ['100%', false],
                 'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', isChanged]
                 }, null);
                 dom.appendChild(svg);
@@ -86,9 +91,11 @@ var Plane = makeClass(null, {
             return self;
         };
         self.remove = function(o) {
-            var index = objects.indexOf(o);
+            var el, index = objects.indexOf(o);
             if (-1 !== index)
             {
+                el = svgEl[o.id];
+                if (el) el.parentNode.removeChild(el);
                 delete svgEl[o.id];
                 objects.splice(index, 1);
                 isChanged = true;

@@ -34,17 +34,14 @@ function makeClass(superklass, klass, statiks)
     var C = HAS.call(klass, 'constructor') ? klass.constructor : function() {}, p;
     if (superklass)
     {
-        if (Object.setPrototypeOf)
+        /*if (Object.setPrototypeOf)
         {
-            Object.setPrototypeOf(C, superklass.prototype);
-            C.prototype.constructor = C;
+            Object.setPrototypeOf(C, Object.create(superklass.prototype));
         }
         else
-        {
+        {*/
             C.prototype = Object.create(superklass.prototype);
-            C.prototype.constructor = C;
-        }
-        C.prototype.$super = superklass.prototype;
+        /*}*/
     }
     for (p in klass)
     {
@@ -53,6 +50,7 @@ function makeClass(superklass, klass, statiks)
             C.prototype[p] = klass[p];
         }
     }
+    C.prototype.constructor = C;
     if (statiks)
     {
         for (p in statiks)
@@ -63,10 +61,12 @@ function makeClass(superklass, klass, statiks)
             }
         }
     }
-    //console.log(C.name, is_function(C), superklass ? [Object.getPrototypeOf(C).constructor.name, superklass.name] : null, is_function(superklass));
     return C;
 }
 function superCall(superklass, self)
 {
     return Function.prototype.bind.call(superklass, self);
+    /*return function() {
+        superklass.apply(self, arguments);
+    };*/
 }

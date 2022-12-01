@@ -19,7 +19,8 @@ var Bezier1 = makeClass(Bezier, {
             set: function(start) {
                 self.points[0] = start;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'end', {
             get: function() {
@@ -28,7 +29,8 @@ var Bezier1 = makeClass(Bezier, {
             set: function(end) {
                 self.points[1] = end;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, '_lines', {
             get: function() {
@@ -36,7 +38,8 @@ var Bezier1 = makeClass(Bezier, {
             },
             set: function(lines) {
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, 'length', {
             get: function() {
@@ -47,7 +50,8 @@ var Bezier1 = makeClass(Bezier, {
                 }
                 return _length;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, '_bbox', {
             get: function() {
@@ -69,7 +73,8 @@ var Bezier1 = makeClass(Bezier, {
                 }
                 return _bbox;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, '_hull', {
             get: function() {
@@ -91,7 +96,8 @@ var Bezier1 = makeClass(Bezier, {
                 }
                 return _hull;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
@@ -100,7 +106,7 @@ var Bezier1 = makeClass(Bezier, {
                 _bbox = null;
                 _hull = null;
             }
-            return self.$super.isChanged.apply(self, arguments);
+            return Bezier.prototype.isChanged.apply(self, arguments);
         };
     },
     clone: function() {

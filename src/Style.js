@@ -29,7 +29,7 @@ var Style = makeClass(null, merge(null, {
             _style = merge(_props, _style, style);
         }
         _props.forEach(function(p) {
-            Object.defineProperty(self, p, {
+            def(self, p, {
                 get: function() {
                     return _style[p];
                 },
@@ -43,7 +43,9 @@ var Style = makeClass(null, merge(null, {
                             self.triggerChange();
                         }
                     }
-                }
+                },
+                enumerable: true,
+                configurable: false
             });
         });
         self.toObj = function() {

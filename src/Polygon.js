@@ -21,7 +21,8 @@ var Polygon = makeClass(Curve, {
             set: function(vertices) {
                 self.points = vertices;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'edges', {
             get: function() {
@@ -30,13 +31,15 @@ var Polygon = makeClass(Curve, {
                     return new Line(vertex, v[(i+1) % v.length]);
                 }) : [];
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, '_lines', {
             get: function() {
                 return self._points.concat([self._points[0]]);
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, 'length', {
             get: function() {
@@ -46,7 +49,8 @@ var Polygon = makeClass(Curve, {
                 }
                 return _length;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'area', {
             get: function() {
@@ -56,7 +60,8 @@ var Polygon = makeClass(Curve, {
                 }
                 return _area;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, '_bbox', {
             get: function() {
@@ -78,7 +83,8 @@ var Polygon = makeClass(Curve, {
                 }
                 return _bbox;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, '_hull', {
             get: function() {
@@ -88,7 +94,8 @@ var Polygon = makeClass(Curve, {
                 }
                 return _hull;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, '_is_convex', {
             get: function() {
@@ -98,7 +105,8 @@ var Polygon = makeClass(Curve, {
                 }
                 return _is_convex;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
@@ -109,7 +117,7 @@ var Polygon = makeClass(Curve, {
                 _hull = null;
                 _is_convex = null;
             }
-            return self.$super.isChanged.apply(self, arguments);
+            return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
     clone: function() {

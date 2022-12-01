@@ -411,6 +411,7 @@ function curve_area(curve_points)
 function sample_curve(f, n, pixelSize, do_refine)
 {
     if (null == n) n = 20;
+    if (null == pixelSize) pixelSize = 0.01;
     var i, t, h = 1/n, p, points = [];
     if (do_refine)
     {
@@ -431,8 +432,9 @@ function sample_curve(f, n, pixelSize, do_refine)
 }
 function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
 {
+    if ((l >= r) || is_almost_equal(l, r)) return;
     var m = (l + r) / 2, left = pl || f(l), right = pr || f(r), middle = f(m);
-    if (/*(0 >= depth) ||*/ (point_line_distance(middle, left, right) < pixelSize))
+    if (point_line_distance(middle, left, right) <= pixelSize)
     {
         // no more refinement, return linear interpolation
         // simple line segment, include middle as well for better accuracy
@@ -444,7 +446,6 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
         subdivide_curve(points, f, l, m, pixelSize, left, middle);
         subdivide_curve(points, f, m, r, pixelSize, middle, right);
     }
-    return points;
 }
 /*function bezier0(t, p)
 {

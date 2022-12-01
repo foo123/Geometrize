@@ -24,13 +24,15 @@ var Polyline = makeClass(Curve, {
                     return lines;
                 }, new Array(p.length-1)) : [];
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, '_lines', {
             get: function() {
                 return self._points;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, 'length', {
             get: function() {
@@ -40,7 +42,8 @@ var Polyline = makeClass(Curve, {
                 }
                 return _length;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, '_bbox', {
             get: function() {
@@ -62,7 +65,8 @@ var Polyline = makeClass(Curve, {
                 }
                 return _bbox;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, '_hull', {
             get: function() {
@@ -72,7 +76,8 @@ var Polyline = makeClass(Curve, {
                 }
                 return _hull;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, '_is_convex', {
             get: function() {
@@ -83,7 +88,8 @@ var Polyline = makeClass(Curve, {
                 }
                 return _is_convex;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
@@ -93,7 +99,7 @@ var Polyline = makeClass(Curve, {
                 _hull = null;
                 _is_convex = null;
             }
-            return self.$super.isChanged.apply(self, arguments);
+            return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
     clone: function() {

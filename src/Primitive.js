@@ -1,9 +1,9 @@
 // 2D Geometric Primitive base class
 var Primitive = makeClass(null, merge(null, {
     constructor: function Primitive() {
-        var _style = null, onStyleChange;
+        var self = this, _style = null, onStyleChange;
 
-        this.id = uuid(this.constructor.name);
+        self.id = uuid(self.constructor.name);
 
         onStyleChange = function onStyleChange(style) {
             if (_style === style)
@@ -17,7 +17,7 @@ var Primitive = makeClass(null, merge(null, {
         };
         _style = new Style();
         _style.onChange(onStyleChange);
-        def(this, 'style', {
+        def(self, 'style', {
             get: function() {
                 return _style;
             },
@@ -37,7 +37,9 @@ var Primitive = makeClass(null, merge(null, {
                         }
                     }
                 }
-            }
+            },
+            enumerable: true,
+            configurable: false
         });
         self.isChanged(true);
     },

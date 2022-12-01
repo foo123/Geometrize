@@ -21,7 +21,8 @@ var Circle = makeClass(Curve, {
             set: function(center) {
                 self.points[0] = center;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'radius', {
             get: function() {
@@ -35,7 +36,8 @@ var Circle = makeClass(Curve, {
                     self.triggerChange();
                 }
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'length', {
             get: function() {
@@ -45,7 +47,8 @@ var Circle = makeClass(Curve, {
                 }
                 return _length;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, 'area', {
             get: function() {
@@ -55,7 +58,8 @@ var Circle = makeClass(Curve, {
                 }
                 return _area;
             },
-            enumerable: true
+            enumerable: true,
+            configurable: false
         });
         def(self, '_bbox', {
             get: function() {
@@ -71,7 +75,8 @@ var Circle = makeClass(Curve, {
                 }
                 return _bbox;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         def(self, '_hull', {
             get: function() {
@@ -87,7 +92,8 @@ var Circle = makeClass(Curve, {
                 }
                 return _hull;
             },
-            enumerable: false
+            enumerable: false,
+            configurable: false
         });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
@@ -97,7 +103,7 @@ var Circle = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return self.$super.isChanged.apply(self, arguments);
+            return Curve.prototype.isChanged.apply(self, arguments);
         };
     },
     clone: function() {
