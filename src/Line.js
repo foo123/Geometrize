@@ -59,16 +59,16 @@ var Bezier1 = makeClass(Bezier, {
                 {
                     var p = self._points,
                         p1 = p[0], p2 = p[1],
-                        x1 = stdMath.min(p1.x, p2.x),
-                        x2 = stdMath.max(p1.x, p2.x),
-                        y1 = stdMath.min(p1.y, p2.y),
-                        y2 = stdMath.max(p1.y, p2.y)
+                        xmin = stdMath.min(p1.x, p2.x),
+                        xmax = stdMath.max(p1.x, p2.x),
+                        ymin = stdMath.min(p1.y, p2.y),
+                        ymax = stdMath.max(p1.y, p2.y)
                     ;
                     _bbox = {
-                        top: y1,
-                        left: x1,
-                        bottom: y2,
-                        right: x2
+                        ymin: ymin,
+                        xmin: xmin,
+                        ymax: ymax,
+                        xmax: xmax
                     };
                 }
                 return _bbox;
@@ -82,16 +82,16 @@ var Bezier1 = makeClass(Bezier, {
                 {
                     var p = self._points,
                         p1 = p[0], p2 = p[1],
-                        x1 = stdMath.min(p1.x, p2.x),
-                        x2 = stdMath.max(p1.x, p2.x),
-                        y1 = stdMath.min(p1.y, p2.y),
-                        y2 = stdMath.max(p1.y, p2.y)
+                        xmin = stdMath.min(p1.x, p2.x),
+                        xmax = stdMath.max(p1.x, p2.x),
+                        ymin = stdMath.min(p1.y, p2.y),
+                        ymax = stdMath.max(p1.y, p2.y)
                     ;
                     _hull = [
-                        new Point(x1, y1),
-                        new Point(x2, y1),
-                        new Point(x2, y2),
-                        new Point(x1, y2)
+                        new Point(xmin, ymin),
+                        new Point(xmax, ymin),
+                        new Point(xmax, ymax),
+                        new Point(xmin, ymax)
                     ];
                 }
                 return _hull;
@@ -149,12 +149,14 @@ var Bezier1 = makeClass(Bezier, {
         else if (other instanceof Ellipse)
         {
             p = this._points;
-            i = line_ellipse_intersection(p[0], p[1], other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            i = line_ellipse_intersection(p[0], p[1], other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            return false;
+            p = this._points;
+            i = curve_line_intersection(other._lines, p[0], p[1]);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
@@ -201,7 +203,8 @@ var Bezier1 = makeClass(Bezier, {
         }, svg) : path;
     },
     toTex: function() {
-        return '\\text{Line: }\\begin{pmatrix}x\\\\y\\end{pmatrix} = '+Tex(this.start) + ' \\cdot (1-t) + ' + Tex(this.end) + ' \\cdot t\\text{, }0 \\le t \\le 1';
+        var p1 = this.start, p2 = this.end;
+        return '\\text{Line: }'+signed(p2.y - p1.y, false)+' \\cdot x '+signed(p1.x - p2.x)+' \\cdot y '+signed(p2.x*p1.y - p1.x*p2.y)+'\\text{, }'+Str(stdMath.min(p1.x, p2.x))+' \\le x \\le '+Str(stdMath.max(p1.x, p2.x))+'\\text{, }'+Str(stdMath.min(p1.y, p2.y))+' \\le y \\le '+Str(stdMath.max(p1.y, p2.y));
     },
     toString: function() {
         return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';

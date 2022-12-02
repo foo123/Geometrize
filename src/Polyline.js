@@ -50,17 +50,17 @@ var Polyline = makeClass(Curve, {
                 if (null == _bbox)
                 {
                     _bbox = {
-                        top: Infinity,
-                        left: Infinity,
-                        bottom: -Infinity,
-                        right: -Infinity
+                        ymin: Infinity,
+                        xmin: Infinity,
+                        ymax: -Infinity,
+                        xmax: -Infinity
                     };
                     for (var i=0,p=self._points,n=p.length; i<n; ++i)
                     {
-                        _bbox.top = stdMath.min(_bbox.top, p[i].y);
-                        _bbox.bottom = stdMath.max(_bbox.bottom, p[i].y);
-                        _bbox.left = stdMath.min(_bbox.left, p[i].x);
-                        _bbox.right = stdMath.max(_bbox.right, p[i].x);
+                        _bbox.ymin = stdMath.min(_bbox.ymin, p[i].y);
+                        _bbox.ymax = stdMath.max(_bbox.ymax, p[i].y);
+                        _bbox.xmin = stdMath.min(_bbox.xmin, p[i].x);
+                        _bbox.xmax = stdMath.max(_bbox.xmax, p[i].x);
                     }
                 }
                 return _bbox;
@@ -126,7 +126,7 @@ var Polyline = makeClass(Curve, {
     },
     hasInsidePoint: function(point, strict) {
         if (!this.isClosed()) return false;
-        var inside = point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this._points);
+        var inside = point_inside_curve(point, {x:this._bbox.xmax+10, y:point.y}, this._points);
         return strict ? 1 === inside : 0 < inside;
     },
     f: function(t, i) {
@@ -146,9 +146,9 @@ var Polyline = makeClass(Curve, {
         {
             return this.hasPoint(other) ? [other] : false;
         }
-        else if ((other instanceof Line) || (other instanceof Polyline))
+        else if (other instanceof Line)
         {
-            i = curve_curve_intersection(this._points, other._points);
+            i = curve_line_intersection(this._points, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
@@ -158,7 +158,12 @@ var Polyline = makeClass(Curve, {
         }
         else if (other instanceof Ellipse)
         {
-            i = curve_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            i = curve_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.cs);
+            return i ? i.map(Point) : false;
+        }
+        else if ((other instanceof Polyline) || (other instanceof Arc))
+        {
+            i = curve_curve_intersection(this._points, other._lines);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
@@ -195,7 +200,7 @@ var Polyline = makeClass(Curve, {
         }, svg) : path;
     },
     toTex: function() {
-        var lines = this.lines, n = lines.length;
+        var lines = this.lines;
         return '\\text{Polyline: }\\begin{cases}&'+lines.map(Tex).join('\\\\&')+'\\end{cases}';
     },
     toString: function() {

@@ -8,7 +8,7 @@
 #test {
     position: relative;
     width: 100%;
-    min-height: 400px;
+    height: 1000px;
     padding: 0;
     margin: 0 auto;
     overflow: visible;
@@ -21,11 +21,13 @@
 <script>
 "use strict";
 (function() {
-    var plane = Geometrize.Plane(document.getElementById('test'), 400, 400);
-    var ellipse = Geometrize.Ellipse([40,40], 30, 10, -45);
-    var circle = Geometrize.Circle([30,30], 20);
-    var line = Geometrize.Line([20,20], [60,60]);
-    var line2 = Geometrize.Line([50,2], [20,70]);
+    var G = Geometrize;
+    var plane = G.Plane(document.getElementById('test'), 400, 400);
+    var ellipse = G.Ellipse([40,40], 30, 10, -45);
+    var circle = G.Circle([30,30], 20);
+    var arc = G.Arc([100,100], [170,90], 30, 10, 0, 0, 0);
+    var line = G.Line([20,20], [60,60]);
+    var line2 = G.Line([50,2], [20,70]);
     var dx = 12, dy = 1;
     var i1 = line.intersects(ellipse),
         i2 = line2.intersects(ellipse),
@@ -42,6 +44,8 @@
     plane.add(line2);
     plane.add(ellipse);
     plane.add(circle);
+    plane.add(arc);
+    plane.add(G.Polyline(arc._lines));
     intersections.forEach(function(p) {
         p.style['stroke'] = 'red';
         p.style['stroke-width'] = 2;

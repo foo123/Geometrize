@@ -27,7 +27,15 @@ function hypot(dx, dy)
     dx = abs(dx);
     dy = abs(dy)
     var r = 0;
-    if (dy > dx)
+    if (0 === dx)
+    {
+        return dy;
+    }
+    else if (0 === dy)
+    {
+        return dx;
+    }
+    else if (dx < dy)
     {
         r = dy/dx;
         return dx*sqrt(1 + r*r);
@@ -49,11 +57,15 @@ function crossp(x1, y1, x2, y2)
 }
 function angle(x1, y1, x2, y2)
 {
-    return stdMath.acos(dotp(x1 / hypot(x1, y1), y1, x2 / hypot(x2, y2), y2));
+    return stdMath.acos(dotp(x1, y1, x2, y2)/hypot(x1, y1)/hypot(x2, y2));
 }
 function sign(x)
 {
     return 0 > x ? -1 : 1;
+}
+function signed(x, add)
+{
+    return 0 > x ? Str(x) : ((false === add ? '' : '+') + Str(x));
 }
 function dist(p1, p2)
 {
@@ -210,13 +222,13 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
         return [{x:-(k + n*((-m*D - F)/R))/m, y:(-m*D - F)/R},{x:-(k + n*((m*D - F)/R))/m, y:(m*D - F)/R}];
     }
 }
-function point_inside_rect(p, top, left, bottom, right)
+function point_inside_rect(p, ymin, xmin, ymax, xmax)
 {
-    if (is_almost_equal(p.x, left) && p.y >= top && p.y <= bottom) return 2;
-    if (is_almost_equal(p.x, right) && p.y >= top && p.y <= bottom) return 2;
-    if (is_almost_equal(p.y, top) && p.x >= left && p.x <= right) return 2;
-    if (is_almost_equal(p.y, bottom) && p.x >= left && p.x <= right) return 2;
-    return p.x >= left && p.x <= right && p.y >= top && p.y <= bottom ? 1 : 0;
+    if (is_almost_equal(p.x, xmin) && p.y >= ymin && p.y <= ymax) return 2;
+    if (is_almost_equal(p.x, xmax) && p.y >= ymin && p.y <= ymax) return 2;
+    if (is_almost_equal(p.y, ymin) && p.x >= xmin && p.x <= xmax) return 2;
+    if (is_almost_equal(p.y, ymax) && p.x >= xmin && p.x <= xmax) return 2;
+    return p.x >= xmin && p.x <= xmax && p.y >= ymin && p.y <= ymax ? 1 : 0;
 }
 function point_inside_circle(p, center, radius)
 {
@@ -273,9 +285,9 @@ function circle2quadratic(center, radius)
     var x0 = center.x, y0 = center.y;
     return [1, 1, 0, -2*x0, -2*y0, x0*x0 + y0*y0 - radius*radius];
 }
-function ellipse2quadratic(center, radiusX, radiusY, angle, cs)
+function ellipse2quadratic(center, radiusX, radiusY, cs)
 {
-    cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
+    //cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
     var x0 = center.x, y0 = center.y,
         a = radiusX, b = radiusY,
         cos_a = cs[0], sin_a = cs[1],
@@ -311,7 +323,7 @@ function line_circle_intersection(p1, p2, abcdef)
 }
 function line_ellipse_intersection(p1, p2, abcdef)
 {
-    if (6 < arguments.length) abcdef = ellipse2quadratic(abcdef, arguments[3], arguments[4], arguments[5], arguments[6]);
+    if (5 < arguments.length) abcdef = ellipse2quadratic(abcdef, arguments[3], arguments[4], arguments[5]);
     var p = new Array(2), pi = 0, i, n,
         s = line_quadratic_intersection(
         p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
@@ -366,7 +378,7 @@ function circle_circle_intersection(c1, r1, c2, r2)
         c2 = tmp;
     }
     var dx = c2.x - c1.x, dy = c2.y - c1.y, d = hypot(dx, dy);
-    if (is_strictly_zero(d) && is_almost_equal(r1, r2))
+    if (is_almost_zero(d) && is_almost_equal(r1, r2))
     {
         // same circles, they intersect at all points
         return false;
@@ -387,6 +399,19 @@ function circle_circle_intersection(c1, r1, c2, r2)
     ;
     return is_strictly_zero(h) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
+function curve_line_intersection(curve_points, p1, p2)
+{
+    var i = [], j, p, n = curve_points.length-1;
+    for (j=0; j<n; ++j)
+    {
+        p = line_segments_intersection(
+            curve_points[j], curve_points[j+1],
+            p1, p2
+        );
+        if (p) i.push(p);
+    }
+    return i.length ? i : false;
+}
 function curve_circle_intersection(curve_points, center, radius)
 {
     var i = [], j, k, p, n = curve_points.length-1,
@@ -398,10 +423,10 @@ function curve_circle_intersection(curve_points, center, radius)
     }
     return i.length ? i : false;
 }
-function curve_ellipse_intersection(curve_points, center, radiusX, radiusY, angle, cs)
+function curve_ellipse_intersection(curve_points, center, radiusX, radiusY, cs)
 {
     var i = [], j, k, p, n = curve_points.length-1,
-        abcdef = ellipse2quadratic(center, radiusX, radiusY, angle, cs);
+        abcdef = ellipse2quadratic(center, radiusX, radiusY, cs);
     for (j=0; j<n; ++j)
     {
         p = line_ellipse_intersection(curve_points[j], curve_points[j+1], abcdef);
@@ -452,22 +477,22 @@ function curve_area(curve_points)
 }
 function sample_curve(f, n, pixelSize, do_refine)
 {
-    if (null == n) n = 20;
-    if (null == pixelSize) pixelSize = 0.01;
-    var i, t, h = 1/n, p, points = [];
+    if (null == n) n = NUM_POINTS;
+    if (null == pixelSize) pixelSize = PIXEL_SIZE;
+    var i, points = [];
     if (do_refine)
     {
         points.push(f(0));
-        for (i=0,t=0; i<n; ++i,t+=h)
+        for (i=0; i<n; ++i)
         {
-            subdivide_curve(points, f, t, t+h, pixelSize);
+            subdivide_curve(points, f, 0 === i ? 0 : i/n, n === i+1 ? 1 : (i+1)/n, pixelSize);
         }
     }
     else
     {
-        for (i=0,t=0; i<n; ++i,t+=h)
+        for (i=0; i<=n; ++i)
         {
-            points.push(f(t));
+            points.push(f(0 === i ? 0 : (n === i ? 1 : i/n)));
         }
     }
     return points;
@@ -478,8 +503,8 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
     var m = (l + r) / 2, left = pl || f(l), right = pr || f(r), middle = f(m);
     if (point_line_distance(middle, left, right) <= pixelSize)
     {
-        // no more refinement, return linear interpolation
-        // simple line segment, include middle as well for better accuracy
+        // no more refinement
+        // return linear interpolation between left and right
         points.push(right);
     }
     else
@@ -609,7 +634,7 @@ function is_convex(points)
     }
     return 1 === abs(stdMath.round(angle_sum / TWO_PI));
 }
-function ellipse_point(cx, cy, rx, ry, angle, theta, cs)
+/*function ellipse_point(cx, cy, rx, ry, angle, theta, cs)
 {
     var M = rx*stdMath.cos(theta), N = ry*stdMath.sin(theta);
     cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
@@ -617,32 +642,24 @@ function ellipse_point(cx, cy, rx, ry, angle, theta, cs)
         x: cx + cs[0]*M - cs[1]*N,
         y: cy + cs[1]*M + cs[0]*N
     };
-}
-function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
+}*/
+function ellipse_params(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {
-    cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
-
     // Step 1: simplify through translation/rotation
     var x =  cs[0]*(x1 - x2)/2 + cs[1]*(y1 - y2)/2,
         y = -cs[1]*(x1 - x2)/2 + cs[0]*(y1 - y2)/2,
-        px = x*x, py = y^y, prx = rx*rx, pry = ry*ry,
-        // correct out-of-range radii
-        L = px/prx + py/pry;
+        px = x*x, py = y*y, prx = rx*rx, pry = ry*ry
+        ;/*,L = px/prx + py/pry;
 
     if (L > 1)
     {
-        rx = sqrt(L)*abs(rx);
-        ry = sqrt(L)*abs(ry);
-    }
-    else
-    {
-        rx = abs(rx);
-        ry = abs(ry);
-    }
+        // correct out-of-range radii
+        rx = sqrt(L)*rx;
+        ry = sqrt(L)*ry;
+    }*/
 
     // Step 2 + 3: compute center
-    var sign = fa === fs ? -1 : 1,
-        M = sqrt((prx*pry - prx*py - pry*px)/(prx*py + pry*px))*sign,
+    var M = sqrt(abs((prx*pry - prx*py - pry*px)/(prx*py + pry*px)))*(fa === fs ? -1 : 1),
         _cx = M*(rx*y)/ry,
         _cy = M*(-ry*x)/rx,
 
@@ -651,25 +668,20 @@ function ellipse_center(x1, y1, x2, y2, fa, fs, rx, ry, angle, cs)
     ;
 
     // Step 4: compute θ and dθ
-    var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry);
+    var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry),
+        dTheta = deg(vector_angle(
+            (x - _cx)/rx, (y - _cy)/ry,
+            (-x - _cx)/rx, (-y - _cy)/ry
+        )) % 360;
 
-    var _dTheta = deg(vector_angle(
-        (x - _cx)/rx, (y - _cy)/ry,
-        (-x - _cx)/rx, (-y - _cy)/ry
-    )) % 360;
+    if (!fs && dTheta > 0) dTheta -= 360;
+    if (fs && dTheta < 0) dTheta += 360;
 
-    if (fs === 0 && _dTheta > 0) _dTheta -= 360;
-    if (fs === 1 && _dTheta < 0) _dTheta += 360;
-
-    return [cx, cy, theta, rad(_dTheta)];
+    return [{x:cx, y:cy}, theta, rad(dTheta)];
 }
 function vector_angle(ux, uy, vx, vy)
 {
-    var sgn = sign(ux*vy - uy*vx),
-        ua = sqrt(ux*ux + uy*uy),
-        va = sqrt(vx*vx + vy*vy),
-        dot = ux*vx + uy*vy;
-    return sgn*stdMath.acos(dot/(ua*va));
+    return sign(ux*vy - uy*vx)*angle(ux, uy, vx, vy);
 }
 
 // ----------------------

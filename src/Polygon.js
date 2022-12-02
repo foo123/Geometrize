@@ -68,17 +68,17 @@ var Polygon = makeClass(Curve, {
                 if (null == _bbox)
                 {
                     _bbox = {
-                        top: Infinity,
-                        left: Infinity,
-                        bottom: -Infinity,
-                        right: -Infinity
+                        ymin: Infinity,
+                        xmin: Infinity,
+                        ymax: -Infinity,
+                        xmax: -Infinity
                     };
                     for (var i=0,p=self._points,n=p.length; i<n; ++i)
                     {
-                        _bbox.top = stdMath.min(_bbox.top, p[i].y);
-                        _bbox.bottom = stdMath.max(_bbox.bottom, p[i].y);
-                        _bbox.left = stdMath.min(_bbox.left, p[i].x);
-                        _bbox.right = stdMath.max(_bbox.right, p[i].x);
+                        _bbox.ymin = stdMath.min(_bbox.ymin, p[i].y);
+                        _bbox.ymax = stdMath.max(_bbox.ymax, p[i].y);
+                        _bbox.xmin = stdMath.min(_bbox.xmin, p[i].x);
+                        _bbox.xmax = stdMath.max(_bbox.xmax, p[i].x);
                     }
                 }
                 return _bbox;
@@ -140,10 +140,10 @@ var Polygon = makeClass(Curve, {
         return this._hull;
     },
     hasPoint: function(point) {
-        return 2 === point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this._lines);
+        return 2 === point_inside_curve(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
     },
     hasInsidePoint: function(point, strict) {
-        var inside = point_inside_curve(point, {x:this._bbox.right+1, y:point.y}, this._lines);
+        var inside = point_inside_curve(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
@@ -152,9 +152,9 @@ var Polygon = makeClass(Curve, {
         {
             return this.hasPoint(other) ? [other] : false;
         }
-        else if ((other instanceof Line) || (other instanceof Polyline) || (other instanceof Polygon))
+        else if (other instanceof Line)
         {
-            i = curve_curve_intersection(this._lines, other._lines);
+            i = curve_line_intersection(this._lines, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
@@ -164,7 +164,12 @@ var Polygon = makeClass(Curve, {
         }
         else if (other instanceof Ellipse)
         {
-            i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            return i ? i.map(Point) : false;
+        }
+        else if ((other instanceof Polyline) || (other instanceof Polygon) || (other instanceof Arc))
+        {
+            i = curve_curve_intersection(this._lines, other._lines);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
@@ -181,7 +186,7 @@ var Polygon = makeClass(Curve, {
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var path = 'M '+(this._points.concat([this._points[0]]).map(function(p) {
+        var path = 'M '+(this._lines.map(function(p) {
             return Str(p.x)+' '+Str(p.y);
         }).join(' L '))+' z';
         return arguments.length ? SVG('path', {

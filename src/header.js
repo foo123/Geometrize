@@ -24,38 +24,39 @@ var HAS = Object.prototype.hasOwnProperty,
     def = Object.defineProperty,
     stdMath = Math, abs = stdMath.abs,
     sqrt = stdMath.sqrt, pow = stdMath.pow,
-    PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-10/*Number.EPSILON*/,
+    PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-8/*Number.EPSILON*/,
     sqrt2 = sqrt(2), sqrt3 = sqrt(3),
+    NUM_POINTS = 20, PIXEL_SIZE = 1e-2,
     EMPTY_ARR = [], EMPTY_OBJ = {},
+    NOP = function() {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window))
 ;
 
 // basic backwards-compatible "class" construction
-function makeClass(superklass, klass, statiks)
+function makeSuper(superklass)
+{
+    var called = {};
+    return function $super(method, args) {
+        var self = this, m = ':'+method, ret;
+        if (1 === called[m]) return (superklass.prototype.$super || NOP).call(self, method, args);
+        called[m] = 1;
+        ret = ('constructor' === method ? superklass : (superklass.prototype[method] || NOP)).apply(self, args || []);
+        called[m] = 0;
+        return ret;
+    };
+}
+function makeClass(superklass, klass, statik)
 {
     var C = HAS.call(klass, 'constructor') ? klass.constructor : function() {}, p;
-    C.prototype.$super = function(method, args) {};
     if (superklass)
     {
-        /*if (Object.setPrototypeOf)
-        {
-            Object.setPrototypeOf(C, Object.create(superklass.prototype));
-        }
-        else
-        {*/
-            C.prototype = Object.create(superklass.prototype);
-        /*}*/
-        C.prototype.$super = (function(superklass) {
-            return function $super(method, args) {
-                var self = this, ret;
-                self.$super = superklass.prototype.$super;
-                //return Function.prototype.bind.call('constructor' === method ? superklass : superklass.prototype[method], self);
-                ret = ('constructor' === method ? superklass : superklass.prototype[method]).apply(self, args || []);
-                self.$super = $super;
-                return ret;
-            };
-        })(superklass);
+        C.prototype = Object.create(superklass.prototype);
+        C.prototype.$super = makeSuper(superklass);
+    }
+    else
+    {
+        C.prototype.$super = NOP;
     }
     C.prototype.constructor = C;
     for (p in klass)
@@ -65,13 +66,13 @@ function makeClass(superklass, klass, statiks)
             C.prototype[p] = klass[p];
         }
     }
-    if (statiks)
+    if (statik)
     {
-        for (p in statiks)
+        for (p in statik)
         {
-            if (HAS.call(statiks, p))
+            if (HAS.call(statik, p))
             {
-                C[p] = statiks[p];
+                C[p] = statik[p];
             }
         }
     }

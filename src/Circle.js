@@ -67,10 +67,10 @@ var Circle = makeClass(Curve, {
                 {
                     var c = self.center, r = _radius.val();
                     _bbox = {
-                        top: c.y - r,
-                        left: c.x - r,
-                        bottom: c.y + r,
-                        right: c.x + r
+                        ymin: c.y - r,
+                        xmin: c.x - r,
+                        ymax: c.y + r,
+                        xmax: c.x + r
                     };
                 }
                 return _bbox;
@@ -188,11 +188,8 @@ var Circle = makeClass(Curve, {
         }, svg) : path;
     },
     toTex: function() {
-        var c = this.center,
-            cX = (0 <= c.x ? '-' : '+')+Str(stdMath.abs(c.x)),
-            cY = (0 <= c.y ? '-' : '+')+Str(stdMath.abs(c.y)),
-            r = Str(this.radius);
-        return '\\text{Circle: }\\left|\\begin{pmatrix}\\frac{x'+cX+'}{'+r+'}\\\\\\frac{y'+cY+'}{'+r+'}\\end{pmatrix}\\right|^2 = 1';
+        var c = this.center, r = Str(this.radius);
+        return '\\text{Circle: }\\left|\\begin{pmatrix}\\frac{x'+signed(-c.x)+'}{'+r+'}\\\\\\frac{y'+signed(-c.y)+'}{'+r+'}\\end{pmatrix}\\right|^2 = 1';
     },
     toString: function() {
         return 'Circle('+[Str(this.center), Str(this.radius)].join(',')+')';

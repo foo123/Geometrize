@@ -17,9 +17,9 @@ var Ellipse = makeClass(Curve, {
         if (!(self instanceof Ellipse)) return new Ellipse(center, radiusX, radiusY, angle);
         _radiusX = new Value(stdMath.abs(Num(radiusX)));
         _radiusY = new Value(stdMath.abs(Num(radiusY)));
-        _angle = new Value(rad(angle));
-        _cos = stdMath.cos(_angle.val());
-        _sin = stdMath.sin(_angle.val());
+        _angle = new Value(angle);
+        _cos = stdMath.cos(rad(_angle.val()));
+        _sin = stdMath.sin(rad(_angle.val()));
 
         self.$super('constructor', [[center], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle}]);
 
@@ -65,12 +65,12 @@ var Ellipse = makeClass(Curve, {
         });
         def(self, 'angle', {
             get: function() {
-                return deg(_angle.val());
+                return _angle.val();
             },
             set: function(angle) {
-                _angle.val(rad(angle));
-                _cos = stdMath.cos(_angle.val());
-                _sin = stdMath.sin(_angle.val());
+                _angle.val(angle);
+                _cos = stdMath.cos(rad(_angle.val()));
+                _sin = stdMath.sin(rad(_angle.val()));
                 if (_angle.isChanged() && !self.isChanged())
                 {
                     self.isChanged(true);
@@ -80,7 +80,7 @@ var Ellipse = makeClass(Curve, {
             enumerable: true,
             configurable: false
         });
-        def(self, 'sincos', {
+        def(self, 'cs', {
             get: function() {
                 return [_cos, _sin];
             },
@@ -92,7 +92,7 @@ var Ellipse = makeClass(Curve, {
                 if (null == _length)
                 {
                     // approximate
-                    _length = PI * (3*(_radiusX.val()+_radiusY.val())-stdMath.sqrt((3*_radiusX.val()+_radiusY.val())*(_radiusX.val()+3*_radiusY.val())));
+                    _length = PI * (3*(_radiusX.val()+_radiusY.val())-sqrt((3*_radiusX.val()+_radiusY.val())*(_radiusX.val()+3*_radiusY.val())));
                 }
                 return _length;
             },
@@ -116,10 +116,10 @@ var Ellipse = makeClass(Curve, {
                 {
                     var ch = self._hull;
                     _bbox = {
-                        top: stdMath.min(ch[0].y,ch[1].y,ch[2].y,ch[3].y),
-                        left: stdMath.min(ch[0].x,ch[1].x,ch[2].x,ch[3].x),
-                        bottom: stdMath.max(ch[0].y,ch[1].y,ch[2].y,ch[3].y),
-                        right: stdMath.max(ch[0].x,ch[1].x,ch[2].x,ch[3].x)
+                        ymin: stdMath.min(ch[0].y,ch[1].y,ch[2].y,ch[3].y),
+                        xmin: stdMath.min(ch[0].x,ch[1].x,ch[2].x,ch[3].x),
+                        ymax: stdMath.max(ch[0].y,ch[1].y,ch[2].y,ch[3].y),
+                        xmax: stdMath.max(ch[0].x,ch[1].x,ch[2].x,ch[3].x)
                     };
                 }
                 return _bbox;
@@ -199,7 +199,7 @@ var Ellipse = makeClass(Curve, {
         var c = this.center,
             rX = this.radiusX,
             rY = this.radiusY,
-            cs = this.sincos,
+            cs = this.cs,
             ct = stdMath.cos(t*TWO_PI),
             st = stdMath.sin(t*TWO_PI)
         ;
@@ -213,10 +213,10 @@ var Ellipse = makeClass(Curve, {
         return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     hasPoint: function(point) {
-        return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.sincos);
+        return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.cs);
     },
     hasInsidePoint: function(point, strict) {
-        var inside = point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.sincos);
+        var inside = point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.cs);
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
@@ -232,7 +232,7 @@ var Ellipse = makeClass(Curve, {
         }
         else if (other instanceof Ellipse)
         {
-            i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.angle, other.sincos);
+            i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Primitive)
@@ -267,14 +267,11 @@ var Ellipse = makeClass(Curve, {
         }, svg) : path;
     },
     toTex: function() {
-        var a = Str(deg(this.angle))+'\\text{°}',
-            c = this.center,
-            cX = (0 <= c.x ? '-' : '+')+Str(stdMath.abs(c.x)),
-            cY = (0 <= c.y ? '-' : '+')+Str(stdMath.abs(c.y)),
-            rX = Str(this.radiusX), rY = Str(this.radiusY);
-        return '\\text{Ellipse: }\\left|\\begin{pmatrix}\\cos('+a+')&-\\sin('+a+')\\\\sin('+a+')&\\cos('+a+')\\end{pmatrix}\\begin{pmatrix}\\frac{x'+cX+'}{'+rX+'}\\\\\\frac{y'+cY+'}{'+rY+'}\\end{pmatrix}\\right|^2 = 1';
+        var a = Str(this.angle)+'\\text{°}',
+            c = this.center, rX = Str(this.radiusX), rY = Str(this.radiusY);
+        return '\\text{Ellipse: }\\left|\\begin{pmatrix}\\cos('+a+')&-\\sin('+a+')\\\\sin('+a+')&\\cos('+a+')\\end{pmatrix}\\begin{pmatrix}\\frac{x'+signed(-c.x)+'}{'+rX+'}\\\\\\frac{y'+signed(-c.y)+'}{'+rY+'}\\end{pmatrix}\\right|^2 = 1';
     },
     toString: function() {
-        return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(deg(this.angle))+'°'].join(',')+')';
+        return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°'].join(',')+')';
     }
 });

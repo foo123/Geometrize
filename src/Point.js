@@ -76,12 +76,12 @@ var Point = makeClass(Primitive, {
             {
                 _n = null;
             }
-            return Primitive.prototype.isChanged.apply(self, arguments);
+            return self.$super('isChanged', arguments);
         };
         self.dispose = function() {
             _x = null;
             _y = null;
-            Primitive.prototype.dispose.call(self);
+            self.$super('dispose');
         };
     },
     name: 'Point',
@@ -93,10 +93,10 @@ var Point = makeClass(Primitive, {
     },
     getBoundingBox: function() {
         return {
-        top: this.y,
-        left: this.x,
-        bottom: this.y,
-        right: this.x
+        ymin: this.y,
+        xmin: this.x,
+        ymax: this.y,
+        xmax: this.x
         };
     },
     eq: function(other) {
@@ -135,7 +135,7 @@ var Point = makeClass(Primitive, {
         {
             return this.eq(other) ? [this] : false;
         }
-        else if ((other instanceof Primitive) && is_function(other.intersects))
+        else if (other instanceof Primitive)
         {
             return other.intersects(this);
         }

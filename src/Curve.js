@@ -104,7 +104,7 @@ var Curve = makeClass(Primitive, {
                     _lines = sample_curve(function(t) {
                         var pt = self.f(t);
                         return _matrix ? _matrix.transform(pt, pt) : pt;
-                    }, 20, 0.1, true);
+                    }, NUM_POINTS, PIXEL_SIZE, true);
                 }
                 return _lines;
             },
@@ -187,7 +187,7 @@ var Curve = makeClass(Primitive, {
             self.points = null;
         }
         self.values = null;
-        Primitive.prototype.dispose.call(self);
+        self.$super('dispose');
     },
     isChanged: function(isChanged) {
         var self = this;
@@ -202,7 +202,7 @@ var Curve = makeClass(Primitive, {
             self._points = null;
             self._lines = null;
         }
-        return Primitive.prototype.isChanged.apply(self, arguments);
+        return self.$super('isChanged', arguments);
     },
     isConnected: function() {
         return true;
@@ -238,11 +238,11 @@ var Curve = makeClass(Primitive, {
 
 // 2D generic Bezier curve base class
 var Bezier = makeClass(Curve, {
-    constructor: function Bezier(points) {
+    constructor: function Bezier(points, values) {
         var self = this;
 
         if (null == points) points = [];
-        self.$super('constructor', [points]);
+        self.$super('constructor', [points, values]);
 
         def(self, 'degree', {
             get: function() {
@@ -384,16 +384,16 @@ var CompositeCurve = makeClass(Curve, {
                 {
                     _bbox = _curves.reduce(function(_bbox, curve) {
                         var box = curve.getBoundingBox();
-                        _bbox.top = stdMath.min(_bbox.top, box.top);
-                        _bbox.left = stdMath.min(_bbox.left, box.left);
-                        _bbox.bottom = stdMath.max(_bbox.bottom, box.bottom);
-                        _bbox.right = stdMath.max(_bbox.right, box.right);
+                        _bbox.ymin = stdMath.min(_bbox.ymin, box.ymin);
+                        _bbox.xmin = stdMath.min(_bbox.xmin, box.xmin);
+                        _bbox.ymax = stdMath.max(_bbox.ymax, box.ymax);
+                        _bbox.xmax = stdMath.max(_bbox.xmax, box.xmax);
                         return _bbox;
                     }, {
-                        top: Infinity,
-                        left: Infinity,
-                        bottom: -Infinity,
-                        right: -Infinity
+                        ymin: Infinity,
+                        xmin: Infinity,
+                        ymax: -Infinity,
+                        xmax: -Infinity
                     });
                 }
                 return _bbox;

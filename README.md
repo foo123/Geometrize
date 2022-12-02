@@ -9,15 +9,19 @@ Computational Geometry and Rendering library in JavaScript
 Example:
 
 ```javascript
-const plane = new Geometrize.Plane(document.getElementById('container'), 400, 400);
+const G = Geometrize;
 
-const ellipse = new Geometrize.Ellipse([40,40], 30, 10, -Math.PI/4);
-const circle = new Geometrize.Circle([30,30], 20);
+// Euclidean plane where the shapes live
+const plane = new G.Plane(document.getElementById('container'), 400, 400);
 
-const line = new Geometrize.Line([20,20], [60,60]);
+const ellipse = new G.Ellipse([40,40], 30, 10, -45);
+
+const circle = new G.Circle([30,30], 20);
+
+const line = new G.Line([20,20], [60,60]);
 line.style['stroke'] = 'blue';
 
-const line2 = new Geometrize.Line([50,2], [20,70]);
+const line2 = new G.Line([50,2], [20,70]);
 line2.style['stroke'] = 'green';
 
 const i1 = line.intersects(ellipse),

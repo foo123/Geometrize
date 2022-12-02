@@ -53,10 +53,10 @@ var Primitive = makeClass(null, merge(null, {
     },
     getBoundingBox: function() {
         return {
-        top: -Infinity,
-        left: -Infinity,
-        bottom: Infinity,
-        right: Infinity
+        ymin: -Infinity,
+        xmin: -Infinity,
+        ymax: Infinity,
+        xmax: Infinity
         };
     },
     getConvexHull: function() {
@@ -65,8 +65,8 @@ var Primitive = makeClass(null, merge(null, {
     getCenter: function() {
         var box = this.getBoundingBox();
         return {
-            x: (box.left + box.right)/2,
-            y: (box.top + box.bottom)/2
+            x: (box.xmin + box.xmax)/2,
+            y: (box.ymin + box.ymax)/2
         };
     },
     hasPoint: function(point) {

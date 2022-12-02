@@ -40,15 +40,47 @@ var Plane = makeClass(null, {
             enumerable: true,
             configurable: false
         });
+        self.add = function(o) {
+            if (o instanceof Primitive)
+            {
+                if (!HAS.call(svgEl, o.id))
+                {
+                    svgEl[o.id] = undef;
+                    objects.push(o);
+                    isChanged = true;
+                }
+            }
+            return self;
+        };
+        self.remove = function(o) {
+            var el, index = objects.indexOf(o);
+            if (-1 !== index)
+            {
+                el = svgEl[o.id];
+                if (isBrowser && el) el.parentNode.removeChild(el);
+                delete svgEl[o.id];
+                objects.splice(index, 1);
+                isChanged = true;
+            }
+            return self;
+        };
+        self.dispose = function() {
+            if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
+            if (isBrowser) cancelAnimationFrame(raf);
+            svg = null;
+            svgEl = null;
+            objects = null;
+            return self;
+        };
+        self.toSVG = function() {
+        };
         render = function render() {
             if (!objects) return;
             if (!svg)
             {
                 svg = SVG('svg', {
                 'xmlns': ['http://www.w3.org/2000/svg', false],
-                'style': ['position:relative;', false],
-                'width': ['100%', false],
-                'height': ['100%', false],
+                'style': ['position:absolute;width:100%;height:100%', false],
                 'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', isChanged]
                 }, null);
                 dom.appendChild(svg);
@@ -78,41 +110,10 @@ var Plane = makeClass(null, {
             isChanged = false;
             raf = requestAnimationFrame(render);
         };
-        self.add = function(o) {
-            if (o instanceof Primitive)
-            {
-                if (!HAS.call(svgEl, o.id))
-                {
-                    svgEl[o.id] = undef;
-                    objects.push(o);
-                    isChanged = true;
-                }
-            }
-            return self;
-        };
-        self.remove = function(o) {
-            var el, index = objects.indexOf(o);
-            if (-1 !== index)
-            {
-                el = svgEl[o.id];
-                if (el) el.parentNode.removeChild(el);
-                delete svgEl[o.id];
-                objects.splice(index, 1);
-                isChanged = true;
-            }
-            return self;
-        };
-        self.dispose = function() {
-            if (svg && svg.parentNode) svg.parentNode.removeChild(svg);
-            svg = null;
-            svgEl = null;
-            objects = null;
-            cancelAnimationFrame(raf);
-            return self;
-        };
-        raf = requestAnimationFrame(render);
+        if (isBrowser) raf = requestAnimationFrame(render);
     },
     dispose: null,
     add: null,
-    remove: null
+    remove: null,
+    toSVG: null
 });
