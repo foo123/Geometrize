@@ -155,7 +155,7 @@ var Bezier1 = makeClass(Bezier, {
         else if (other instanceof Arc)
         {
             p = this._points;
-            i = curve_line_intersection(other._lines, p[0], p[1]);
+            i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)

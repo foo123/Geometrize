@@ -100,7 +100,19 @@ var Point = makeClass(Primitive, {
         };
     },
     eq: function(other) {
-        return other instanceof Point ? p_eq(this, other) : false;
+        if (other instanceof Point)
+        {
+            return p_eq(this, other);
+        }
+        else if (null != other.x && null != other.y)
+        {
+            return p_eq(this, other);
+        }
+        else if (is_array(other))
+        {
+            return p_eq(this, {x: other[0], y: other[1]});
+        }
+        return false;
     },
     add: function(other) {
         return other instanceof Point ? new Point(this.x+other.x, this.y+other.y) : new Point(this.x+Num(other), this.y+Num(other));
@@ -140,6 +152,12 @@ var Point = makeClass(Primitive, {
             return other.intersects(this);
         }
         return false;
+    },
+    toObj: function() {
+        return {
+            x: this.x,
+            y: this.y
+        };
     },
     toSVG: function(svg) {
         return SVG('circle', {

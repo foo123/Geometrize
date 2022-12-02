@@ -22,30 +22,37 @@
 "use strict";
 (function() {
     var G = Geometrize;
-    var plane = G.Plane(document.getElementById('test'), 400, 400);
+    var plane = G.Plane(document.getElementById('test'), 300, 300);
     var ellipse = G.Ellipse([40,40], 30, 10, -45);
     var circle = G.Circle([30,30], 20);
-    var arc = G.Arc([100,100], [170,90], 30, 10, 0, 0, 0);
+    var arc = G.Arc([100,100], [170,90], 30, 10, 30, 0, 1);
     var line = G.Line([20,20], [60,60]);
     var line2 = G.Line([50,2], [20,70]);
+    var line3 = G.Line([60,160], [300,0]);
+    var line4 = G.Line([60,120], [300,-40]);
     var dx = 12, dy = 1;
     var i1 = line.intersects(ellipse),
         i2 = line2.intersects(ellipse),
         i3 = line.intersects(circle),
         i4 = line2.intersects(circle),
         i5 = ellipse.intersects(circle),
-        i6 = line.intersects(line2)
+        i6 = line.intersects(line2),
+        i7 = line3.intersects(arc),
+        i8 = line4.intersects(arc)
     ;
-    var intersections = [].concat(i1 ? i1 : []).concat(i2 ? i2 : []).concat(i3 ? i3 : []).concat(i4 ? i4 : []).concat(i5 ? i5 : []).concat(i6 ? i6 : []);
+    var intersections = [].concat(i1 ? i1 : []).concat(i2 ? i2 : []).concat(i3 ? i3 : []).concat(i4 ? i4 : []).concat(i5 ? i5 : []).concat(i6 ? i6 : []).concat(i7 ? i7 : []).concat(i8 ? i8 : []);
 
     line.style['stroke'] = 'blue';
     line2.style['stroke'] = 'green';
+    line3.style['stroke'] = 'orange';
+    line4.style['stroke'] = 'cyan';
     plane.add(line);
     plane.add(line2);
+    plane.add(line3);
+    plane.add(line4);
     plane.add(ellipse);
     plane.add(circle);
     plane.add(arc);
-    plane.add(G.Polyline(arc._lines));
     intersections.forEach(function(p) {
         p.style['stroke'] = 'red';
         p.style['stroke-width'] = 2;

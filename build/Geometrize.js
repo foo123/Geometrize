@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.2.0 (2022-12-02 13:16:14)
+*   @version 0.2.0 (2022-12-02 16:25:08)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.2.0 (2022-12-02 13:16:14)
+*   @version 0.2.0 (2022-12-02 16:25:08)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -31,7 +31,7 @@ var HAS = Object.prototype.hasOwnProperty,
     def = Object.defineProperty,
     stdMath = Math, abs = stdMath.abs,
     sqrt = stdMath.sqrt, pow = stdMath.pow,
-    PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-8/*Number.EPSILON*/,
+    PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-6/*Number.EPSILON*/,
     sqrt2 = sqrt(2), sqrt3 = sqrt(3),
     NUM_POINTS = 20, PIXEL_SIZE = 1e-2,
     EMPTY_ARR = [], EMPTY_OBJ = {},
@@ -726,7 +726,19 @@ var Point = makeClass(Primitive, {
         };
     },
     eq: function(other) {
-        return other instanceof Point ? p_eq(this, other) : false;
+        if (other instanceof Point)
+        {
+            return p_eq(this, other);
+        }
+        else if (null != other.x && null != other.y)
+        {
+            return p_eq(this, other);
+        }
+        else if (is_array(other))
+        {
+            return p_eq(this, {x: other[0], y: other[1]});
+        }
+        return false;
     },
     add: function(other) {
         return other instanceof Point ? new Point(this.x+other.x, this.y+other.y) : new Point(this.x+Num(other), this.y+Num(other));
@@ -766,6 +778,12 @@ var Point = makeClass(Primitive, {
             return other.intersects(this);
         }
         return false;
+    },
+    toObj: function() {
+        return {
+            x: this.x,
+            y: this.y
+        };
     },
     toSVG: function(svg) {
         return SVG('circle', {
@@ -1462,7 +1480,7 @@ var Bezier1 = makeClass(Bezier, {
         else if (other instanceof Arc)
         {
             p = this._points;
-            i = curve_line_intersection(other._lines, p[0], p[1]);
+            i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
@@ -1681,7 +1699,12 @@ var Polyline = makeClass(Curve, {
             i = curve_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Polyline) || (other instanceof Arc))
+        else if (other instanceof Arc)
+        {
+            i = curve_arc_intersection(this._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Polyline)
         {
             i = curve_curve_intersection(this._points, other._lines);
             return i ? i.map(Point) : false;
@@ -1823,13 +1846,6 @@ var Arc = makeClass(Curve, {
             enumerable: true,
             configurable: false
         });
-        def(self, 'cs', {
-            get: function() {
-                return [_cos, _sin];
-            },
-            enumerable: false,
-            configurable: false
-        });
         def(self, 'largeArc', {
             get: function() {
                 return _largeArc.val();
@@ -1862,22 +1878,53 @@ var Arc = makeClass(Curve, {
         });
         def(self, 'center', {
             get: function() {
-                if (null == _params)
-                {
-                    _params = ellipse_params(self.start.x, self.start.y, self.end.x, self.end.y, self.largeArc, self.sweep, self.radiusX, self.radiusY, self.cs);
-                }
-                return _params[0];
+                return self._params[0];
             },
             enumerable: false,
             configurable: false
         });
         def(self, 'theta', {
             get: function() {
+                return self._params[1];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'dtheta', {
+            get: function() {
+                return self._params[2];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'rX', {
+            get: function() {
+                return self._params[3];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'rY', {
+            get: function() {
+                return self._params[4];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'cs', {
+            get: function() {
+                return [_cos, _sin];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_params', {
+            get: function() {
                 if (null == _params)
                 {
-                    var c = self.center;
+                    _params = arc2ellipse(self.start.x, self.start.y, self.end.x, self.end.y, self.largeArc, self.sweep, self.radiusX, self.radiusY, self.cs);
                 }
-                return [_params[1], _params[2]];
+                return _params;
             },
             enumerable: false,
             configurable: false
@@ -1937,16 +1984,15 @@ var Arc = makeClass(Curve, {
         return new Arc(this.start.clone(), this.end.clone(), this.radiusX, this.radiusY, this.angle, this.largeArc, this.sweep);
     },
     transform: function(matrix) {
-        var s = this.start.transform(matrix),
-            e = this.end.transform(matrix),
-            rX = this.radiusX,
+        var rX = this.radiusX,
             rY = this.radiusY,
             a = this.angle,
             r = deg(matrix.getRotationAngle()),
             s = matrix.getScale()
         ;
         return new Arc(
-            s, e,
+            this.start.transform(matrix),
+            this.end.transform(matrix),
             rX * s.x,
             rY * s.y,
             a + r,
@@ -1972,11 +2018,12 @@ var Arc = makeClass(Curve, {
     f: function(t) {
         var c = this.center,
             theta = this.theta,
-            rX = this.radiusX,
-            rY = this.radiusY,
+            dtheta = this.dtheta,
+            rX = this.rX,
+            rY = this.rY,
             cs = this.cs,
-            ct = stdMath.cos(theta[0] + t*theta[1]),
-            st = stdMath.sin(theta[0] + t*theta[1])
+            ct = stdMath.cos(theta + t*dtheta),
+            st = stdMath.sin(theta + t*dtheta)
         ;
         return {
             x: c.x + rX*cs[0]*ct - rY*cs[1]*st,
@@ -1988,7 +2035,7 @@ var Arc = makeClass(Curve, {
         return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     hasPoint: function(point) {
-        return point_on_curve(point, this._lines);
+        return point_on_arc(point, this.center, this.rX, this.rY, this.cs, this.theta, this.dtheta);
     },
     hasInsidePoint: function(point, strict) {
         return strict ? false : this.hasPoint(point);
@@ -2011,7 +2058,7 @@ var Arc = makeClass(Curve, {
         }
         else if (other instanceof Arc)
         {
-            i = curve_curve_intersection(this._lines, other._lines);
+            i = curve_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
@@ -2218,7 +2265,12 @@ var Polygon = makeClass(Curve, {
             i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Polyline) || (other instanceof Polygon) || (other instanceof Arc))
+        else if (other instanceof Arc)
+        {
+            i = curve_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point) : false;
+        }
+        else if ((other instanceof Polyline) || (other instanceof Polygon))
         {
             i = curve_curve_intersection(this._lines, other._lines);
             return i ? i.map(Point) : false;
@@ -3103,6 +3155,17 @@ function point_inside_ellipse(p, center, radiusX, radiusY, cs)
     if (is_almost_equal(d2, 1)) return 2;
     return d2 < 1 ? 1 : 0;
 }
+function point_on_arc(p, center, radiusX, radiusY, cs, theta, dtheta)
+{
+    var x0 = p.x - center.x,
+        y0 = p.y - center.y,
+        x = cs[0]*x0 + cs[1]*y0,
+        y = -cs[1]*x0 + cs[0]*y0,
+        t = stdMath.atan2(y/radiusY, x/radiusX);
+    if (t < 0) t += TWO_PI;
+    t = (t - theta)/dtheta;
+    return t >= 0 && t <= 1;
+}
 function point_on_curve(p, curve_points)
 {
     get_point = get_point || identity;
@@ -3183,6 +3246,26 @@ function line_ellipse_intersection(p1, p2, abcdef)
     {
         if (point_between(s[i], p1, p2))
             p[pi++] = s[i];
+    }
+    p.length = pi;
+    return p.length ? p : false;
+}
+function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
+{
+    if (null == abcdef) abcdef = ellipse2quadratic(c, rX, rY, cs);
+    var p = new Array(2), pi = 0, i, n,
+        x, y, x0, y0, t,
+        s = line_quadratic_intersection(
+        p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
+        abcdef[0], abcdef[1], abcdef[2], abcdef[3], abcdef[4], abcdef[5]
+        );
+    if (!s) return false;
+    for (i=0,n=s.length; i<n; ++i)
+    {
+        if (point_between(s[i], p1, p2) && point_on_arc(s[i], c, rX, rY, cs, t, d))
+        {
+            p[pi++] = s[i];
+        }
     }
     p.length = pi;
     return p.length ? p : false;
@@ -3279,6 +3362,17 @@ function curve_ellipse_intersection(curve_points, center, radiusX, radiusY, cs)
     for (j=0; j<n; ++j)
     {
         p = line_ellipse_intersection(curve_points[j], curve_points[j+1], abcdef);
+        if (p) i.push.apply(i, p);
+    }
+    return i.length ? i : false;
+}
+function curve_arc_intersection(curve_points, center, radiusX, radiusY, cs, theta, dtheta)
+{
+    var i = [], j, k, p, n = curve_points.length-1,
+        abcdef = ellipse2quadratic(center, radiusX, radiusY, cs);
+    for (j=0; j<n; ++j)
+    {
+        p = line_arc_intersection(curve_points[j], curve_points[j+1], abcdef, center, radiusX, radiusY, cs, theta, dtheta);
         if (p) i.push.apply(i, p);
     }
     return i.length ? i : false;
@@ -3483,34 +3577,25 @@ function is_convex(points)
     }
     return 1 === abs(stdMath.round(angle_sum / TWO_PI));
 }
-/*function ellipse_point(cx, cy, rx, ry, angle, theta, cs)
-{
-    var M = rx*stdMath.cos(theta), N = ry*stdMath.sin(theta);
-    cs = cs || [stdMath.cos(angle), stdMath.sin(angle)];
-    return {
-        x: cx + cs[0]*M - cs[1]*N,
-        y: cy + cs[1]*M + cs[0]*N
-    };
-}*/
-function ellipse_params(x1, y1, x2, y2, fa, fs, rx, ry, cs)
+function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {
     // Step 1: simplify through translation/rotation
     var x =  cs[0]*(x1 - x2)/2 + cs[1]*(y1 - y2)/2,
         y = -cs[1]*(x1 - x2)/2 + cs[0]*(y1 - y2)/2,
-        px = x*x, py = y*y, prx = rx*rx, pry = ry*ry
-        ;/*,L = px/prx + py/pry;
+        px = x*x, py = y*y, prx = rx*rx, pry = ry*ry,
+        L = px/prx + py/pry;
 
-    if (L > 1)
-    {
-        // correct out-of-range radii
-        rx = sqrt(L)*rx;
-        ry = sqrt(L)*ry;
-    }*/
+    // correct out-of-range radii
+    L = sqrt(L);
+    rx *= L;
+    ry *= L;
+    prx = rx*rx;
+    pry = ry*ry;
 
     // Step 2 + 3: compute center
     var M = sqrt(abs((prx*pry - prx*py - pry*px)/(prx*py + pry*px)))*(fa === fs ? -1 : 1),
-        _cx = M*(rx*y)/ry,
-        _cy = M*(-ry*x)/rx,
+        _cx = M*rx*y/ry,
+        _cy = -M*ry*x/rx,
 
         cx = cs[0]*_cx - cs[1]*_cy + (x1 + x2)/2,
         cy = cs[1]*_cx + cs[0]*_cy + (y1 + y2)/2
@@ -3518,16 +3603,31 @@ function ellipse_params(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 
     // Step 4: compute θ and dθ
     var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry),
-        dTheta = deg(vector_angle(
+        dtheta = deg(vector_angle(
             (x - _cx)/rx, (y - _cy)/ry,
             (-x - _cx)/rx, (-y - _cy)/ry
         )) % 360;
 
-    if (!fs && dTheta > 0) dTheta -= 360;
-    if (fs && dTheta < 0) dTheta += 360;
+    if (!fs && dtheta > 0) dtheta -= 360;
+    if (fs && dtheta < 0) dtheta += 360;
 
-    return [{x:cx, y:cy}, theta, rad(dTheta)];
+    return [{x:cx, y:cy}, theta, rad(dtheta), rx, ry];
 }
+/*function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
+{
+    var
+        cth0 = stdMath.cos(theta),
+        sth0 = stdMath.sin(theta),
+        cth1 = stdMath.cos(theta+dtheta),
+        sth1 = stdMath.sin(theta+dtheta),
+        x1 = cx + cs[0]*rx*cth0 - cs[1]*ry*sth0,
+        y1 = cy + cs[1]*rx*cth0 + cs[0]*ry*sth0,
+        x2 = cx + cs[0]*rx*cth1 - cs[1]*ry*sth1,
+        y2 = cy + cs[1]*rx*cth1 + cs[0]*ry*sth1,
+        fa = abs(deg(dtheta)) > 180,
+        fs = abs(deg(dtheta)) > 0;
+    return [{x:x1, y:y1}, {x:x2, y:y2}, fa, fs];
+}*/
 function vector_angle(ux, uy, vx, vy)
 {
     return sign(ux*vy - uy*vx)*angle(ux, uy, vx, vy);
@@ -3553,7 +3653,7 @@ function merge(keys, a, b)
     }
     return a;
 }
-function SVG(tag, atts, svg, g, ga)
+function SVG(tag, atts, svg, childNodes)
 {
     var setAnyway = false;
     atts = atts || EMPTY_OBJ;
@@ -3561,13 +3661,7 @@ function SVG(tag, atts, svg, g, ga)
     {
         svg = '<'+tag+' '+Object.keys(atts).reduce(function(s, a) {
             return s + a+'="'+Str(atts[a][0])+'" ';
-        }, '')+'/>';
-        if (g)
-        {
-            svg = '<g '+Object.keys(ga||EMPTY_OBJ).reduce(function(s, a) {
-                return s + a+'="'+Str(ga[a][0])+'" ';
-            }, '')+'>'+svg+'</g>';
-        }
+        }, '')+(childNodes ? ('>'+Str(childNodes)+'</'+tag+'>') : '/>');
     }
     else
     {
@@ -3575,26 +3669,17 @@ function SVG(tag, atts, svg, g, ga)
         {
             setAnyway = true;
             svg = document.createElementNS('http://www.w3.org/2000/svg', tag);
-            if (g)
+            if (childNodes)
             {
-                g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                g.appendChild(svg);
+                for (var i=0,n=childNodes.length; i<n; ++i)
+                {
+                    svg.appendChild(childNodes[i]);
+                }
             }
-        }
-        else if (g)
-        {
-            g = svg;
-            svg = g.firstChild || g;
         }
         Object.keys(atts).forEach(function(a) {
             if (setAnyway || atts[a][1]) svg.setAttribute(a, atts[a][0]);
         });
-        if (g && ga)
-        {
-            Object.keys(ga).forEach(function(a) {
-                if (setAnyway || ga[a][1]) g.setAttribute(a, ga[a][0]);
-            });
-        }
     }
     return svg;
 }

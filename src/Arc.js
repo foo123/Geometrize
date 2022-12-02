@@ -94,13 +94,6 @@ var Arc = makeClass(Curve, {
             enumerable: true,
             configurable: false
         });
-        def(self, 'cs', {
-            get: function() {
-                return [_cos, _sin];
-            },
-            enumerable: false,
-            configurable: false
-        });
         def(self, 'largeArc', {
             get: function() {
                 return _largeArc.val();
@@ -133,22 +126,53 @@ var Arc = makeClass(Curve, {
         });
         def(self, 'center', {
             get: function() {
-                if (null == _params)
-                {
-                    _params = ellipse_params(self.start.x, self.start.y, self.end.x, self.end.y, self.largeArc, self.sweep, self.radiusX, self.radiusY, self.cs);
-                }
-                return _params[0];
+                return self._params[0];
             },
             enumerable: false,
             configurable: false
         });
         def(self, 'theta', {
             get: function() {
+                return self._params[1];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'dtheta', {
+            get: function() {
+                return self._params[2];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'rX', {
+            get: function() {
+                return self._params[3];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'rY', {
+            get: function() {
+                return self._params[4];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'cs', {
+            get: function() {
+                return [_cos, _sin];
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_params', {
+            get: function() {
                 if (null == _params)
                 {
-                    var c = self.center;
+                    _params = arc2ellipse(self.start.x, self.start.y, self.end.x, self.end.y, self.largeArc, self.sweep, self.radiusX, self.radiusY, self.cs);
                 }
-                return [_params[1], _params[2]];
+                return _params;
             },
             enumerable: false,
             configurable: false
@@ -208,16 +232,15 @@ var Arc = makeClass(Curve, {
         return new Arc(this.start.clone(), this.end.clone(), this.radiusX, this.radiusY, this.angle, this.largeArc, this.sweep);
     },
     transform: function(matrix) {
-        var s = this.start.transform(matrix),
-            e = this.end.transform(matrix),
-            rX = this.radiusX,
+        var rX = this.radiusX,
             rY = this.radiusY,
             a = this.angle,
             r = deg(matrix.getRotationAngle()),
             s = matrix.getScale()
         ;
         return new Arc(
-            s, e,
+            this.start.transform(matrix),
+            this.end.transform(matrix),
             rX * s.x,
             rY * s.y,
             a + r,
@@ -243,11 +266,12 @@ var Arc = makeClass(Curve, {
     f: function(t) {
         var c = this.center,
             theta = this.theta,
-            rX = this.radiusX,
-            rY = this.radiusY,
+            dtheta = this.dtheta,
+            rX = this.rX,
+            rY = this.rY,
             cs = this.cs,
-            ct = stdMath.cos(theta[0] + t*theta[1]),
-            st = stdMath.sin(theta[0] + t*theta[1])
+            ct = stdMath.cos(theta + t*dtheta),
+            st = stdMath.sin(theta + t*dtheta)
         ;
         return {
             x: c.x + rX*cs[0]*ct - rY*cs[1]*st,
@@ -259,7 +283,7 @@ var Arc = makeClass(Curve, {
         return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     hasPoint: function(point) {
-        return point_on_curve(point, this._lines);
+        return point_on_arc(point, this.center, this.rX, this.rY, this.cs, this.theta, this.dtheta);
     },
     hasInsidePoint: function(point, strict) {
         return strict ? false : this.hasPoint(point);
@@ -282,7 +306,7 @@ var Arc = makeClass(Curve, {
         }
         else if (other instanceof Arc)
         {
-            i = curve_curve_intersection(this._lines, other._lines);
+            i = curve_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)

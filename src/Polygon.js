@@ -167,7 +167,12 @@ var Polygon = makeClass(Curve, {
             i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Polyline) || (other instanceof Polygon) || (other instanceof Arc))
+        else if (other instanceof Arc)
+        {
+            i = curve_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point) : false;
+        }
+        else if ((other instanceof Polyline) || (other instanceof Polygon))
         {
             i = curve_curve_intersection(this._lines, other._lines);
             return i ? i.map(Point) : false;
