@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html><head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>Geometrize</title>
+<style type="text/css">
+#test {
+    position: relative;
+    width: 100%;
+    height: 1000px;
+    padding: 0;
+    margin: 0 auto;
+    overflow: visible;
+}
+</style>
+</head><body>
+<h1>Geometrize</h1>
+<button id="animate">start tween</button>
+<div id="test"></div>
+<script src="../build/Geometrize.js"></script>
+<script>
+"use strict";
+(function() {
+    var G = Geometrize, r = 50, cx = 100, cy = 100;
+    var plane = G.Plane(document.getElementById('test'), 300, 300);
+    var circle = G.Circle([cx,cy], r);
+    var square = G.Polygon([[cx+r,cy],[cx+r,cy-r],[cx,cy-r],[cx-r,cy-r],[cx-r,cy],[cx-r,cy+r],[cx,cy+r],[cx+r,cy+r]]);
+    var tween = G.Tween(circle, square, 1000);
+    plane.add(tween);
+    document.getElementById('animate').addEventListener('click', function(evt) {
+        tween.rewind().start();
+    }, false);
+})();
+</script>
+</body></html>

@@ -187,6 +187,12 @@ var Polyline = makeClass(Curve, {
             return dist;
         }, Infinity));
     },
+    toBezier3: function() {
+        return this.lines.reduce(function(b, l) {
+            b.push.apply(b, l.toBezier3());
+            return b;
+        }, []);
+    },
     toSVG: function(svg) {
         return SVG('polyline', {
             'id': [this.id, false],

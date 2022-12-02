@@ -183,6 +183,12 @@ var Polygon = makeClass(Curve, {
         }
         return false;
     },
+    toBezier3: function() {
+        return this.edges.reduce(function(b, e) {
+            b.push.apply(b, e.toBezier3());
+            return b;
+        }, []);
+    },
     toSVG: function(svg) {
         return SVG('polygon', {
             'id': [this.id, false],

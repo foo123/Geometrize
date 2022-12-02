@@ -225,7 +225,7 @@ var Curve = makeClass(Primitive, {
     toLines: function() {
         return this._lines;
     },
-    toBezier: function() {
+    toBezier3: function() {
         return this;
     },
     toTex: function() {

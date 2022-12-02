@@ -57,7 +57,7 @@ var Plane = makeClass(null, {
             if (-1 !== index)
             {
                 el = svgEl[o.id];
-                if (isBrowser && el) el.parentNode.removeChild(el);
+                if (isBrowser && el && el.parentNode) el.parentNode.removeChild(el);
                 delete svgEl[o.id];
                 objects.splice(index, 1);
                 isChanged = true;
@@ -66,7 +66,7 @@ var Plane = makeClass(null, {
         };
         self.dispose = function() {
             if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
-            if (isBrowser) cancelAnimationFrame(raf);
+            if (isBrowser) window.cancelAnimationFrame(raf);
             svg = null;
             svgEl = null;
             objects = null;
@@ -108,9 +108,9 @@ var Plane = makeClass(null, {
                 }
             });
             isChanged = false;
-            raf = requestAnimationFrame(render);
+            raf = window.requestAnimationFrame(render);
         };
-        if (isBrowser) raf = requestAnimationFrame(render);
+        if (isBrowser) raf = window.requestAnimationFrame(render);
     },
     dispose: null,
     add: null,

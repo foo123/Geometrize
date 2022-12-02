@@ -43,3 +43,7 @@ intersections.forEach(p => {
     plane.add(p);
 });
 ```
+
+**Shape Tween** in progress
+
+![circle to square tween](/shapetween.gif)

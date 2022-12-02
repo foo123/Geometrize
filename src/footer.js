@@ -22,6 +22,7 @@ return {
     Ellipse: Ellipse,
     CompositeCurve: CompositeCurve,
     Shape: Shape,
+    Tween: Tween,
     Plane: Plane
 };
 });

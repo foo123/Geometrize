@@ -756,7 +756,7 @@ function SVG(tag, atts, svg, childNodes)
 {
     var setAnyway = false;
     atts = atts || EMPTY_OBJ;
-    if (false === svg)
+    if (!isBrowser || false === svg)
     {
         svg = '<'+tag+' '+Object.keys(atts).reduce(function(s, a) {
             return s + a+'="'+Str(atts[a][0])+'" ';

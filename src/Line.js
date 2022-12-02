@@ -182,6 +182,11 @@ var Bezier1 = makeClass(Bezier, {
     distanceToPoint: function(point) {
         return point_line_segment_distance(point, this._points[0], this._points[1]);
     },
+    toBezier3: function() {
+        return [
+        [this.f(0), this.f(1/3), this.f(2/3), this.f(1)]
+        ];
+    },
     toSVG: function(svg) {
         var p = this._points;
         return SVG('line', {

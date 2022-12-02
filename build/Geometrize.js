@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.2.0 (2022-12-02 16:25:08)
+*   @version 0.2.0 (2022-12-02 20:56:48)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.2.0 (2022-12-02 16:25:08)
+*   @version 0.2.0 (2022-12-02 20:56:48)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -1038,7 +1038,7 @@ var Curve = makeClass(Primitive, {
     toLines: function() {
         return this._lines;
     },
-    toBezier: function() {
+    toBezier3: function() {
         return this;
     },
     toTex: function() {
@@ -1507,6 +1507,11 @@ var Bezier1 = makeClass(Bezier, {
     distanceToPoint: function(point) {
         return point_line_segment_distance(point, this._points[0], this._points[1]);
     },
+    toBezier3: function() {
+        return [
+        [this.f(0), this.f(1/3), this.f(2/3), this.f(1)]
+        ];
+    },
     toSVG: function(svg) {
         var p = this._points;
         return SVG('line', {
@@ -1724,6 +1729,12 @@ var Polyline = makeClass(Curve, {
             }
             return dist;
         }, Infinity));
+    },
+    toBezier3: function() {
+        return this.lines.reduce(function(b, l) {
+            b.push.apply(b, l.toBezier3());
+            return b;
+        }, []);
     },
     toSVG: function(svg) {
         return SVG('polyline', {
@@ -2281,6 +2292,12 @@ var Polygon = makeClass(Curve, {
         }
         return false;
     },
+    toBezier3: function() {
+        return this.edges.reduce(function(b, e) {
+            b.push.apply(b, e.toBezier3());
+            return b;
+        }, []);
+    },
     toSVG: function(svg) {
         return SVG('polygon', {
             'id': [this.id, false],
@@ -2474,6 +2491,30 @@ var Circle = makeClass(Curve, {
             return other.intersects(this);
         }
         return false;
+    },
+    toBezier3: function() {
+        var r = this.radius,
+            c = this.center,
+            b = function(cx, cy, rx, ry, rev) {
+                return rev ? [
+                {x:cx, y:cy - ry},
+                {x:cx - 0.55228*rx, y:cy - ry},
+                {x:cx - rx, y:cy - 0.55228*ry},
+                {x:cx - rx, y:cy}
+                ] : [
+                {x:cx - rx, y:cy},
+                {x:cx - rx, y:cy - 0.55228*ry},
+                {x:cx - 0.55228*rx, y:cy - ry},
+                {x:cx, y:cy - ry}
+                ];
+            }
+        ;
+        return [
+        b(c.x, c.y, -r, r),
+        b(c.x, c.y, r, r, 1),
+        b(c.x, c.y, r, -r),
+        b(c.x, c.y, -r, -r, 1)
+        ];
     },
     toSVG: function(svg) {
         var c = this.center, r = this.radius;
@@ -2781,7 +2822,103 @@ var Ellipse = makeClass(Curve, {
 });
 // 2D generic Shape class
 // container for primitives shapes
-var Shape = makeClass(Primitive, {});// Plane
+var Shape = makeClass(Primitive, {});
+
+var Tween = makeClass(Primitive, {
+    constructor: function Tween(from, to, dur) {
+        var self = this, t = null, i = 0, k = 0, animate, run = false;
+
+        if (from instanceof Tween) return from;
+        if (!(self instanceof Tween)) return new Tween(from, to, dur);
+
+        Primitive.call(self);
+
+        t = {
+            a: from.toBezier3(),
+            b: to.toBezier3(),
+            p: null,
+            v: null
+        };
+        k = stdMath.ceil(dur/(1000/60));
+        var a = t.a.length < t.b.length ? t.a : t.b,
+            d = abs(t.a.length - t.b.length);
+        if (d)
+        {
+            i = 0;
+            while (0 < d)
+            {
+                a.splice(i, 0, a[i].map(function(xy) {
+                    return {x:xy.x, y:xy.y};
+                }));
+                --d;
+                i += 2;
+            }
+        }
+        t.v = t.a.map(function(_, i) {
+            return t.a[i].map(function(_, j) {
+                return {
+                    x: (t.b[i][j].x - t.a[i][j].x)/k,
+                    y: (t.b[i][j].y - t.a[i][j].y)/k
+                };
+            });
+        });
+
+        animate = function animate() {
+            if (!run) return;
+            if (i >= k)
+            {
+                t.p = t.b;
+                return;
+            }
+            ++i;
+            t.p = t.a.map(function(a, n) {
+                return a.map(function(xy, m) {
+                   return {
+                       x: xy.x + i*t.v[n][m].x,
+                       y: xy.y + i*t.v[n][m].y
+                   };
+                });
+            });
+            self.isChanged(true);
+            setTimeout(animate, 1000/60);
+        };
+
+        self.start = function() {
+            run = true;
+            animate();
+            return self;
+        };
+        self.stop = function() {
+            run = false;
+            return self;
+        };
+        self.rewind = function() {
+            i = 0;
+            t.p = t.a;
+            return self;
+        };
+        self.toSVG = function(svg) {
+            var path = t.p.map(function(cb) {
+                return 'M '+cb[0].x+' '+cb[0].y+' C '+cb[1].x+' '+cb[1].y+','+cb[2].x+' '+cb[2].y+','+cb[3].x+' '+cb[3].y;
+            }).join(' ');
+            return SVG('path', {
+                'id': [self.id, false],
+                'd': [path, self.isChanged()],
+                'style': [self.style.toSVG(), self.style.isChanged()]
+            }, arguments.length ? svg : false);
+        };
+        self.dispose = function() {
+            run = false;
+            t = null;
+            self.$super('dispose');
+        };
+        self.rewind();
+    },
+    name: 'Tween',
+    rewind: null,
+    start: null,
+    stop: null
+});// Plane
 // scene container for 2D geometric objects
 var Plane = makeClass(null, {
     constructor: function Plane(dom, width, height) {
@@ -2840,7 +2977,7 @@ var Plane = makeClass(null, {
             if (-1 !== index)
             {
                 el = svgEl[o.id];
-                if (isBrowser && el) el.parentNode.removeChild(el);
+                if (isBrowser && el && el.parentNode) el.parentNode.removeChild(el);
                 delete svgEl[o.id];
                 objects.splice(index, 1);
                 isChanged = true;
@@ -2849,7 +2986,7 @@ var Plane = makeClass(null, {
         };
         self.dispose = function() {
             if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
-            if (isBrowser) cancelAnimationFrame(raf);
+            if (isBrowser) window.cancelAnimationFrame(raf);
             svg = null;
             svgEl = null;
             objects = null;
@@ -2891,9 +3028,9 @@ var Plane = makeClass(null, {
                 }
             });
             isChanged = false;
-            raf = requestAnimationFrame(render);
+            raf = window.requestAnimationFrame(render);
         };
-        if (isBrowser) raf = requestAnimationFrame(render);
+        if (isBrowser) raf = window.requestAnimationFrame(render);
     },
     dispose: null,
     add: null,
@@ -3657,7 +3794,7 @@ function SVG(tag, atts, svg, childNodes)
 {
     var setAnyway = false;
     atts = atts || EMPTY_OBJ;
-    if (false === svg)
+    if (!isBrowser || false === svg)
     {
         svg = '<'+tag+' '+Object.keys(atts).reduce(function(s, a) {
             return s + a+'="'+Str(atts[a][0])+'" ';
@@ -3941,6 +4078,7 @@ return {
     Ellipse: Ellipse,
     CompositeCurve: CompositeCurve,
     Shape: Shape,
+    Tween: Tween,
     Plane: Plane
 };
 });

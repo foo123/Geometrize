@@ -168,6 +168,30 @@ var Circle = makeClass(Curve, {
         }
         return false;
     },
+    toBezier3: function() {
+        var r = this.radius,
+            c = this.center,
+            b = function(cx, cy, rx, ry, rev) {
+                return rev ? [
+                {x:cx, y:cy - ry},
+                {x:cx - 0.55228*rx, y:cy - ry},
+                {x:cx - rx, y:cy - 0.55228*ry},
+                {x:cx - rx, y:cy}
+                ] : [
+                {x:cx - rx, y:cy},
+                {x:cx - rx, y:cy - 0.55228*ry},
+                {x:cx - 0.55228*rx, y:cy - ry},
+                {x:cx, y:cy - ry}
+                ];
+            }
+        ;
+        return [
+        b(c.x, c.y, -r, r),
+        b(c.x, c.y, r, r, 1),
+        b(c.x, c.y, r, -r),
+        b(c.x, c.y, -r, -r, 1)
+        ];
+    },
     toSVG: function(svg) {
         var c = this.center, r = this.radius;
         return SVG('circle', {
