@@ -241,6 +241,33 @@ var Ellipse = makeClass(Curve, {
         }
         return false;
     },
+    toBezier3: function() {
+        var rx = this.radiusX,
+            ry = this.radiusY,
+            c = this.center,
+            cs = this.cs,
+            b3 = function(cx, cy, rx, ry, cos, sin, rev) {
+                var x1 = -rx, y1 = 0, x2 = -0.55228*rx, y2 = -0.55228*ry, x3 = 0, y3 = -ry;
+                return rev ? [
+                {x:cx + cos*x3 - sin*y3, y:cy + sin*x3 + cos*y3},
+                {x:cx + cos*x2 - sin*y3, y:cy + sin*x2 + cos*y3},
+                {x:cx + cos*x1 - sin*y2, y:cy + sin*x1 + cos*y2},
+                {x:cx + cos*x1 - sin*y1, y:cy + sin*x1 + cos*y1}
+                ] : [
+                {x:cx + cos*x1 - sin*y1, y:cy + sin*x1 + cos*y1},
+                {x:cx + cos*x1 - sin*y2, y:cy + sin*x1 + cos*y2},
+                {x:cx + cos*x2 - sin*y3, y:cy + sin*x2 + cos*y3},
+                {x:cx + cos*x3 - sin*y3, y:cy + sin*x3 + cos*y3}
+                ];
+            }
+        ;
+        return [
+        b3(c.x, c.y, -rx, ry, cs[0], cs[1], 0),
+        b3(c.x, c.y, rx, ry, cs[0], cs[1], 1),
+        b3(c.x, c.y, rx, -ry, cs[0], cs[1], 0),
+        b3(c.x, c.y, -rx, -ry, cs[0], cs[1], 1)
+        ];
+    },
     toSVG: function(svg) {
         var c = this.center,
             rX = this.radiusX,
@@ -265,6 +292,15 @@ var Ellipse = makeClass(Curve, {
             'd': [path, this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
+        ctx.stroke();
+        //ctx.closePath();
     },
     toTex: function() {
         var a = Str(this.angle)+'\\text{°}',

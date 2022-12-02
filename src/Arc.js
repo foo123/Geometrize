@@ -336,6 +336,16 @@ var Arc = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
     },
+    toCanvas: function(ctx) {
+        var c = this.center, rx = this.rX, ry = this.rY,
+            a = rad(this.angle), t = this.theta, d = this.dtheta, fs = !!this.sweep;
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.ellipse(c.x, c.x, rx, ry, a, t, t+d, fs);
+        ctx.stroke();
+        //ctx.closePath();
+    },
     toTex: function() {
         return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ?1 : 0)].join(',')+'\\right)';
     },

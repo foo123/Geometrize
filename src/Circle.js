@@ -171,7 +171,7 @@ var Circle = makeClass(Curve, {
     toBezier3: function() {
         var r = this.radius,
             c = this.center,
-            b = function(cx, cy, rx, ry, rev) {
+            b3 = function(cx, cy, rx, ry, rev) {
                 return rev ? [
                 {x:cx, y:cy - ry},
                 {x:cx - 0.55228*rx, y:cy - ry},
@@ -186,10 +186,10 @@ var Circle = makeClass(Curve, {
             }
         ;
         return [
-        b(c.x, c.y, -r, r),
-        b(c.x, c.y, r, r, 1),
-        b(c.x, c.y, r, -r),
-        b(c.x, c.y, -r, -r, 1)
+        b3(c.x, c.y, -r, r, 0),
+        b3(c.x, c.y, r, r, 1),
+        b3(c.x, c.y, r, -r, 0),
+        b3(c.x, c.y, -r, -r, 1)
         ];
     },
     toSVG: function(svg) {
@@ -210,6 +210,15 @@ var Circle = makeClass(Curve, {
             'd': [path, this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var c = this.center, r = this.radius;
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.arc(c.x, c.x, r, 0, TWO_PI);
+        ctx.stroke();
+        //ctx.closePath();
     },
     toTex: function() {
         var c = this.center, r = Str(this.radius);

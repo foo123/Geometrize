@@ -3,9 +3,9 @@
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-<title>Geometrize</title>
+<title>Geometrize Tween</title>
 <style type="text/css">
-#test {
+#container {
     position: relative;
     width: 100%;
     height: 1000px;
@@ -13,22 +13,39 @@
     margin: 0 auto;
     overflow: visible;
 }
+#button {
+    position: relative;
+    display: block;
+    padding: 8px 12px;
+    background: white;
+    color: black;
+    border: 1px solid #676767;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 1px;
+}
+#button:hover {
+    border-width: 2px;
+    margin: 0;
+}
 </style>
 </head><body>
-<h1>Geometrize</h1>
-<button id="animate">start tween</button>
-<div id="test"></div>
+<h1>Geometrize Tween</h1>
+<button id="button">start tween</button>
+<div id="container"></div>
 <script src="../build/Geometrize.js"></script>
 <script>
 "use strict";
 (function() {
-    var G = Geometrize, r = 50, cx = 100, cy = 100;
-    var plane = G.Plane(document.getElementById('test'), 300, 300);
-    var circle = G.Circle([cx,cy], r);
-    var square = G.Polygon([[cx+r,cy],[cx+r,cy-r],[cx,cy-r],[cx-r,cy-r],[cx-r,cy],[cx-r,cy+r],[cx,cy+r],[cx+r,cy+r]]);
-    var tween = G.Tween(circle, square, 1000);
+    const {Plane, Tween, Polygon, Ellipse, Circle} = Geometrize,
+        r = 50, rx = 50, ry = 20, cx = 100, cy = 100;
+    const plane = Plane(document.getElementById('container'), 300, 300);
+    const circle = Circle([cx,cy], r);
+    //const ellipse = Ellipse([cx, cy], rx, ry, -30);
+    const square = Polygon([[cx+r,cy],[cx+r,cy-r],[cx,cy-r],[cx-r,cy-r],[cx-r,cy],[cx-r,cy+r],[cx,cy+r],[cx+r,cy+r]]);
+    const tween = Tween(circle, square, 1000);
     plane.add(tween);
-    document.getElementById('animate').addEventListener('click', function(evt) {
+    document.getElementById('button').addEventListener('click', () => {
         tween.rewind().start();
     }, false);
 })();

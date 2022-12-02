@@ -210,6 +210,15 @@ var Polyline = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
     },
+    toCanvas: function(ctx) {
+        var p = this._points, n = p.length;
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.moveTo(p[0].x, p[0].y);
+        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        ctx.stroke();
+    },
     toTex: function() {
         var lines = this.lines;
         return '\\text{Polyline: }\\begin{cases}&'+lines.map(Tex).join('\\\\&')+'\\end{cases}';

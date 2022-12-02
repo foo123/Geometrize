@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.2.0 (2022-12-02 20:56:48)
+*   @version 0.2.0 (2022-12-02 23:51:44)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.2.0 (2022-12-02 20:56:48)
+*   @version 0.2.0 (2022-12-02 23:51:44)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -616,6 +616,8 @@ var Primitive = makeClass(null, merge(null, {
     },
     toSVGPath: function(svg) {
         return arguments.length ? svg : '';
+    },
+    toCanvas: function(ctx) {
     },
     toTex: function() {
         return '\\text{Primitive}';
@@ -1509,7 +1511,7 @@ var Bezier1 = makeClass(Bezier, {
     },
     toBezier3: function() {
         return [
-        [this.f(0), this.f(1/3), this.f(2/3), this.f(1)]
+        [this.f(0), this.f(0.5), this.f(0.5), this.f(1)]
         ];
     },
     toSVG: function(svg) {
@@ -1531,6 +1533,15 @@ var Bezier1 = makeClass(Bezier, {
             'd': [path, this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var p1 = this._points[0], p2 = this._points[1];
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
     },
     toTex: function() {
         var p1 = this.start, p2 = this.end;
@@ -1752,6 +1763,15 @@ var Polyline = makeClass(Curve, {
             'd': [path, this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var p = this._points, n = p.length;
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.moveTo(p[0].x, p[0].y);
+        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        ctx.stroke();
     },
     toTex: function() {
         var lines = this.lines;
@@ -2099,6 +2119,16 @@ var Arc = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
     },
+    toCanvas: function(ctx) {
+        var c = this.center, rx = this.rX, ry = this.rY,
+            a = rad(this.angle), t = this.theta, d = this.dtheta, fs = !!this.sweep;
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.ellipse(c.x, c.x, rx, ry, a, t, t+d, fs);
+        ctx.stroke();
+        //ctx.closePath();
+    },
     toTex: function() {
         return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ?1 : 0)].join(',')+'\\right)';
     },
@@ -2315,6 +2345,15 @@ var Polygon = makeClass(Curve, {
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
     },
+    toCanvas: function(ctx) {
+        var p = this._lines, n = p.length;
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.moveTo(p[0].x, p[0].y);
+        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        ctx.stroke();
+    },
     toTex: function() {
         return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';
     },
@@ -2495,7 +2534,7 @@ var Circle = makeClass(Curve, {
     toBezier3: function() {
         var r = this.radius,
             c = this.center,
-            b = function(cx, cy, rx, ry, rev) {
+            b3 = function(cx, cy, rx, ry, rev) {
                 return rev ? [
                 {x:cx, y:cy - ry},
                 {x:cx - 0.55228*rx, y:cy - ry},
@@ -2510,10 +2549,10 @@ var Circle = makeClass(Curve, {
             }
         ;
         return [
-        b(c.x, c.y, -r, r),
-        b(c.x, c.y, r, r, 1),
-        b(c.x, c.y, r, -r),
-        b(c.x, c.y, -r, -r, 1)
+        b3(c.x, c.y, -r, r, 0),
+        b3(c.x, c.y, r, r, 1),
+        b3(c.x, c.y, r, -r, 0),
+        b3(c.x, c.y, -r, -r, 1)
         ];
     },
     toSVG: function(svg) {
@@ -2534,6 +2573,15 @@ var Circle = makeClass(Curve, {
             'd': [path, this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var c = this.center, r = this.radius;
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.arc(c.x, c.x, r, 0, TWO_PI);
+        ctx.stroke();
+        //ctx.closePath();
     },
     toTex: function() {
         var c = this.center, r = Str(this.radius);
@@ -2786,6 +2834,33 @@ var Ellipse = makeClass(Curve, {
         }
         return false;
     },
+    toBezier3: function() {
+        var rx = this.radiusX,
+            ry = this.radiusY,
+            c = this.center,
+            cs = this.cs,
+            b3 = function(cx, cy, rx, ry, cos, sin, rev) {
+                var x1 = -rx, y1 = 0, x2 = -0.55228*rx, y2 = -0.55228*ry, x3 = 0, y3 = -ry;
+                return rev ? [
+                {x:cx + cos*x3 - sin*y3, y:cy + sin*x3 + cos*y3},
+                {x:cx + cos*x2 - sin*y3, y:cy + sin*x2 + cos*y3},
+                {x:cx + cos*x1 - sin*y2, y:cy + sin*x1 + cos*y2},
+                {x:cx + cos*x1 - sin*y1, y:cy + sin*x1 + cos*y1}
+                ] : [
+                {x:cx + cos*x1 - sin*y1, y:cy + sin*x1 + cos*y1},
+                {x:cx + cos*x1 - sin*y2, y:cy + sin*x1 + cos*y2},
+                {x:cx + cos*x2 - sin*y3, y:cy + sin*x2 + cos*y3},
+                {x:cx + cos*x3 - sin*y3, y:cy + sin*x3 + cos*y3}
+                ];
+            }
+        ;
+        return [
+        b3(c.x, c.y, -rx, ry, cs[0], cs[1], 0),
+        b3(c.x, c.y, rx, ry, cs[0], cs[1], 1),
+        b3(c.x, c.y, rx, -ry, cs[0], cs[1], 0),
+        b3(c.x, c.y, -rx, -ry, cs[0], cs[1], 1)
+        ];
+    },
     toSVG: function(svg) {
         var c = this.center,
             rX = this.radiusX,
@@ -2810,6 +2885,15 @@ var Ellipse = makeClass(Curve, {
             'd': [path, this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
+        ctx.stroke();
+        //ctx.closePath();
     },
     toTex: function() {
         var a = Str(this.angle)+'\\text{°}',
@@ -2926,6 +3010,7 @@ var Plane = makeClass(null, {
             svg = null,
             svgEl = null,
             objects = null,
+            intersections = null,
             isChanged = true,
             render, raf;
 
@@ -2984,6 +3069,24 @@ var Plane = makeClass(null, {
             }
             return self;
         };
+        self.getIntersections = function() {
+            if (!objects || !objects.length) return [];
+            if (isChanged || !intersections)
+            {
+                intersections = [];
+                for (var k,i,j=0,n=objects.length; j<n; ++j)
+                {
+                    for (k=j+1; k<n; ++k)
+                    {
+                        i = objects[j].intersects(objects[k]);
+                        if (i) intersections.push.apply(intersections, i);
+                    }
+                }
+            }
+            return intersections ? intersections.map(function(p) {
+                return p.clone();
+            }) : [];
+        };
         self.dispose = function() {
             if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
             if (isBrowser) window.cancelAnimationFrame(raf);
@@ -2993,6 +3096,8 @@ var Plane = makeClass(null, {
             return self;
         };
         self.toSVG = function() {
+        };
+        self.toCanvas = function() {
         };
         render = function render() {
             if (!objects) return;
@@ -3035,7 +3140,9 @@ var Plane = makeClass(null, {
     dispose: null,
     add: null,
     remove: null,
-    toSVG: null
+    getIntersections: null,
+    toSVG: null,
+    toCanvas: null
 });
 // ---- utilities -----
 function is_strictly_zero(x)

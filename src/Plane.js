@@ -6,6 +6,7 @@ var Plane = makeClass(null, {
             svg = null,
             svgEl = null,
             objects = null,
+            intersections = null,
             isChanged = true,
             render, raf;
 
@@ -64,6 +65,24 @@ var Plane = makeClass(null, {
             }
             return self;
         };
+        self.getIntersections = function() {
+            if (!objects || !objects.length) return [];
+            if (isChanged || !intersections)
+            {
+                intersections = [];
+                for (var k,i,j=0,n=objects.length; j<n; ++j)
+                {
+                    for (k=j+1; k<n; ++k)
+                    {
+                        i = objects[j].intersects(objects[k]);
+                        if (i) intersections.push.apply(intersections, i);
+                    }
+                }
+            }
+            return intersections ? intersections.map(function(p) {
+                return p.clone();
+            }) : [];
+        };
         self.dispose = function() {
             if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
             if (isBrowser) window.cancelAnimationFrame(raf);
@@ -73,6 +92,8 @@ var Plane = makeClass(null, {
             return self;
         };
         self.toSVG = function() {
+        };
+        self.toCanvas = function() {
         };
         render = function render() {
             if (!objects) return;
@@ -115,5 +136,7 @@ var Plane = makeClass(null, {
     dispose: null,
     add: null,
     remove: null,
-    toSVG: null
+    getIntersections: null,
+    toSVG: null,
+    toCanvas: null
 });

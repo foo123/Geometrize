@@ -184,7 +184,7 @@ var Bezier1 = makeClass(Bezier, {
     },
     toBezier3: function() {
         return [
-        [this.f(0), this.f(1/3), this.f(2/3), this.f(1)]
+        [this.f(0), this.f(0.5), this.f(0.5), this.f(1)]
         ];
     },
     toSVG: function(svg) {
@@ -206,6 +206,15 @@ var Bezier1 = makeClass(Bezier, {
             'd': [path, this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var p1 = this._points[0], p2 = this._points[1];
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
     },
     toTex: function() {
         var p1 = this.start, p2 = this.end;

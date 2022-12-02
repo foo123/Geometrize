@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html><head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<title>Geometrize Intersections</title>
+<style type="text/css">
+#container {
+    position: relative;
+    width: 100%;
+    height: 1000px;
+    padding: 0;
+    margin: 0 auto;
+    overflow: visible;
+}
+#button {
+    position: relative;
+    display: block;
+    padding: 8px 12px;
+    background: white;
+    color: black;
+    border: 1px solid #676767;
+    border-radius: 8px;
+    cursor: pointer;
+    margin: 1px;
+}
+#button:hover {
+    border-width: 2px;
+    margin: 0;
+}
+</style>
+</head><body>
+<h1>Geometrize Intersections</h1>
+<button id="button">find intersections</button>
+<div id="container"></div>
+<script src="../build/Geometrize.js"></script>
+<script>
+"use strict";
+(function() {
+    const {Plane, Ellipse, Circle, Arc, Line} = Geometrize;
+    const plane = Plane(document.getElementById('container'), 300, 300);
+    const ellipse = Ellipse([40,40], 30, 10, -45);
+    const circle = Circle([30,30], 20);
+    const arc = Arc([100,100], [170,90], 30, 10, 30, 0, 1);
+    const line1 = Line([20,20], [60,60]);
+    const line2 = Line([50,2], [20,70]);
+    const line3 = Line([60,160], [300,0]);
+    const line4 = Line([60,120], [300,-40]);
+    let intersections = [];
+
+    line1.style['stroke'] = 'blue';
+    line2.style['stroke'] = 'green';
+    line3.style['stroke'] = 'orange';
+    line4.style['stroke'] = 'cyan';
+    plane.add(line1);
+    plane.add(line2);
+    plane.add(line3);
+    plane.add(line4);
+    plane.add(ellipse);
+    plane.add(circle);
+    plane.add(arc);
+    document.getElementById('button').addEventListener('click', () => {
+        intersections.forEach(p => {
+            plane.remove(p);
+            p.dispose();
+        });
+        intersections = plane.getIntersections();
+        intersections.forEach(p => {
+            p.style['stroke'] = 'red';
+            p.style['stroke-width'] = 2;
+            plane.add(p);
+        });
+    }, false);
+    /*
+    let dx = 12, dy = 1;
+    setTimeout(function animate() {
+        if (0 > line1.start.x+dx || line1.start.x+dx > plane.width) dx = -dx;
+        if (0 > line1.start.y+dy || line1.start.y+dy > plane.height) dy = -dy;
+        line1.start.x += dx;
+        line1.start.y += dy;
+        line1.end.x += dx;
+        line1.end.y += dy;
+        setTimeout(animate, 500);
+    }, 500);*/
+})();
+</script>
+</body></html>
