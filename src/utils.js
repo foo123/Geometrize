@@ -957,6 +957,20 @@ function unobserveArray(array, onDel)
 
     return array;
 }
+function clamp(v, m, M)
+{
+    return stdMath.max(stdMath.min(v, M), m);
+}
+var ESC_RE = /([.*+?^${}()|\[\]\/\\\-])/g;
+function esc(s)
+{
+    return Str(s).replace(ESC_RE, '\\$1');
+}
+function trim(s)
+{
+    //return s.replace(/^\s+/gm, '').replace(/\s+$/gm, '');
+    s.trim();
+}
 function identity(x)
 {
     return x;

@@ -315,6 +315,60 @@ var Arc = makeClass(Curve, {
         }
         return false;
     },
+    toBezier3: function() {
+        var rx = this.rX,
+            ry = this.rY,
+            c = this.center,
+            cs = this.cs,
+            cos = cs[0],
+            sin = cs[1],
+            theta = this.theta,
+            dtheta = this.dtheta,
+            arc = function(x, y) {
+                x *= rx;
+                y *= ry;
+                return {
+                x:cos*x - sin*y + c.x,
+                y:sin*x + cos*y + c.y
+                };
+            },
+            b3 = function(theta, dtheta, rev) {
+                var f = is_almost_equal(dtheta, PI/2)
+                    ? 0.551915024494
+                    : (is_almost_equal(dtheta, -PI/2)
+                    ? -0.551915024494
+                    : stdMath.tan(dtheta/4)*4/3),
+                    x1 = stdMath.cos(theta),
+                    y1 = stdMath.sin(theta),
+                    x2 = stdMath.cos(theta + dtheta),
+                    y2 = stdMath.sin(theta + dtheta)
+                ;
+                return rev ? [
+                arc(x2, y2),
+                arc(x2 + y2*f, y2 - x2*f),
+                arc(x1 - y1*f, y1 + x1*f),
+                arc(x1, y1)
+                ] : [
+                arc(x1, y1),
+                arc(x1 - y1*f, y1 + x1*f),
+                arc(x2 + y2*f, y2 - x2*f),
+                arc(x2, y2)
+                ];
+            },
+            r = abs(dtheta) / (PI/2),
+            i, j, n, beziers
+        ;
+
+        if (is_almost_equal(r, 1)) r = 1;
+        n = stdMath.max(stdMath.ceil(r), 1);
+        dtheta /= n;
+        beziers = new Array(n)
+        for (j=0,i=0; i<n; ++i,j=1-j,theta+=dtheta)
+        {
+            beziers[i] = b3(theta, dtheta/*, j*/);
+        }
+        return beziers;
+    },
     toSVG: function(svg) {
         var path = this.toSVGPath();
         return SVG('path', {
@@ -347,7 +401,7 @@ var Arc = makeClass(Curve, {
         //ctx.closePath();
     },
     toTex: function() {
-        return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ?1 : 0)].join(',')+'\\right)';
+        return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ? 1 : 0)].join(',')+'\\right)';
     },
     toString: function() {
         return 'Arc('+[Str(this.start), Str(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°', Str(this.largeArc), Str(this.sweep)].join(',')+')';

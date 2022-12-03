@@ -47,8 +47,27 @@ const {Plane, Tween, Polygon, Circle} = Geometrize,
     r = 50, cx = 100, cy = 100;
 const plane = Plane(document.getElementById('container'), 300, 300);
 const circle = Circle([cx,cy], r);
-const square = Polygon([[cx+r,cy],[cx+r,cy-r],[cx,cy-r],[cx-r,cy-r],[cx-r,cy],[cx-r,cy+r],[cx,cy+r],[cx+r,cy+r]]);
-const tween = Tween(circle, square, 1000);
+const square = Polygon([
+    [cx+r,cy],
+    [cx+r,cy-r],
+    [cx,cy-r],
+    [cx-r,cy-r],
+    [cx-r,cy],
+    [cx-r,cy+r],
+    [cx,cy+r],
+    [cx+r,cy+r]
+]);
+const tween = Tween({
+    from: {
+        shape: circle,
+        stroke: 'cyan'
+    },
+    to: {
+        shape: square,
+        stroke: 'orange'
+    },
+    duration: 1000
+});
 plane.add(tween);
 tween.start();
 ```

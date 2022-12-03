@@ -172,15 +172,16 @@ var Circle = makeClass(Curve, {
         var r = this.radius,
             c = this.center,
             b3 = function(cx, cy, rx, ry, rev) {
+                /*0.55228*/
                 return rev ? [
                 {x:cx, y:cy - ry},
-                {x:cx - 0.55228*rx, y:cy - ry},
-                {x:cx - rx, y:cy - 0.55228*ry},
+                {x:cx - 0.551915024494*rx, y:cy - ry},
+                {x:cx - rx, y:cy - 0.551915024494*ry},
                 {x:cx - rx, y:cy}
                 ] : [
                 {x:cx - rx, y:cy},
-                {x:cx - rx, y:cy - 0.55228*ry},
-                {x:cx - 0.55228*rx, y:cy - ry},
+                {x:cx - rx, y:cy - 0.551915024494*ry},
+                {x:cx - 0.551915024494*rx, y:cy - ry},
                 {x:cx, y:cy - ry}
                 ];
             }

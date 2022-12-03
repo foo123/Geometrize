@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.3.0 (2022-12-03 12:27:25)
+*   @version 0.3.0 (2022-12-03 18:39:26)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.3.0 (2022-12-03 12:27:25)
+*   @version 0.3.0 (2022-12-03 18:39:26)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -466,6 +466,283 @@ var Matrix = makeClass(null, {
 });
 var EYE = Matrix.eye();
 Geometrize.Matrix = Matrix;
+var hexRE = /^#([0-9a-fA-F]{3,6})\b/, rgbRE = /^(rgba?)\b\s*\(([^\)]*)\)/i, hslRE = /^(hsla?)\b\s*\(([^\)]*)\)/i;
+
+function hue2rgb(p, q, t)
+{
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1/6) return p + (q - p)*6*t;
+    if (t < 1/2) return q;
+    if (t < 2/3) return p + (q - p)*(2/3 - t)*6;
+    return p;
+}
+
+// Color utilities
+// eg for stroke, fill, ..
+var Color = {
+    keywords: {
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
+    /* extended */
+     'transparent'         : [  0,0,0        ,0]
+    ,'aliceblue'           : [  240,248,255  ,1]
+    ,'antiquewhite'        : [  250,235,215  ,1]
+    ,'aqua'                : [  0,255,255    ,1]
+    ,'aquamarine'          : [  127,255,212  ,1]
+    ,'azure'               : [  240,255,255  ,1]
+    ,'beige'               : [  245,245,220  ,1]
+    ,'bisque'              : [  255,228,196  ,1]
+    ,'black'               : [  0,0,0    ,    1]
+    ,'blanchedalmond'      : [  255,235,205  ,1]
+    ,'blue'                : [  0,0,255  ,    1]
+    ,'blueviolet'          : [  138,43,226   ,1]
+    ,'brown'               : [  165,42,42    ,1]
+    ,'burlywood'           : [  222,184,135  ,1]
+    ,'cadetblue'           : [  95,158,160   ,1]
+    ,'chartreuse'          : [  127,255,0    ,1]
+    ,'chocolate'           : [  210,105,30   ,1]
+    ,'coral'               : [  255,127,80   ,1]
+    ,'cornflowerblue'      : [  100,149,237  ,1]
+    ,'cornsilk'            : [  255,248,220  ,1]
+    ,'crimson'             : [  220,20,60    ,1]
+    ,'cyan'                : [  0,255,255    ,1]
+    ,'darkblue'            : [  0,0,139  ,    1]
+    ,'darkcyan'            : [  0,139,139    ,1]
+    ,'darkgoldenrod'       : [  184,134,11   ,1]
+    ,'darkgray'            : [  169,169,169  ,1]
+    ,'darkgreen'           : [  0,100,0  ,    1]
+    ,'darkgrey'            : [  169,169,169  ,1]
+    ,'darkkhaki'           : [  189,183,107  ,1]
+    ,'darkmagenta'         : [  139,0,139    ,1]
+    ,'darkolivegreen'      : [  85,107,47    ,1]
+    ,'darkorange'          : [  255,140,0    ,1]
+    ,'darkorchid'          : [  153,50,204   ,1]
+    ,'darkred'             : [  139,0,0  ,    1]
+    ,'darksalmon'          : [  233,150,122  ,1]
+    ,'darkseagreen'        : [  143,188,143  ,1]
+    ,'darkslateblue'       : [  72,61,139    ,1]
+    ,'darkslategray'       : [  47,79,79 ,    1]
+    ,'darkslategrey'       : [  47,79,79 ,    1]
+    ,'darkturquoise'       : [  0,206,209    ,1]
+    ,'darkviolet'          : [  148,0,211    ,1]
+    ,'deeppink'            : [  255,20,147   ,1]
+    ,'deepskyblue'         : [  0,191,255    ,1]
+    ,'dimgray'             : [  105,105,105  ,1]
+    ,'dimgrey'             : [  105,105,105  ,1]
+    ,'dodgerblue'          : [  30,144,255   ,1]
+    ,'firebrick'           : [  178,34,34    ,1]
+    ,'floralwhite'         : [  255,250,240  ,1]
+    ,'forestgreen'         : [  34,139,34    ,1]
+    ,'fuchsia'             : [  255,0,255    ,1]
+    ,'gainsboro'           : [  220,220,220  ,1]
+    ,'ghostwhite'          : [  248,248,255  ,1]
+    ,'gold'                : [  255,215,0    ,1]
+    ,'goldenrod'           : [  218,165,32   ,1]
+    ,'gray'                : [  128,128,128  ,1]
+    ,'green'               : [  0,128,0  ,    1]
+    ,'greenyellow'         : [  173,255,47   ,1]
+    ,'grey'                : [  128,128,128  ,1]
+    ,'honeydew'            : [  240,255,240  ,1]
+    ,'hotpink'             : [  255,105,180  ,1]
+    ,'indianred'           : [  205,92,92    ,1]
+    ,'indigo'              : [  75,0,130 ,    1]
+    ,'ivory'               : [  255,255,240  ,1]
+    ,'khaki'               : [  240,230,140  ,1]
+    ,'lavender'            : [  230,230,250  ,1]
+    ,'lavenderblush'       : [  255,240,245  ,1]
+    ,'lawngreen'           : [  124,252,0    ,1]
+    ,'lemonchiffon'        : [  255,250,205  ,1]
+    ,'lightblue'           : [  173,216,230  ,1]
+    ,'lightcoral'          : [  240,128,128  ,1]
+    ,'lightcyan'           : [  224,255,255  ,1]
+    ,'lightgoldenrodyellow': [  250,250,210  ,1]
+    ,'lightgray'           : [  211,211,211  ,1]
+    ,'lightgreen'          : [  144,238,144  ,1]
+    ,'lightgrey'           : [  211,211,211  ,1]
+    ,'lightpink'           : [  255,182,193  ,1]
+    ,'lightsalmon'         : [  255,160,122  ,1]
+    ,'lightseagreen'       : [  32,178,170   ,1]
+    ,'lightskyblue'        : [  135,206,250  ,1]
+    ,'lightslategray'      : [  119,136,153  ,1]
+    ,'lightslategrey'      : [  119,136,153  ,1]
+    ,'lightsteelblue'      : [  176,196,222  ,1]
+    ,'lightyellow'         : [  255,255,224  ,1]
+    ,'lime'                : [  0,255,0  ,    1]
+    ,'limegreen'           : [  50,205,50    ,1]
+    ,'linen'               : [  250,240,230  ,1]
+    ,'magenta'             : [  255,0,255    ,1]
+    ,'maroon'              : [  128,0,0  ,    1]
+    ,'mediumaquamarine'    : [  102,205,170  ,1]
+    ,'mediumblue'          : [  0,0,205  ,    1]
+    ,'mediumorchid'        : [  186,85,211   ,1]
+    ,'mediumpurple'        : [  147,112,219  ,1]
+    ,'mediumseagreen'      : [  60,179,113   ,1]
+    ,'mediumslateblue'     : [  123,104,238  ,1]
+    ,'mediumspringgreen'   : [  0,250,154    ,1]
+    ,'mediumturquoise'     : [  72,209,204   ,1]
+    ,'mediumvioletred'     : [  199,21,133   ,1]
+    ,'midnightblue'        : [  25,25,112    ,1]
+    ,'mintcream'           : [  245,255,250  ,1]
+    ,'mistyrose'           : [  255,228,225  ,1]
+    ,'moccasin'            : [  255,228,181  ,1]
+    ,'navajowhite'         : [  255,222,173  ,1]
+    ,'navy'                : [  0,0,128  ,    1]
+    ,'oldlace'             : [  253,245,230  ,1]
+    ,'olive'               : [  128,128,0    ,1]
+    ,'olivedrab'           : [  107,142,35   ,1]
+    ,'orange'              : [  255,165,0    ,1]
+    ,'orangered'           : [  255,69,0 ,    1]
+    ,'orchid'              : [  218,112,214  ,1]
+    ,'palegoldenrod'       : [  238,232,170  ,1]
+    ,'palegreen'           : [  152,251,152  ,1]
+    ,'paleturquoise'       : [  175,238,238  ,1]
+    ,'palevioletred'       : [  219,112,147  ,1]
+    ,'papayawhip'          : [  255,239,213  ,1]
+    ,'peachpuff'           : [  255,218,185  ,1]
+    ,'peru'                : [  205,133,63   ,1]
+    ,'pink'                : [  255,192,203  ,1]
+    ,'plum'                : [  221,160,221  ,1]
+    ,'powderblue'          : [  176,224,230  ,1]
+    ,'purple'              : [  128,0,128    ,1]
+    ,'red'                 : [  255,0,0  ,    1]
+    ,'rosybrown'           : [  188,143,143  ,1]
+    ,'royalblue'           : [  65,105,225   ,1]
+    ,'saddlebrown'         : [  139,69,19    ,1]
+    ,'salmon'              : [  250,128,114  ,1]
+    ,'sandybrown'          : [  244,164,96   ,1]
+    ,'seagreen'            : [  46,139,87    ,1]
+    ,'seashell'            : [  255,245,238  ,1]
+    ,'sienna'              : [  160,82,45    ,1]
+    ,'silver'              : [  192,192,192  ,1]
+    ,'skyblue'             : [  135,206,235  ,1]
+    ,'slateblue'           : [  106,90,205   ,1]
+    ,'slategray'           : [  112,128,144  ,1]
+    ,'slategrey'           : [  112,128,144  ,1]
+    ,'snow'                : [  255,250,250  ,1]
+    ,'springgreen'         : [  0,255,127    ,1]
+    ,'steelblue'           : [  70,130,180   ,1]
+    ,'tan'                 : [  210,180,140  ,1]
+    ,'teal'                : [  0,128,128    ,1]
+    ,'thistle'             : [  216,191,216  ,1]
+    ,'tomato'              : [  255,99,71    ,1]
+    ,'turquoise'           : [  64,224,208   ,1]
+    ,'violet'              : [  238,130,238  ,1]
+    ,'wheat'               : [  245,222,179  ,1]
+    ,'white'               : [  255,255,255  ,1]
+    ,'whitesmoke'          : [  245,245,245  ,1]
+    ,'yellow'              : [  255,255,0    ,1]
+    ,'yellowgreen'         : [  154,205,50   ,1]
+    },
+    hex2rgb: function(h) {
+        if (!h || 3 > h.length)
+        {
+            return [0, 0, 0, 0];
+        }
+        else if (6 > h.length)
+        {
+            return [
+            clamp(parseInt(h[0]+h[0], 16)||0, 0, 255),
+            clamp(parseInt(h[1]+h[1], 16)||0, 0, 255),
+            clamp(parseInt(h[2]+h[2], 16)||0, 0, 255),
+            1
+            ];
+        }
+        else
+        {
+            return [
+            clamp(parseInt(h[0]+h[1], 16)||0, 0, 255),
+            clamp(parseInt(h[2]+h[3], 16)||0, 0, 255),
+            clamp(parseInt(h[4]+h[5], 16)||0, 0, 255),
+            1
+            ];
+        }
+    },
+    hsl2rgb: function(h, s, l, a) {
+        var r, g, b, p, q;
+        // convert to [0, 1] range
+        h = ((h + 360)%360)/360;
+        s /= 100;
+        l /= 100;
+        if (0 === s)
+        {
+            // achromatic
+            r = 1;
+            g = 1;
+            b = 1;
+        }
+        else
+        {
+            q = l < 0.5 ? l*(1 + s) : l + s - l*s;
+            p = 2*l - q;
+            r = hue2rgb(p, q, h + 1/3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1/3);
+        }
+        return [
+        clamp(stdMath.round(r*255), 0, 255),
+        clamp(stdMath.round(g*255), 0, 255),
+        clamp(stdMath.round(b*255), 0, 255),
+        a
+        ];
+    },
+    parse: function(s) {
+        var m, hasOpacity;
+        s = Str(s).toLowerCase();
+        if (m = s.match(hexRE))
+        {
+            // hex
+            return hex2rgb(m[1]);
+        }
+        if (m = s.match(hslRE))
+        {
+            // hsl(a)
+            hasOpacity = 'hsla' === m[1].toLowerCase();
+            var col = m[2].split(',').map(trim),
+                h = col[0] ? col[0] : '0',
+                s = col[1] ? col[1] : '0',
+                l = col[2] ? col[2] : '0',
+                a = hasOpacity && null != col[3] ? col[3] : '1';
+            h = parseFloat(h, 10);
+            s = '%' === s.slice(-1) ? parseFloat(s, 10) : parseFloat(s, 10)*100/255;
+            l = '%' === l.slice(-1) ? parseFloat(l, 10) : parseFloat(l, 10)*100/255;
+            a = parseFloat(a, 10);
+            return hsl2rgb(h, s, l, a);
+        }
+        if (m = s.match(rgbRE))
+        {
+            // rgb(a)
+            hasOpacity = 'rgba' === m[1].toLowerCase();
+            var col = m[2].split(',').map(trim),
+                r = col[0] ? col[0] : '0',
+                g = col[1] ? col[1] : '0',
+                b = col[2] ? col[2] : '0',
+                a = hasOpacity && null != col[3] ? col[3] : '1';
+            r = '%' === r.slice(-1) ? parseFloat(r, 10)*2.55 : parseFloat(r, 10);
+            g = '%' === g.slice(-1) ? parseFloat(g, 10)*2.55 : parseFloat(g, 10);
+            b = '%' === b.slice(-1) ? parseFloat(b, 10)*2.55 : parseFloat(b, 10);
+            a = parseFloat(a, 10);
+            return [r, g, b, a];
+        }
+        if (HAS.call(Color.keywords, s))
+        {
+            // keyword
+            return Color.keywords[s].slice();
+        }
+    },
+    interpolate: function(r0, g0, b0, a0, r1, g1, b1, a1, t) {
+        var t0 = (t||0), t1 = 1 - t0;
+        return [
+        clamp(stdMath.round(t1*r0 + t0*r1), 0, 255),
+        clamp(stdMath.round(t1*g0 + t0*g1), 0, 255),
+        clamp(stdMath.round(t1*b0 + t0*b1), 0, 255),
+        clamp(t1*a0 + t0*a1, 0, 1)
+        ];
+    },
+    toCSS: function(r, g, b, a) {
+        return 3 < arguments.length ? 'rgba('+r+','+g+','+b+','+a+')' : 'rgb('+r+','+g+','+b+')';
+    }
+};
+Geometrize.Color = Color;
 // 2D Style class
 // eg stroke, fill, width, ..
 var Style = makeClass(null, merge(null, {
@@ -1588,7 +1865,7 @@ var Bezier1 = makeClass(Bezier, {
     },
     toTex: function() {
         var p1 = this.start, p2 = this.end;
-        return '\\text{Line: }'+signed(p2.y - p1.y, false)+' \\cdot x '+signed(p1.x - p2.x)+' \\cdot y '+signed(p2.x*p1.y - p1.x*p2.y)+'\\text{, }'+Str(stdMath.min(p1.x, p2.x))+' \\le x \\le '+Str(stdMath.max(p1.x, p2.x))+'\\text{, }'+Str(stdMath.min(p1.y, p2.y))+' \\le y \\le '+Str(stdMath.max(p1.y, p2.y));
+        return '\\text{Line: }'+signed(p2.y - p1.y, false)+' \\cdot x '+signed(p1.x - p2.x)+' \\cdot y '+signed(p2.x*p1.y - p1.x*p2.y)+' = 0\\text{, }'+Str(stdMath.min(p1.x, p2.x))+' \\le x \\le '+Str(stdMath.max(p1.x, p2.x))+'\\text{, }'+Str(stdMath.min(p1.y, p2.y))+' \\le y \\le '+Str(stdMath.max(p1.y, p2.y));
     },
     toString: function() {
         return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';
@@ -2152,6 +2429,60 @@ var Arc = makeClass(Curve, {
         }
         return false;
     },
+    toBezier3: function() {
+        var rx = this.rX,
+            ry = this.rY,
+            c = this.center,
+            cs = this.cs,
+            cos = cs[0],
+            sin = cs[1],
+            theta = this.theta,
+            dtheta = this.dtheta,
+            arc = function(x, y) {
+                x *= rx;
+                y *= ry;
+                return {
+                x:cos*x - sin*y + c.x,
+                y:sin*x + cos*y + c.y
+                };
+            },
+            b3 = function(theta, dtheta, rev) {
+                var f = is_almost_equal(dtheta, PI/2)
+                    ? 0.551915024494
+                    : (is_almost_equal(dtheta, -PI/2)
+                    ? -0.551915024494
+                    : stdMath.tan(dtheta/4)*4/3),
+                    x1 = stdMath.cos(theta),
+                    y1 = stdMath.sin(theta),
+                    x2 = stdMath.cos(theta + dtheta),
+                    y2 = stdMath.sin(theta + dtheta)
+                ;
+                return rev ? [
+                arc(x2, y2),
+                arc(x2 + y2*f, y2 - x2*f),
+                arc(x1 - y1*f, y1 + x1*f),
+                arc(x1, y1)
+                ] : [
+                arc(x1, y1),
+                arc(x1 - y1*f, y1 + x1*f),
+                arc(x2 + y2*f, y2 - x2*f),
+                arc(x2, y2)
+                ];
+            },
+            r = abs(dtheta) / (PI/2),
+            i, j, n, beziers
+        ;
+
+        if (is_almost_equal(r, 1)) r = 1;
+        n = stdMath.max(stdMath.ceil(r), 1);
+        dtheta /= n;
+        beziers = new Array(n)
+        for (j=0,i=0; i<n; ++i,j=1-j,theta+=dtheta)
+        {
+            beziers[i] = b3(theta, dtheta/*, j*/);
+        }
+        return beziers;
+    },
     toSVG: function(svg) {
         var path = this.toSVGPath();
         return SVG('path', {
@@ -2184,7 +2515,7 @@ var Arc = makeClass(Curve, {
         //ctx.closePath();
     },
     toTex: function() {
-        return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ?1 : 0)].join(',')+'\\right)';
+        return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ? 1 : 0)].join(',')+'\\right)';
     },
     toString: function() {
         return 'Arc('+[Str(this.start), Str(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°', Str(this.largeArc), Str(this.sweep)].join(',')+')';
@@ -2603,15 +2934,16 @@ var Circle = makeClass(Curve, {
         var r = this.radius,
             c = this.center,
             b3 = function(cx, cy, rx, ry, rev) {
+                /*0.55228*/
                 return rev ? [
                 {x:cx, y:cy - ry},
-                {x:cx - 0.55228*rx, y:cy - ry},
-                {x:cx - rx, y:cy - 0.55228*ry},
+                {x:cx - 0.551915024494*rx, y:cy - ry},
+                {x:cx - rx, y:cy - 0.551915024494*ry},
                 {x:cx - rx, y:cy}
                 ] : [
                 {x:cx - rx, y:cy},
-                {x:cx - rx, y:cy - 0.55228*ry},
-                {x:cx - 0.55228*rx, y:cy - ry},
+                {x:cx - rx, y:cy - 0.551915024494*ry},
+                {x:cx - 0.551915024494*rx, y:cy - ry},
                 {x:cx, y:cy - ry}
                 ];
             }
@@ -2911,7 +3243,9 @@ var Ellipse = makeClass(Curve, {
             c = this.center,
             cs = this.cs,
             b3 = function(cx, cy, rx, ry, cos, sin, rev) {
-                var x1 = -rx, y1 = 0, x2 = -0.55228*rx, y2 = -0.55228*ry, x3 = 0, y3 = -ry;
+                var x1 = -rx, y1 = 0,
+                    x2 = -0.551915024494*rx, y2 = -0.551915024494*ry,
+                    x3 = 0, y3 = -ry;
                 return rev ? [
                 {x:cx + cos*x3 - sin*y3, y:cy + sin*x3 + cos*y3},
                 {x:cx + cos*x2 - sin*y3, y:cy + sin*x2 + cos*y3},
@@ -2983,77 +3317,106 @@ Geometrize.Ellipse = Ellipse;
 var Shape = makeClass(Primitive, {});
 Geometrize.Shape = Shape;
 // Tween between 2D shapes
+// TODO: support keyframes
 var Tween = makeClass(Primitive, {
-    constructor: function Tween(fromShape, toShape, dur) {
-        var self = this, a, b, p, v, i = 0, k = 0,
-            animate, run = false, onStart = null, onEnd = null;
+    constructor: function Tween(tween) {
+        var self = this, a = null, b = null, p = null, v = null, step = 0, steps = 0,
+            fa = null, fb = null, sa = null, sb = null, sp = null, fp = null,
+            prepare, animate, run = false, onStart = null, onEnd = null, dt = 16/*1000/60*/;
 
-        if (fromShape instanceof Tween) return fromShape;
-        if (!(self instanceof Tween)) return new Tween(fromShape, toShape, dur);
+        if (tween instanceof Tween) return tween;
+        if (!(self instanceof Tween)) return new Tween(tween);
 
-        Primitive.call(self);
+        prepare = function prepare() {
+            if (null != a && null != b) return;
+            tween = tween || EMPTY_OBJ;
+            var from = tween.from || EMPTY_OBJ, to = tween.to || EMPTY_OBJ;
+            a = from.shape && is_function(from.shape.toBezier3) ? from.shape.toBezier3() : [];
+            b = to.shape && is_function(to.shape.toBezier3) ? to.shape.toBezier3() : [];
+            sa = is_string(from.stroke) ? Color.parse(from.stroke) : null;
+            sb = is_string(to.stroke) ? Color.parse(to.stroke) : null;
+            fa = is_string(from.fill) ? Color.parse(from.fill) : null;
+            fb = is_string(to.fill) ? Color.parse(to.fill) : null;
 
-        a = fromShape.toBezier3 ? fromShape.toBezier3() : [];
-        b = toShape.toBezier3 ? toShape.toBezier3() : [];
-        p = null;
-        v = null;
-        k = stdMath.ceil(dur/(16/*1000/60*/));
-        var d = abs(a.length - b.length), t;
-        if (0 < d)
-        {
-            t = a.length < b.length ? a : b;
-            i = t.length ? 1 : 0;
-            p = [{x:0, y:0}, {x:0, y:0}];
-            while (0 < d)
+            var d = abs(a.length - b.length), t, i, p;
+            if (0 < d)
             {
-                if (i >= 1) p = [t[i-1][3], t[i-1][3]];
-                t.splice(i, 0, [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]);
-                --d;
-                i += t.length > i+1 ? 2 : 1;
+                t = a.length < b.length ? a : b;
+                i = t.length ? 1 : 0;
+                p = [{x:0, y:0}, {x:0, y:0}];
+                while (0 < d)
+                {
+                    if (i >= 1) p = [t[i-1][3], t[i-1][3]];
+                    t.splice(i, 0, [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]);
+                    --d;
+                    i += t.length > i+1 ? 2 : 1;
+                }
             }
-        }
-        v = a.map(function(ai, i) {
-            var bi = b[i];
-            return ai.map(function(aij, j) {
-                var bij = bi[j];
-                return {
-                    x: (bij.x - aij.x)/k,
-                    y: (bij.y - aij.y)/k
-                };
-            });
-        });
 
+            steps = stdMath.ceil((tween.duration || 1000)/dt);
+            v = a.map(function(ai, i) {
+                var bi = b[i];
+                return ai.map(function(aij, j) {
+                    var bij = bi[j];
+                    return {
+                        x: (bij.x - aij.x)/steps,
+                        y: (bij.y - aij.y)/steps
+                    };
+                });
+            });
+        };
         animate = function animate() {
-            if (!run) return;
-            if (i >= k)
+            if (!run || (step > steps))
+            {
+                return;
+            }
+            if (step === steps)
             {
                 if (p !== b)
                 {
                     p = b;
+                    sp = sb;
+                    fp = fb;
+                    if (null != sa && null != sb)
+                        self.style['stroke'] = Color.toCSS(sp[0], sp[1], sp[2], sp[3]);
+                    if (null != fa && null != fb)
+                        self.style['fill'] = Color.toCSS(fp[0], fp[1], fp[2], fp[3]);
+                    self.isChanged(true);
                     if (onEnd) onEnd(self);
                 }
                 return;
             }
-            ++i;
-            p = a.map(function(an, n) {
-                var vn = v[n];
-                return an.map(function(anm, m) {
-                   var vnm = vn[m];
+            ++step;
+            p = a.map(function(ai, i) {
+                var vi = v[i];
+                return ai.map(function(aij, j) {
+                   var vij = vi[j];
                    return {
-                       x: anm.x + i*vnm.x,
-                       y: anm.y + i*vnm.y,
-                       i: i
+                       x: aij.x + step*vij.x,
+                       y: aij.y + step*vij.y,
+                       step: step, steps: steps
                    };
                 });
             });
+            if (null != sa && null != sb)
+            {
+                sp = Color.interpolate(sa[0], sa[1], sa[2], sa[3], sb[0], sb[1], sb[2], sb[3], step/steps);
+                self.style['stroke'] = Color.toCSS(sp[0], sp[1], sp[2], sp[3]);
+            }
+            if (null != fa && null != fb)
+            {
+                fp = Color.interpolate(fa[0], fa[1], fa[2], fa[3], fb[0], fb[1], fb[2], fb[3], step/steps);
+                self.style['fill'] = Color.toCSS(fp[0], fp[1], fp[2], fp[3]);
+            }
             self.isChanged(true);
-            setTimeout(animate, 16/*1000/60*/);
+            setTimeout(animate, dt);
         };
 
+        Primitive.call(self);
         self.start = function() {
             run = true;
-            if (onStart) onStart(self);
-            animate();
+            if ((0 === step) && onStart) onStart(self);
+            setTimeout(animate, dt);
             return self;
         };
         self.stop = function() {
@@ -3061,8 +3424,15 @@ var Tween = makeClass(Primitive, {
             return self;
         };
         self.rewind = function() {
-            i = 0;
+            step = 0;
             p = a;
+            sp = sa;
+            fp = fa;
+            if (null != sa && null != sb)
+                self.style['stroke'] = Color.toCSS(sp[0], sp[1], sp[2], sp[3]);
+            if (null != fa && null != fb)
+                self.style['fill'] = Color.toCSS(fp[0], fp[1], fp[2], fp[3]);
+            self.isChanged(true);
             return self;
         };
         self.onStart = function(cb) {
@@ -3097,10 +3467,12 @@ var Tween = makeClass(Primitive, {
             ctx.beginPath();
             ctx.lineWidth = this.style['stroke-width'];
             ctx.strokeStyle = this.style['stroke'];
+            if ('none' !== this.style['fill']) ctx.fillStyle = this.style['fill'];
             p.forEach(function(cb) {
                 ctx.moveTo(cb[0].x, cb[0].y);
                 ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);
             })
+            if ('none' !== this.style['fill']) ctx.fill();
             ctx.stroke();
         };
         self.dispose = function() {
@@ -3113,6 +3485,8 @@ var Tween = makeClass(Primitive, {
             v = null;
             self.$super('dispose');
         };
+
+        prepare();
         self.rewind();
     },
     name: 'Tween',
@@ -4256,6 +4630,20 @@ function unobserveArray(array, onDel)
     array.push.apply(array, values);
 
     return array;
+}
+function clamp(v, m, M)
+{
+    return stdMath.max(stdMath.min(v, M), m);
+}
+var ESC_RE = /([.*+?^${}()|\[\]\/\\\-])/g;
+function esc(s)
+{
+    return Str(s).replace(ESC_RE, '\\$1');
+}
+function trim(s)
+{
+    //return s.replace(/^\s+/gm, '').replace(/\s+$/gm, '');
+    s.trim();
 }
 function identity(x)
 {

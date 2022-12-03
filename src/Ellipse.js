@@ -247,7 +247,9 @@ var Ellipse = makeClass(Curve, {
             c = this.center,
             cs = this.cs,
             b3 = function(cx, cy, rx, ry, cos, sin, rev) {
-                var x1 = -rx, y1 = 0, x2 = -0.55228*rx, y2 = -0.55228*ry, x3 = 0, y3 = -ry;
+                var x1 = -rx, y1 = 0,
+                    x2 = -0.551915024494*rx, y2 = -0.551915024494*ry,
+                    x3 = 0, y3 = -ry;
                 return rev ? [
                 {x:cx + cos*x3 - sin*y3, y:cy + sin*x3 + cos*y3},
                 {x:cx + cos*x2 - sin*y3, y:cy + sin*x2 + cos*y3},
