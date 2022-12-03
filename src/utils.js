@@ -22,8 +22,10 @@ function rad(deg)
 {
     return deg * PI / 180;
 }
-function hypot(dx, dy)
-{
+// stdMath.hypot produces wrong results
+var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
+    return stdMath.hypot(dx, dy);
+} :*/ function hypot(dx, dy) {
     dx = abs(dx);
     dy = abs(dy)
     var r = 0;
@@ -46,7 +48,7 @@ function hypot(dx, dy)
         return dy*sqrt(1 + r*r);
     }
     return dx*sqrt2;
-}
+};
 function dotp(x1, y1, x2, y2)
 {
     return x1*x2 + y1*y2;
@@ -243,12 +245,11 @@ function point_inside_ellipse(p, center, radiusX, radiusY, cs)
 {
     var rX2 = radiusX*radiusX,
         rY2 = radiusY*radiusY,
-        c = cs[0],
-        s = cs[1],
+        cos = cs[0], sin = cs[1],
         dx0 = p.x - center.x,
         dy0 = p.y - center.y,
-        dx = c*dx0 - s*dy0,
-        dy = c*dy0 + s*dx0,
+        dx = cos*dx0 - sin*dy0,
+        dy = cos*dy0 + sin*dx0,
         d2 = dx*dx/rX2 + dy*dy/rY2
     ;
     if (is_almost_equal(d2, 1)) return 2;
@@ -562,10 +563,10 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
 }*/
 function bezier1(t, p)
 {
-    var b00 = p[0], b01 = p[1], i = 1-t;
+    var b00 = p[0], b01 = p[1], t1 = t, t0 = 1 - t;
     return {
-        x: i*b00.x + t*b01.x,
-        y: i*b00.y + t*b01.y
+        x: t0*b00.x + t1*b01.x,
+        y: t0*b00.y + t1*b01.y
     };
 }
 function bezier2(t, p)
@@ -679,8 +680,9 @@ function is_convex(points)
 function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {
     // Step 1: simplify through translation/rotation
-    var x =  cs[0]*(x1 - x2)/2 + cs[1]*(y1 - y2)/2,
-        y = -cs[1]*(x1 - x2)/2 + cs[0]*(y1 - y2)/2,
+    var cos = cs[0], sin = cs[1],
+        x =  cos*(x1 - x2)/2 + sin*(y1 - y2)/2,
+        y = -sin*(x1 - x2)/2 + cos*(y1 - y2)/2,
         px = x*x, py = y*y, prx = rx*rx, pry = ry*ry,
         L = px/prx + py/pry;
 
@@ -696,8 +698,8 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
         _cx = M*rx*y/ry,
         _cy = -M*ry*x/rx,
 
-        cx = cs[0]*_cx - cs[1]*_cy + (x1 + x2)/2,
-        cy = cs[1]*_cx + cs[0]*_cy + (y1 + y2)/2
+        cx = cos*_cx - sin*_cy + (x1 + x2)/2,
+        cy = sin*_cx + cos*_cy + (y1 + y2)/2
     ;
 
     // Step 4: compute θ and dθ
@@ -714,8 +716,7 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 }
 /*function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
 {
-    var
-        cth0 = stdMath.cos(theta),
+    var cth0 = stdMath.cos(theta),
         sth0 = stdMath.sin(theta),
         cth1 = stdMath.cos(theta+dtheta),
         sth1 = stdMath.sin(theta+dtheta),
@@ -1016,3 +1017,11 @@ function is_function(x)
 {
     return "function" === typeof x;
 }
+
+Geometrize.Math.deg = deg;
+Geometrize.Math.rad = rad;
+Geometrize.Math.hypot = hypot;
+Geometrize.Math.solve1 = lin_solve;
+Geometrize.Math.solve2 = quad_solve;
+Geometrize.Math.solve3 = cub_solve;
+

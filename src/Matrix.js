@@ -290,3 +290,4 @@ var Matrix = makeClass(null, {
     }
 });
 var EYE = Matrix.eye();
+Geometrize.Matrix = Matrix;

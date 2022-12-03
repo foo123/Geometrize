@@ -215,8 +215,10 @@ var Circle = makeClass(Curve, {
         var c = this.center, r = this.radius;
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
+        ctx.fillStyle = this.style['fill'];
         ctx.strokeStyle = this.style['stroke'];
         ctx.arc(c.x, c.x, r, 0, TWO_PI);
+        if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
         //ctx.closePath();
     },
@@ -228,3 +230,4 @@ var Circle = makeClass(Curve, {
         return 'Circle('+[Str(this.center), Str(this.radius)].join(',')+')';
     }
 });
+Geometrize.Circle = Circle;

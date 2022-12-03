@@ -178,6 +178,13 @@ var Point = makeClass(Primitive, {
             'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
         }, svg) : path;
     },
+    toCanvas: function(ctx) {
+        ctx.beginPath();
+        ctx.fillStyle = this.style['stroke'];
+        ctx.arc(this.x, this.y, this.style['stroke-width'], 0, TWO_PI);
+        ctx.fill();
+        //ctx.closePath();
+    },
     toTex: function() {
         return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';
     },
@@ -185,3 +192,4 @@ var Point = makeClass(Primitive, {
         return 'Point('+Str(this.x)+','+Str(this.y)+')';
     }
 });
+Geometrize.Point = Point;

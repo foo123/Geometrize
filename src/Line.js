@@ -173,7 +173,7 @@ var Bezier1 = makeClass(Bezier, {
         return false;
     },
     f: function(t) {
-        return bezier1(t, this.points);
+        return bezier1(t, this._points);
     },
     getPointAt: function(t) {
         t = Num(t);
@@ -183,8 +183,9 @@ var Bezier1 = makeClass(Bezier, {
         return point_line_segment_distance(point, this._points[0], this._points[1]);
     },
     toBezier3: function() {
+        var p = this._points;
         return [
-        [this.f(0), this.f(0.5), this.f(0.5), this.f(1)]
+        [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]
         ];
     },
     toSVG: function(svg) {
@@ -225,3 +226,6 @@ var Bezier1 = makeClass(Bezier, {
     }
 });
 var Line = Bezier1;
+Geometrize.Bezier1 = Bezier1;
+Geometrize.Line = Line;
+

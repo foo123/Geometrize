@@ -2,33 +2,17 @@
 // eg stroke, fill, width, ..
 var Style = makeClass(null, merge(null, {
     constructor: function Style(style) {
-        var self = this, _props = null, _style = null;
+        var self = this, styleProps = null, _style = null;
+
         if (style instanceof Style) return style;
         if (!(self instanceof Style)) return new Style(style);
-        _props = [
-            'stroke-width',
-            'stroke',
-            'stroke-opacity',
-            'stroke-linecap',
-            'stroke-linejoin',
-            'fill',
-            'fill-opacity'
-        ];
+
         // defaults
-        _style = {
-            'stroke-width': 1,
-            'stroke': '#000000',
-            'stroke-opacity': 1,
-            'stroke-linecap': 'butt',
-            'stroke-linejoin': 'miter',
-            'fill': 'none',
-            'fill-opacity': 1
-        };
-        if (is_object(style))
-        {
-            _style = merge(_props, _style, style);
-        }
-        _props.forEach(function(p) {
+        styleProps = Style.Properties;
+        _style = merge(styleProps, {}, Style.Defaults);
+        if (is_object(style)) _style = merge(styleProps, _style, style);
+
+        styleProps.forEach(function(p) {
             def(self, p, {
                 get: function() {
                     return _style[p];
@@ -49,7 +33,7 @@ var Style = makeClass(null, merge(null, {
             });
         });
         self.toObj = function() {
-            return _props.reduce(function(o, p) {
+            return styleProps.reduce(function(o, p) {
                 o[p] = _style[p];
                 return o;
             }, {});
@@ -65,4 +49,24 @@ var Style = makeClass(null, merge(null, {
             return s + p + ':' + Str(style[p]) + ';';
         }, '');
     }
-}, Changeable));
+}, Changeable), {
+    Properties: [
+    'stroke-width',
+    'stroke',
+    'stroke-opacity',
+    'stroke-linecap',
+    'stroke-linejoin',
+    'fill',
+    'fill-opacity'
+    ],
+    Defaults: {
+    'stroke-width': 1,
+    'stroke': '#000000',
+    'stroke-opacity': 1,
+    'stroke-linecap': 'butt',
+    'stroke-linejoin': 'miter',
+    'fill': 'none',
+    'fill-opacity': 1
+    }
+});
+Geometrize.Style = Style;

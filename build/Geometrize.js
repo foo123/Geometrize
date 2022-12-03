@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.2.0 (2022-12-02 23:51:44)
+*   @version 0.3.0 (2022-12-03 12:27:25)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.2.0 (2022-12-02 23:51:44)
+*   @version 0.3.0 (2022-12-03 12:27:25)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -37,7 +37,8 @@ var HAS = Object.prototype.hasOwnProperty,
     EMPTY_ARR = [], EMPTY_OBJ = {},
     NOP = function() {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
-    isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window))
+    isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
+    Geometrize = {VERSION: "0.3.0", Math: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -463,37 +464,23 @@ var Matrix = makeClass(null, {
         return '['+pad(point.x, maxlen)+"]\n["+pad(point.y, maxlen)+"]\n["+pad(1, maxlen)+']';
     }
 });
-var EYE = Matrix.eye();// 2D Style class
+var EYE = Matrix.eye();
+Geometrize.Matrix = Matrix;
+// 2D Style class
 // eg stroke, fill, width, ..
 var Style = makeClass(null, merge(null, {
     constructor: function Style(style) {
-        var self = this, _props = null, _style = null;
+        var self = this, styleProps = null, _style = null;
+
         if (style instanceof Style) return style;
         if (!(self instanceof Style)) return new Style(style);
-        _props = [
-            'stroke-width',
-            'stroke',
-            'stroke-opacity',
-            'stroke-linecap',
-            'stroke-linejoin',
-            'fill',
-            'fill-opacity'
-        ];
+
         // defaults
-        _style = {
-            'stroke-width': 1,
-            'stroke': '#000000',
-            'stroke-opacity': 1,
-            'stroke-linecap': 'butt',
-            'stroke-linejoin': 'miter',
-            'fill': 'none',
-            'fill-opacity': 1
-        };
-        if (is_object(style))
-        {
-            _style = merge(_props, _style, style);
-        }
-        _props.forEach(function(p) {
+        styleProps = Style.Properties;
+        _style = merge(styleProps, {}, Style.Defaults);
+        if (is_object(style)) _style = merge(styleProps, _style, style);
+
+        styleProps.forEach(function(p) {
             def(self, p, {
                 get: function() {
                     return _style[p];
@@ -514,7 +501,7 @@ var Style = makeClass(null, merge(null, {
             });
         });
         self.toObj = function() {
-            return _props.reduce(function(o, p) {
+            return styleProps.reduce(function(o, p) {
                 o[p] = _style[p];
                 return o;
             }, {});
@@ -530,7 +517,27 @@ var Style = makeClass(null, merge(null, {
             return s + p + ':' + Str(style[p]) + ';';
         }, '');
     }
-}, Changeable));
+}, Changeable), {
+    Properties: [
+    'stroke-width',
+    'stroke',
+    'stroke-opacity',
+    'stroke-linecap',
+    'stroke-linejoin',
+    'fill',
+    'fill-opacity'
+    ],
+    Defaults: {
+    'stroke-width': 1,
+    'stroke': '#000000',
+    'stroke-opacity': 1,
+    'stroke-linecap': 'butt',
+    'stroke-linejoin': 'miter',
+    'fill': 'none',
+    'fill-opacity': 1
+    }
+});
+Geometrize.Style = Style;
 // 2D Geometric Primitive base class
 var Primitive = makeClass(null, merge(null, {
     constructor: function Primitive() {
@@ -574,6 +581,20 @@ var Primitive = makeClass(null, merge(null, {
             enumerable: true,
             configurable: false
         });
+        self.setStyle = function(prop, val) {
+            if (arguments.length)
+            {
+                if (1 < arguments.length)
+                {
+                    self.style[prop] = val;
+                }
+                else
+                {
+                    self.style = prop;
+                }
+            }
+            return self;
+        };
         self.isChanged(true);
     },
     id: '',
@@ -584,6 +605,7 @@ var Primitive = makeClass(null, merge(null, {
     transform: function() {
         return this;
     },
+    setStyle: null,
     getBoundingBox: function() {
         return {
         ymin: -Infinity,
@@ -626,6 +648,7 @@ var Primitive = makeClass(null, merge(null, {
         return 'Primitive()';
     }
 }, Changeable));
+Geometrize.Primitive = Primitive;
 // 2D Point class
 var Point = makeClass(Primitive, {
     constructor: function Point(x, y) {
@@ -806,6 +829,13 @@ var Point = makeClass(Primitive, {
             'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
         }, svg) : path;
     },
+    toCanvas: function(ctx) {
+        ctx.beginPath();
+        ctx.fillStyle = this.style['stroke'];
+        ctx.arc(this.x, this.y, this.style['stroke-width'], 0, TWO_PI);
+        ctx.fill();
+        //ctx.closePath();
+    },
     toTex: function() {
         return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';
     },
@@ -813,6 +843,7 @@ var Point = makeClass(Primitive, {
         return 'Point('+Str(this.x)+','+Str(this.y)+')';
     }
 });
+Geometrize.Point = Point;
 // 2D generic Curve base class
 var Curve = makeClass(Primitive, {
     constructor: function Curve(points, values) {
@@ -893,6 +924,13 @@ var Curve = makeClass(Primitive, {
             enumerable: true,
             configurable: true
         });
+        self.setMatrix = function(m) {
+            if (arguments.length)
+            {
+                self.matrix = m;
+            }
+            return self;
+        };
         def(self, '_points', {
             get: function() {
                 if (null == _points2)
@@ -1031,6 +1069,7 @@ var Curve = makeClass(Primitive, {
     hasMatrix: function() {
         return true;
     },
+    setMatrix: null,
     f: function(t) {
         return null;
     },
@@ -1050,6 +1089,7 @@ var Curve = makeClass(Primitive, {
         return 'Curve()';
     }
 });
+Geometrize.Curve = Curve;
 
 // 2D generic Bezier curve base class
 var Bezier = makeClass(Curve, {
@@ -1074,6 +1114,7 @@ var Bezier = makeClass(Curve, {
         return 'Bezier()';
     }
 });
+Geometrize.Bezier = Bezier;
 
 // 2D Composite Curve class (container of multiple, joined, curves)
 var CompositeCurve = makeClass(Curve, {
@@ -1325,6 +1366,7 @@ var CompositeCurve = makeClass(Curve, {
         return 'CompositeCurve('+"\n"+this.curves.map(Str).join("\n")+"\n"+')';
     }
 });
+Geometrize.CompositeCurve = CompositeCurve;
 // 2D Line segment class (equivalent to Linear Bezier curve)
 var Bezier1 = makeClass(Bezier, {
     constructor: function Bezier1(start, end) {
@@ -1500,7 +1542,7 @@ var Bezier1 = makeClass(Bezier, {
         return false;
     },
     f: function(t) {
-        return bezier1(t, this.points);
+        return bezier1(t, this._points);
     },
     getPointAt: function(t) {
         t = Num(t);
@@ -1510,8 +1552,9 @@ var Bezier1 = makeClass(Bezier, {
         return point_line_segment_distance(point, this._points[0], this._points[1]);
     },
     toBezier3: function() {
+        var p = this._points;
         return [
-        [this.f(0), this.f(0.5), this.f(0.5), this.f(1)]
+        [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]
         ];
     },
     toSVG: function(svg) {
@@ -1552,6 +1595,9 @@ var Bezier1 = makeClass(Bezier, {
     }
 });
 var Line = Bezier1;
+Geometrize.Bezier1 = Bezier1;
+Geometrize.Line = Line;
+
 // 2D Polyline class
 // assembly of consecutive line segments between given points
 var Polyline = makeClass(Curve, {
@@ -1742,8 +1788,13 @@ var Polyline = makeClass(Curve, {
         }, Infinity));
     },
     toBezier3: function() {
-        return this.lines.reduce(function(b, l) {
-            b.push.apply(b, l.toBezier3());
+        var p = this._points, n = p.length;
+        return p.reduce(function(b, _, i) {
+            if (i+1 < n)
+            {
+                var pp = [p[i], p[i+1]];
+                b.push([bezier1(0, pp), bezier1(0.5, pp), bezier1(0.5, pp), bezier1(1, pp)]);
+            }
             return b;
         }, []);
     },
@@ -1768,9 +1819,11 @@ var Polyline = makeClass(Curve, {
         var p = this._points, n = p.length;
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
+        ctx.fillStyle = this.style['fill'];
         ctx.strokeStyle = this.style['stroke'];
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        if (this.isClosed() && ('none' !== this.style['fill'])) ctx.fill();
         ctx.stroke();
     },
     toTex: function() {
@@ -1781,6 +1834,7 @@ var Polyline = makeClass(Curve, {
         return 'Polyline('+this.points.map(Str).join(',')+')';
     }
 });
+Geometrize.Polyline = Polyline;
 // 2D Elliptic Arc class
 var Arc = makeClass(Curve, {
     constructor: function Arc(start, end, radiusX, radiusY, angle, largeArc, sweep) {
@@ -2120,12 +2174,12 @@ var Arc = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var c = this.center, rx = this.rX, ry = this.rY,
-            a = rad(this.angle), t = this.theta, d = this.dtheta, fs = !!this.sweep;
+        var c = this.center, rx = this.rX, ry = this.rY, fs = !this.sweep,
+            a = rad(this.angle), t1 = this.theta, t2 = t1 + this.dtheta;
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
         ctx.strokeStyle = this.style['stroke'];
-        ctx.ellipse(c.x, c.x, rx, ry, a, t, t+d, fs);
+        ctx.ellipse(c.x, c.y, rx, ry, a, t1, t2, fs);
         ctx.stroke();
         //ctx.closePath();
     },
@@ -2135,9 +2189,15 @@ var Arc = makeClass(Curve, {
     toString: function() {
         return 'Arc('+[Str(this.start), Str(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°', Str(this.largeArc), Str(this.sweep)].join(',')+')';
     }
-});// 2D Quadratic Bezier class
-var Bezier2 = makeClass(Bezier, {});// 2D Cubic Bezier class
-var Bezier3 = makeClass(Bezier, {});// 2D Polygon class
+});
+Geometrize.Arc = Arc;
+// 2D Quadratic Bezier class
+var Bezier2 = makeClass(Bezier, {});
+Geometrize.Bezier2 = Bezier2;
+// 2D Cubic Bezier class
+var Bezier3 = makeClass(Bezier, {});
+Geometrize.Bezier3 = Bezier3;
+// 2D Polygon class
 // defined by vertices as a closed polyline
 var Polygon = makeClass(Curve, {
     constructor: function Polygon(vertices) {
@@ -2323,8 +2383,13 @@ var Polygon = makeClass(Curve, {
         return false;
     },
     toBezier3: function() {
-        return this.edges.reduce(function(b, e) {
-            b.push.apply(b, e.toBezier3());
+        var p = this._lines, n = p.length;
+        return p.reduce(function(b, _, i) {
+            if (i+1 < n)
+            {
+                var pp = [p[i], p[i+1]];
+                b.push([bezier1(0, pp), bezier1(0.5, pp), bezier1(0.5, pp), bezier1(1, pp)]);
+            }
             return b;
         }, []);
     },
@@ -2349,9 +2414,11 @@ var Polygon = makeClass(Curve, {
         var p = this._lines, n = p.length;
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
+        ctx.fillStyle = this.style['fill'];
         ctx.strokeStyle = this.style['stroke'];
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toTex: function() {
@@ -2361,6 +2428,7 @@ var Polygon = makeClass(Curve, {
         return 'Polygon('+this.vertices.map(Str).join(',')+')';
     }
 });
+Geometrize.Polygon = Polygon;
 // 2D Circle class
 var Circle = makeClass(Curve, {
     constructor: function Circle(center, radius) {
@@ -2578,8 +2646,10 @@ var Circle = makeClass(Curve, {
         var c = this.center, r = this.radius;
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
+        ctx.fillStyle = this.style['fill'];
         ctx.strokeStyle = this.style['stroke'];
         ctx.arc(c.x, c.x, r, 0, TWO_PI);
+        if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
         //ctx.closePath();
     },
@@ -2591,6 +2661,7 @@ var Circle = makeClass(Curve, {
         return 'Circle('+[Str(this.center), Str(this.radius)].join(',')+')';
     }
 });
+Geometrize.Circle = Circle;
 // 2D Ellipse class
 var Ellipse = makeClass(Curve, {
     constructor: function Ellipse(center, radiusX, radiusY, angle) {
@@ -2890,8 +2961,10 @@ var Ellipse = makeClass(Curve, {
         var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
+        ctx.fillStyle = this.style['fill'];
         ctx.strokeStyle = this.style['stroke'];
         ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
+        if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
         //ctx.closePath();
     },
@@ -2904,45 +2977,48 @@ var Ellipse = makeClass(Curve, {
         return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°'].join(',')+')';
     }
 });
+Geometrize.Ellipse = Ellipse;
 // 2D generic Shape class
 // container for primitives shapes
 var Shape = makeClass(Primitive, {});
-
+Geometrize.Shape = Shape;
+// Tween between 2D shapes
 var Tween = makeClass(Primitive, {
-    constructor: function Tween(from, to, dur) {
-        var self = this, t = null, i = 0, k = 0, animate, run = false;
+    constructor: function Tween(fromShape, toShape, dur) {
+        var self = this, a, b, p, v, i = 0, k = 0,
+            animate, run = false, onStart = null, onEnd = null;
 
-        if (from instanceof Tween) return from;
-        if (!(self instanceof Tween)) return new Tween(from, to, dur);
+        if (fromShape instanceof Tween) return fromShape;
+        if (!(self instanceof Tween)) return new Tween(fromShape, toShape, dur);
 
         Primitive.call(self);
 
-        t = {
-            a: from.toBezier3(),
-            b: to.toBezier3(),
-            p: null,
-            v: null
-        };
-        k = stdMath.ceil(dur/(1000/60));
-        var a = t.a.length < t.b.length ? t.a : t.b,
-            d = abs(t.a.length - t.b.length);
-        if (d)
+        a = fromShape.toBezier3 ? fromShape.toBezier3() : [];
+        b = toShape.toBezier3 ? toShape.toBezier3() : [];
+        p = null;
+        v = null;
+        k = stdMath.ceil(dur/(16/*1000/60*/));
+        var d = abs(a.length - b.length), t;
+        if (0 < d)
         {
-            i = 0;
+            t = a.length < b.length ? a : b;
+            i = t.length ? 1 : 0;
+            p = [{x:0, y:0}, {x:0, y:0}];
             while (0 < d)
             {
-                a.splice(i, 0, a[i].map(function(xy) {
-                    return {x:xy.x, y:xy.y};
-                }));
+                if (i >= 1) p = [t[i-1][3], t[i-1][3]];
+                t.splice(i, 0, [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]);
                 --d;
-                i += 2;
+                i += t.length > i+1 ? 2 : 1;
             }
         }
-        t.v = t.a.map(function(_, i) {
-            return t.a[i].map(function(_, j) {
+        v = a.map(function(ai, i) {
+            var bi = b[i];
+            return ai.map(function(aij, j) {
+                var bij = bi[j];
                 return {
-                    x: (t.b[i][j].x - t.a[i][j].x)/k,
-                    y: (t.b[i][j].y - t.a[i][j].y)/k
+                    x: (bij.x - aij.x)/k,
+                    y: (bij.y - aij.y)/k
                 };
             });
         });
@@ -2951,24 +3027,32 @@ var Tween = makeClass(Primitive, {
             if (!run) return;
             if (i >= k)
             {
-                t.p = t.b;
+                if (p !== b)
+                {
+                    p = b;
+                    if (onEnd) onEnd(self);
+                }
                 return;
             }
             ++i;
-            t.p = t.a.map(function(a, n) {
-                return a.map(function(xy, m) {
+            p = a.map(function(an, n) {
+                var vn = v[n];
+                return an.map(function(anm, m) {
+                   var vnm = vn[m];
                    return {
-                       x: xy.x + i*t.v[n][m].x,
-                       y: xy.y + i*t.v[n][m].y
+                       x: anm.x + i*vnm.x,
+                       y: anm.y + i*vnm.y,
+                       i: i
                    };
                 });
             });
             self.isChanged(true);
-            setTimeout(animate, 1000/60);
+            setTimeout(animate, 16/*1000/60*/);
         };
 
         self.start = function() {
             run = true;
+            if (onStart) onStart(self);
             animate();
             return self;
         };
@@ -2978,11 +3062,19 @@ var Tween = makeClass(Primitive, {
         };
         self.rewind = function() {
             i = 0;
-            t.p = t.a;
+            p = a;
+            return self;
+        };
+        self.onStart = function(cb) {
+            onStart = is_function(cb) ? cb : null;
+            return self;
+        };
+        self.onEnd = function(cb) {
+            onEnd = is_function(cb) ? cb : null;
             return self;
         };
         self.toSVG = function(svg) {
-            var path = t.p.map(function(cb) {
+            var path = p.map(function(cb) {
                 return 'M '+cb[0].x+' '+cb[0].y+' C '+cb[1].x+' '+cb[1].y+','+cb[2].x+' '+cb[2].y+','+cb[3].x+' '+cb[3].y;
             }).join(' ');
             return SVG('path', {
@@ -2991,9 +3083,34 @@ var Tween = makeClass(Primitive, {
                 'style': [self.style.toSVG(), self.style.isChanged()]
             }, arguments.length ? svg : false);
         };
+        self.toSVGPath = function(svg) {
+            var path = p.map(function(cb) {
+                return 'M '+cb[0].x+' '+cb[0].y+' C '+cb[1].x+' '+cb[1].y+','+cb[2].x+' '+cb[2].y+','+cb[3].x+' '+cb[3].y;
+            }).join(' ');
+            return arguments.length ? SVG('path', {
+                'id': [self.id, false],
+                'd': [path, self.isChanged()],
+                'style': [self.style.toSVG(), self.style.isChanged()]
+            }, svg) : path;
+        };
+        self.toCanvas = function(ctx) {
+            ctx.beginPath();
+            ctx.lineWidth = this.style['stroke-width'];
+            ctx.strokeStyle = this.style['stroke'];
+            p.forEach(function(cb) {
+                ctx.moveTo(cb[0].x, cb[0].y);
+                ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);
+            })
+            ctx.stroke();
+        };
         self.dispose = function() {
             run = false;
-            t = null;
+            onStart = null;
+            onEnd = null;
+            a = null;
+            b = null;
+            p = null;
+            v = null;
             self.$super('dispose');
         };
         self.rewind();
@@ -3001,18 +3118,23 @@ var Tween = makeClass(Primitive, {
     name: 'Tween',
     rewind: null,
     start: null,
-    stop: null
-});// Plane
+    stop: null,
+    onStart: null,
+    onEnd: null
+});
+Geometrize.Tween = Tween;
+// Plane
 // scene container for 2D geometric objects
 var Plane = makeClass(null, {
     constructor: function Plane(dom, width, height) {
         var self = this,
             svg = null,
+            canvas = null,
             svgEl = null,
             objects = null,
             intersections = null,
             isChanged = true,
-            render, raf;
+            renderSVG, renderCanvas, raf;
 
         if (!(self instanceof Plane)) return new Plane(dom, width, height);
 
@@ -3088,18 +3210,29 @@ var Plane = makeClass(null, {
             }) : [];
         };
         self.dispose = function() {
+            if (isBrowser && canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
             if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
             if (isBrowser) window.cancelAnimationFrame(raf);
+            canvas = null;
             svg = null;
             svgEl = null;
             objects = null;
             return self;
         };
         self.toSVG = function() {
+            return SVG('svg', {
+            'xmlns': ['http://www.w3.org/2000/svg', true],
+            'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', true]
+            }, false, objects.map(function(o){return o instanceof Primitive ? o.toSVG() : '';}).join(''));
         };
-        self.toCanvas = function() {
+        self.toCanvas = function(canvas) {
+            return isBrowser ? renderCanvas(canvas || document.createElement('canvas')) : canvas;
         };
-        render = function render() {
+        self.toIMG = function() {
+            return isBrowser ? self.toCanvas(document.createElement('canvas')).toDataURL('image/png') : '';
+        };
+
+        renderSVG = function renderSVG() {
             if (!objects) return;
             if (!svg)
             {
@@ -3133,17 +3266,39 @@ var Plane = makeClass(null, {
                 }
             });
             isChanged = false;
-            raf = window.requestAnimationFrame(render);
+            raf = window.requestAnimationFrame(renderSVG);
         };
-        if (isBrowser) raf = window.requestAnimationFrame(render);
+        renderCanvas = function renderCanvas(canvas) {
+            if (objects && canvas)
+            {
+                canvas.style.width = Str(width)+'px';
+                canvas.style.height = Str(height)+'px';
+                canvas.setAttribute('width', Str(width)+'px');
+                canvas.setAttribute('height', Str(height)+'px');
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'transparent';
+                ctx.fillRect(0, 0, width, height);
+                objects.forEach(function(o) {
+                    if (o instanceof Primitive)
+                    {
+                        o.toCanvas(ctx);
+                    }
+                });
+            }
+            return canvas;
+        };
+        if (isBrowser) raf = window.requestAnimationFrame(renderSVG);
     },
     dispose: null,
     add: null,
     remove: null,
     getIntersections: null,
     toSVG: null,
-    toCanvas: null
+    toCanvas: null,
+    toIMG: null
 });
+Geometrize.Plane = Plane;
+
 // ---- utilities -----
 function is_strictly_zero(x)
 {
@@ -3167,8 +3322,10 @@ function rad(deg)
 {
     return deg * PI / 180;
 }
-function hypot(dx, dy)
-{
+// stdMath.hypot produces wrong results
+var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
+    return stdMath.hypot(dx, dy);
+} :*/ function hypot(dx, dy) {
     dx = abs(dx);
     dy = abs(dy)
     var r = 0;
@@ -3191,7 +3348,7 @@ function hypot(dx, dy)
         return dy*sqrt(1 + r*r);
     }
     return dx*sqrt2;
-}
+};
 function dotp(x1, y1, x2, y2)
 {
     return x1*x2 + y1*y2;
@@ -3388,12 +3545,11 @@ function point_inside_ellipse(p, center, radiusX, radiusY, cs)
 {
     var rX2 = radiusX*radiusX,
         rY2 = radiusY*radiusY,
-        c = cs[0],
-        s = cs[1],
+        cos = cs[0], sin = cs[1],
         dx0 = p.x - center.x,
         dy0 = p.y - center.y,
-        dx = c*dx0 - s*dy0,
-        dy = c*dy0 + s*dx0,
+        dx = cos*dx0 - sin*dy0,
+        dy = cos*dy0 + sin*dx0,
         d2 = dx*dx/rX2 + dy*dy/rY2
     ;
     if (is_almost_equal(d2, 1)) return 2;
@@ -3707,10 +3863,10 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
 }*/
 function bezier1(t, p)
 {
-    var b00 = p[0], b01 = p[1], i = 1-t;
+    var b00 = p[0], b01 = p[1], t1 = t, t0 = 1 - t;
     return {
-        x: i*b00.x + t*b01.x,
-        y: i*b00.y + t*b01.y
+        x: t0*b00.x + t1*b01.x,
+        y: t0*b00.y + t1*b01.y
     };
 }
 function bezier2(t, p)
@@ -3824,8 +3980,9 @@ function is_convex(points)
 function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {
     // Step 1: simplify through translation/rotation
-    var x =  cs[0]*(x1 - x2)/2 + cs[1]*(y1 - y2)/2,
-        y = -cs[1]*(x1 - x2)/2 + cs[0]*(y1 - y2)/2,
+    var cos = cs[0], sin = cs[1],
+        x =  cos*(x1 - x2)/2 + sin*(y1 - y2)/2,
+        y = -sin*(x1 - x2)/2 + cos*(y1 - y2)/2,
         px = x*x, py = y*y, prx = rx*rx, pry = ry*ry,
         L = px/prx + py/pry;
 
@@ -3841,8 +3998,8 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
         _cx = M*rx*y/ry,
         _cy = -M*ry*x/rx,
 
-        cx = cs[0]*_cx - cs[1]*_cy + (x1 + x2)/2,
-        cy = cs[1]*_cx + cs[0]*_cy + (y1 + y2)/2
+        cx = cos*_cx - sin*_cy + (x1 + x2)/2,
+        cy = sin*_cx + cos*_cy + (y1 + y2)/2
     ;
 
     // Step 4: compute θ and dθ
@@ -3859,8 +4016,7 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 }
 /*function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
 {
-    var
-        cth0 = stdMath.cos(theta),
+    var cth0 = stdMath.cos(theta),
         sth0 = stdMath.sin(theta),
         cth1 = stdMath.cos(theta+dtheta),
         sth1 = stdMath.sin(theta+dtheta),
@@ -4161,31 +4317,14 @@ function is_function(x)
 {
     return "function" === typeof x;
 }
+
+Geometrize.Math.deg = deg;
+Geometrize.Math.rad = rad;
+Geometrize.Math.hypot = hypot;
+Geometrize.Math.solve1 = lin_solve;
+Geometrize.Math.solve2 = quad_solve;
+Geometrize.Math.solve3 = cub_solve;
+
 // export it
-return {
-    VERSION: "0.2.0",
-    Util: {
-        hypot: hypot,
-        deg: deg,
-        rad: rad
-    },
-    Value: Value,
-    Matrix: Matrix,
-    Style: Style,
-    Primitive: Primitive,
-    Point: Point,
-    Line: Line,
-    Polyline: Polyline,
-    Bezier1: Bezier1,
-    Bezier2: Bezier2,
-    Bezier3: Bezier3,
-    Arc: Arc,
-    Polygon: Polygon,
-    Circle: Circle,
-    Ellipse: Ellipse,
-    CompositeCurve: CompositeCurve,
-    Shape: Shape,
-    Tween: Tween,
-    Plane: Plane
-};
+return Geometrize;
 });

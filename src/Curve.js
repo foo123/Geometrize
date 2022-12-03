@@ -78,6 +78,13 @@ var Curve = makeClass(Primitive, {
             enumerable: true,
             configurable: true
         });
+        self.setMatrix = function(m) {
+            if (arguments.length)
+            {
+                self.matrix = m;
+            }
+            return self;
+        };
         def(self, '_points', {
             get: function() {
                 if (null == _points2)
@@ -216,6 +223,7 @@ var Curve = makeClass(Primitive, {
     hasMatrix: function() {
         return true;
     },
+    setMatrix: null,
     f: function(t) {
         return null;
     },
@@ -235,6 +243,7 @@ var Curve = makeClass(Primitive, {
         return 'Curve()';
     }
 });
+Geometrize.Curve = Curve;
 
 // 2D generic Bezier curve base class
 var Bezier = makeClass(Curve, {
@@ -259,6 +268,7 @@ var Bezier = makeClass(Curve, {
         return 'Bezier()';
     }
 });
+Geometrize.Bezier = Bezier;
 
 // 2D Composite Curve class (container of multiple, joined, curves)
 var CompositeCurve = makeClass(Curve, {
@@ -510,3 +520,4 @@ var CompositeCurve = makeClass(Curve, {
         return 'CompositeCurve('+"\n"+this.curves.map(Str).join("\n")+"\n"+')';
     }
 });
+Geometrize.CompositeCurve = CompositeCurve;

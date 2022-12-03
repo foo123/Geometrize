@@ -4,11 +4,12 @@ var Plane = makeClass(null, {
     constructor: function Plane(dom, width, height) {
         var self = this,
             svg = null,
+            canvas = null,
             svgEl = null,
             objects = null,
             intersections = null,
             isChanged = true,
-            render, raf;
+            renderSVG, renderCanvas, raf;
 
         if (!(self instanceof Plane)) return new Plane(dom, width, height);
 
@@ -84,18 +85,29 @@ var Plane = makeClass(null, {
             }) : [];
         };
         self.dispose = function() {
+            if (isBrowser && canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
             if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
             if (isBrowser) window.cancelAnimationFrame(raf);
+            canvas = null;
             svg = null;
             svgEl = null;
             objects = null;
             return self;
         };
         self.toSVG = function() {
+            return SVG('svg', {
+            'xmlns': ['http://www.w3.org/2000/svg', true],
+            'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', true]
+            }, false, objects.map(function(o){return o instanceof Primitive ? o.toSVG() : '';}).join(''));
         };
-        self.toCanvas = function() {
+        self.toCanvas = function(canvas) {
+            return isBrowser ? renderCanvas(canvas || document.createElement('canvas')) : canvas;
         };
-        render = function render() {
+        self.toIMG = function() {
+            return isBrowser ? self.toCanvas(document.createElement('canvas')).toDataURL('image/png') : '';
+        };
+
+        renderSVG = function renderSVG() {
             if (!objects) return;
             if (!svg)
             {
@@ -129,14 +141,35 @@ var Plane = makeClass(null, {
                 }
             });
             isChanged = false;
-            raf = window.requestAnimationFrame(render);
+            raf = window.requestAnimationFrame(renderSVG);
         };
-        if (isBrowser) raf = window.requestAnimationFrame(render);
+        renderCanvas = function renderCanvas(canvas) {
+            if (objects && canvas)
+            {
+                canvas.style.width = Str(width)+'px';
+                canvas.style.height = Str(height)+'px';
+                canvas.setAttribute('width', Str(width)+'px');
+                canvas.setAttribute('height', Str(height)+'px');
+                var ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'transparent';
+                ctx.fillRect(0, 0, width, height);
+                objects.forEach(function(o) {
+                    if (o instanceof Primitive)
+                    {
+                        o.toCanvas(ctx);
+                    }
+                });
+            }
+            return canvas;
+        };
+        if (isBrowser) raf = window.requestAnimationFrame(renderSVG);
     },
     dispose: null,
     add: null,
     remove: null,
     getIntersections: null,
     toSVG: null,
-    toCanvas: null
+    toCanvas: null,
+    toIMG: null
 });
+Geometrize.Plane = Plane;

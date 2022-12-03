@@ -337,12 +337,12 @@ var Arc = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var c = this.center, rx = this.rX, ry = this.rY,
-            a = rad(this.angle), t = this.theta, d = this.dtheta, fs = !!this.sweep;
+        var c = this.center, rx = this.rX, ry = this.rY, fs = !this.sweep,
+            a = rad(this.angle), t1 = this.theta, t2 = t1 + this.dtheta;
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
         ctx.strokeStyle = this.style['stroke'];
-        ctx.ellipse(c.x, c.x, rx, ry, a, t, t+d, fs);
+        ctx.ellipse(c.x, c.y, rx, ry, a, t1, t2, fs);
         ctx.stroke();
         //ctx.closePath();
     },
@@ -353,3 +353,4 @@ var Arc = makeClass(Curve, {
         return 'Arc('+[Str(this.start), Str(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°', Str(this.largeArc), Str(this.sweep)].join(',')+')';
     }
 });
+Geometrize.Arc = Arc;

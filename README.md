@@ -2,48 +2,53 @@
 
 ![Geometrize](/geometrize.png)
 
-Computational Geometry and Rendering library in JavaScript
+Computational Geometry and Rendering library for JavaScript
 
 **in progress**
 
-Example:
+Examples:
+
+**Intersections**
+
+![geometrize intersections](/intersections.png)
 
 ```javascript
-const G = Geometrize;
+const {Plane, Ellipse, Circle, Arc, Line} = Geometrize;
+const plane = Plane(document.getElementById('container'), 300, 300);
+const ellipse = Ellipse([40,40], 30, 10, -45);
+const circle = Circle([30,30], 20);
+const arc = Arc([100,100], [170,90], 30, 10, 30, 0, 1);
+const line1 = Line([20,20], [60,60]).setStyle('stroke', 'blue');
+const line2 = Line([50,2], [20,70]).setStyle('stroke', 'green');
+const line3 = Line([60,160], [300,0]).setStyle('stroke', 'orange');
+const line4 = Line([60,120], [300,-40]).setStyle('stroke', 'cyan');
+let intersections = [];
 
-// Euclidean plane where the shapes live
-const plane = new G.Plane(document.getElementById('container'), 400, 400);
-
-const ellipse = new G.Ellipse([40,40], 30, 10, -45);
-
-const circle = new G.Circle([30,30], 20);
-
-const line = new G.Line([20,20], [60,60]);
-line.style['stroke'] = 'blue';
-
-const line2 = new G.Line([50,2], [20,70]);
-line2.style['stroke'] = 'green';
-
-const i1 = line.intersects(ellipse),
-    i2 = line2.intersects(ellipse),
-    i3 = line.intersects(circle),
-    i4 = line2.intersects(circle),
-    i5 = ellipse.intersects(circle),
-    i6 = line.intersects(line2);
-
-let intersections = [].concat(i1 ? i1 : []).concat(i2 ? i2 : []).concat(i3 ? i3 : []).concat(i4 ? i4 : []).concat(i5 ? i5 : []).concat(i6 ? i6 : []);
-
-plane.add(line);
+plane.add(line1);
 plane.add(line2);
+plane.add(line3);
+plane.add(line4);
 plane.add(ellipse);
 plane.add(circle);
+plane.add(arc);
+
+intersections = plane.getIntersections();
 intersections.forEach(p => {
-    p.style['stroke'] = 'red';
-    p.style['stroke-width'] = 2;
-    plane.add(p);
+    plane.add(p.setStyle('stroke', 'red').setStyle('stroke-width', 2));
 });
 ```
 
-**Shape Tween** in progress
+**Shape Tween** (in progress)
 
-![circle to square tween](/shapetween.gif)
+![geometrize circle to square tween](/shapetween.gif)
+
+```javascript
+const {Plane, Tween, Polygon, Circle} = Geometrize,
+    r = 50, cx = 100, cy = 100;
+const plane = Plane(document.getElementById('container'), 300, 300);
+const circle = Circle([cx,cy], r);
+const square = Polygon([[cx+r,cy],[cx+r,cy-r],[cx,cy-r],[cx-r,cy-r],[cx-r,cy],[cx-r,cy+r],[cx,cy+r],[cx+r,cy+r]]);
+const tween = Tween(circle, square, 1000);
+plane.add(tween);
+tween.start();
+```

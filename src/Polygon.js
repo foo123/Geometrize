@@ -184,8 +184,13 @@ var Polygon = makeClass(Curve, {
         return false;
     },
     toBezier3: function() {
-        return this.edges.reduce(function(b, e) {
-            b.push.apply(b, e.toBezier3());
+        var p = this._lines, n = p.length;
+        return p.reduce(function(b, _, i) {
+            if (i+1 < n)
+            {
+                var pp = [p[i], p[i+1]];
+                b.push([bezier1(0, pp), bezier1(0.5, pp), bezier1(0.5, pp), bezier1(1, pp)]);
+            }
             return b;
         }, []);
     },
@@ -210,9 +215,11 @@ var Polygon = makeClass(Curve, {
         var p = this._lines, n = p.length;
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
+        ctx.fillStyle = this.style['fill'];
         ctx.strokeStyle = this.style['stroke'];
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toTex: function() {
@@ -222,3 +229,4 @@ var Polygon = makeClass(Curve, {
         return 'Polygon('+this.vertices.map(Str).join(',')+')';
     }
 });
+Geometrize.Polygon = Polygon;

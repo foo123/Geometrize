@@ -41,6 +41,20 @@ var Primitive = makeClass(null, merge(null, {
             enumerable: true,
             configurable: false
         });
+        self.setStyle = function(prop, val) {
+            if (arguments.length)
+            {
+                if (1 < arguments.length)
+                {
+                    self.style[prop] = val;
+                }
+                else
+                {
+                    self.style = prop;
+                }
+            }
+            return self;
+        };
         self.isChanged(true);
     },
     id: '',
@@ -51,6 +65,7 @@ var Primitive = makeClass(null, merge(null, {
     transform: function() {
         return this;
     },
+    setStyle: null,
     getBoundingBox: function() {
         return {
         ymin: -Infinity,
@@ -93,3 +108,4 @@ var Primitive = makeClass(null, merge(null, {
         return 'Primitive()';
     }
 }, Changeable));
+Geometrize.Primitive = Primitive;

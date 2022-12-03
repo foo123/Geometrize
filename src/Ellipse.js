@@ -297,8 +297,10 @@ var Ellipse = makeClass(Curve, {
         var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
         ctx.beginPath();
         ctx.lineWidth = this.style['stroke-width'];
+        ctx.fillStyle = this.style['fill'];
         ctx.strokeStyle = this.style['stroke'];
         ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
+        if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
         //ctx.closePath();
     },
@@ -311,3 +313,4 @@ var Ellipse = makeClass(Curve, {
         return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°'].join(',')+')';
     }
 });
+Geometrize.Ellipse = Ellipse;
