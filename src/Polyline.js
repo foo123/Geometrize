@@ -38,7 +38,7 @@ var Polyline = makeClass(Curve, {
             get: function() {
                 if (null == _length)
                 {
-                    _length = curve_length(self._points);
+                    _length = polyline_length(self._points);
                 }
                 return _length;
             },
@@ -122,11 +122,11 @@ var Polyline = makeClass(Curve, {
         return this._hull;
     },
     hasPoint: function(point) {
-        return point_on_curve(point, this._points);
+        return point_on_polyline(point, this._points);
     },
     hasInsidePoint: function(point, strict) {
         if (!this.isClosed()) return false;
-        var inside = point_inside_curve(point, {x:this._bbox.xmax+10, y:point.y}, this._points);
+        var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._points);
         return strict ? 1 === inside : 0 < inside;
     },
     f: function(t, i) {
@@ -148,27 +148,27 @@ var Polyline = makeClass(Curve, {
         }
         else if (other instanceof Line)
         {
-            i = curve_line_intersection(this._points, other._points[0], other._points[1]);
+            i = polyline_line_intersection(this._points, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
         {
-            i = curve_circle_intersection(this._points, other.center, other.radius);
+            i = polyline_circle_intersection(this._points, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            i = curve_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            i = curve_arc_intersection(this._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(this._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Polyline)
         {
-            i = curve_curve_intersection(this._points, other._lines);
+            i = polyline_polyline_intersection(this._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)

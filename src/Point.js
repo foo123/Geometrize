@@ -131,7 +131,7 @@ var Point = makeClass(Primitive, {
         return angle(this.x, this.y, other.x, other.y);
     },
     between: function(p1, p2) {
-        return !!(p1 instanceof Line ? point_between(this, p1.start, p1.end) : point_between(this, p1, p2));
+        return !!(p1 instanceof Line ? point_on_line_segment(this, p1.start, p1.end) : point_on_line_segment(this, p1, p2));
     },
     distanceToLine: function(p1, p2) {
         return p1 instanceof Line ? point_line_distance(this, p1.start, p1.end) : point_line_distance(this, p1, p2);

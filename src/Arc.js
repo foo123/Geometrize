@@ -182,7 +182,7 @@ var Arc = makeClass(Curve, {
                 if (null == _length)
                 {
                     // approximate
-                    _length = curve_length(self._lines);
+                    _length = polyline_length(self._lines);
                 }
                 return _length;
             },
@@ -296,17 +296,17 @@ var Arc = makeClass(Curve, {
         }
         else if (other instanceof Circle)
         {
-            i = curve_circle_intersection(this._lines, other.center, other.radius);
+            i = polyline_circle_intersection(this._lines, other.center, other.radius);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Ellipse)
         {
-            i = curve_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Arc)
         {
-            i = curve_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)

@@ -1,17 +1,160 @@
-var hexRE = /^#([0-9a-fA-F]{3,6})\b/, rgbRE = /^(rgba?)\b\s*\(([^\)]*)\)/i, hslRE = /^(hsla?)\b\s*\(([^\)]*)\)/i;
-
-function hue2rgb(p, q, t)
-{
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1/6) return p + (q - p)*6*t;
-    if (t < 1/2) return q;
-    if (t < 2/3) return p + (q - p)*(2/3 - t)*6;
-    return p;
-}
-
 // Color utilities
 // eg for stroke, fill, ..
+var hexRE = /^#([0-9a-fA-F]{3,6})\b/,
+    rgbRE = /^(rgba?)\b\s*\(([^\)]*)\)/i,
+    hslRE = /^(hsla?)\b\s*\(([^\)]*)\)/i,
+    hwbRE = /^(hwba?)\b\s*\(([^\)]*)\)/i,
+    sepRE = /\s+|,/gm, aRE = /\/\s*(\d*?\.?\d+%?)/;
+
+function hex2rgb(h)
+{
+    if (!h || 3 > h.length)
+    {
+        return [0, 0, 0, 0];
+    }
+    else if (6 > h.length)
+    {
+        return [
+        clamp(parseInt(h[0]+h[0], 16)||0, 0, 255),
+        clamp(parseInt(h[1]+h[1], 16)||0, 0, 255),
+        clamp(parseInt(h[2]+h[2], 16)||0, 0, 255),
+        1
+        ];
+    }
+    else
+    {
+        return [
+        clamp(parseInt(h[0]+h[1], 16)||0, 0, 255),
+        clamp(parseInt(h[2]+h[3], 16)||0, 0, 255),
+        clamp(parseInt(h[4]+h[5], 16)||0, 0, 255),
+        1
+        ];
+    }
+}
+function hsl2rgb(h, s, l, a)
+{
+    var c, hp, x, m, r, g, b;
+    s /= 100;
+    l /= 100;
+    c = (1 - abs(2*l - 1))*s;
+    hp = h/60;
+    x = c*(1 - abs((hp - stdMath.floor(hp / 2)) - 1));
+    m = l - c/2;
+    if (hp >= 0 && hp < 1)
+    {
+        r = c + m;
+        g = x + m;
+        b = 0 + m;
+    }
+    else if (hp >= 1 && hp < 2)
+    {
+        r = x + m;
+        g = c + m;
+        b = 0 + m;
+    }
+    else if (hp >= 2 && hp < 3)
+    {
+        r = 0 + m;
+        g = c + m;
+        b = x + m;
+    }
+    else if (hp >= 3 && hp < 4)
+    {
+        r = 0 + m;
+        g = x + m;
+        b = c + m;
+    }
+    else if (hp >= 4 && hp < 5)
+    {
+        r = x + m;
+        g = 0 + m;
+        b = c + m;
+    }
+    else //if (hp >= 5 && hp < 6)
+    {
+        r = c + m;
+        g = 0 + m;
+        b = x + m;
+    }
+    return [
+    clamp(stdMath.round(r*255), 0, 255),
+    clamp(stdMath.round(g*255), 0, 255),
+    clamp(stdMath.round(b*255), 0, 255),
+    a
+    ];
+}
+function hsv2rgb(h, s, v, a)
+{
+    v /= 100;
+    var l = v*(1 - s/200), lm = stdMath.min(l, 1-l);
+    return hsl2rgb(h, 0 === lm ? 0 : 100*(v-l)/lm, 100*l, a);
+}
+function hwb2rgb(h, w, b, a)
+{
+    var b1 = 1 - b/100;
+    return hsv2rgb(h, 100 - w/b1, 100*b1, a);
+}
+function parse_color(s)
+{
+    var m, hasOpacity;
+    s = trim(Str(s)).toLowerCase();
+    if (m = s.match(hexRE))
+    {
+        // hex
+        return hex2rgb(m[1]);
+    }
+    if (m = s.match(hwbRE))
+    {
+        // hwb(a)
+        hasOpacity = m[2].match(aRE);
+        var col = trim(m[2]).split(sepRE).map(trim),
+            h = col[0] ? col[0] : '0',
+            w = col[1] ? col[1] : '0',
+            b = col[2] ? col[2] : '0',
+            a = hasOpacity ? hasOpacity[1] : '1';
+        h = parseFloat(h, 10);
+        w = '%' === w.slice(-1) ? parseFloat(w, 10) : parseFloat(w, 10)*100/255;
+        b = '%' === b.slice(-1) ? parseFloat(b, 10) : parseFloat(b, 10)*100/255;
+        a = '%' === a.slice(-1) ? parseFloat(a, 10)/100 : parseFloat(a, 10);
+        return hwb2rgb(h, w, b, a);
+    }
+    if (m = s.match(hslRE))
+    {
+        // hsl(a)
+        hasOpacity = m[2].match(aRE);
+        var col = trim(m[2]).split(sepRE).map(trim),
+            h = col[0] ? col[0] : '0',
+            s = col[1] ? col[1] : '0',
+            l = col[2] ? col[2] : '0',
+            a = hasOpacity ? hasOpacity[1] : ('hsla' === m[1] && null != col[3] ? col[3] : '1');
+        h = parseFloat(h, 10);
+        s = '%' === s.slice(-1) ? parseFloat(s, 10) : parseFloat(s, 10)*100/255;
+        l = '%' === l.slice(-1) ? parseFloat(l, 10) : parseFloat(l, 10)*100/255;
+        a = '%' === a.slice(-1) ? parseFloat(a, 10)/100 : parseFloat(a, 10);
+        return hsl2rgb(h, s, l, a);
+    }
+    if (m = s.match(rgbRE))
+    {
+        // rgb(a)
+        hasOpacity = m[2].match(aRE);
+        var col = trim(m[2]).split(sepRE).map(trim),
+            r = col[0] ? col[0] : '0',
+            g = col[1] ? col[1] : '0',
+            b = col[2] ? col[2] : '0',
+            a = hasOpacity ? hasOpacity[1] : ('rgba' === m[1] && null != col[3] ? col[3] : '1');
+        r = '%' === r.slice(-1) ? parseFloat(r, 10)*2.55 : parseFloat(r, 10);
+        g = '%' === g.slice(-1) ? parseFloat(g, 10)*2.55 : parseFloat(g, 10);
+        b = '%' === b.slice(-1) ? parseFloat(b, 10)*2.55 : parseFloat(b, 10);
+        a = '%' === a.slice(-1) ? parseFloat(a, 10)/100 : parseFloat(a, 10);
+        return [r, g, b, a];
+    }
+    if (HAS.call(Color.keywords, s))
+    {
+        // keyword
+        return Color.keywords[s].slice();
+    }
+}
+
 var Color = {
     keywords: {
     // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
@@ -165,113 +308,47 @@ var Color = {
     ,'yellow'              : [  255,255,0    ,1]
     ,'yellowgreen'         : [  154,205,50   ,1]
     },
-    hex2rgb: function(h) {
-        if (!h || 3 > h.length)
-        {
-            return [0, 0, 0, 0];
-        }
-        else if (6 > h.length)
-        {
-            return [
-            clamp(parseInt(h[0]+h[0], 16)||0, 0, 255),
-            clamp(parseInt(h[1]+h[1], 16)||0, 0, 255),
-            clamp(parseInt(h[2]+h[2], 16)||0, 0, 255),
-            1
-            ];
-        }
-        else
-        {
-            return [
-            clamp(parseInt(h[0]+h[1], 16)||0, 0, 255),
-            clamp(parseInt(h[2]+h[3], 16)||0, 0, 255),
-            clamp(parseInt(h[4]+h[5], 16)||0, 0, 255),
-            1
-            ];
-        }
-    },
-    hsl2rgb: function(h, s, l, a) {
-        var r, g, b, p, q;
-        // convert to [0, 1] range
-        h = ((h + 360)%360)/360;
-        s /= 100;
-        l /= 100;
-        if (0 === s)
-        {
-            // achromatic
-            r = 1;
-            g = 1;
-            b = 1;
-        }
-        else
-        {
-            q = l < 0.5 ? l*(1 + s) : l + s - l*s;
-            p = 2*l - q;
-            r = hue2rgb(p, q, h + 1/3);
-            g = hue2rgb(p, q, h);
-            b = hue2rgb(p, q, h - 1/3);
-        }
-        return [
-        clamp(stdMath.round(r*255), 0, 255),
-        clamp(stdMath.round(g*255), 0, 255),
-        clamp(stdMath.round(b*255), 0, 255),
-        a
-        ];
-    },
-    parse: function(s) {
-        var m, hasOpacity;
-        s = Str(s).toLowerCase();
-        if (m = s.match(hexRE))
-        {
-            // hex
-            return hex2rgb(m[1]);
-        }
-        if (m = s.match(hslRE))
-        {
-            // hsl(a)
-            hasOpacity = 'hsla' === m[1].toLowerCase();
-            var col = m[2].split(',').map(trim),
-                h = col[0] ? col[0] : '0',
-                s = col[1] ? col[1] : '0',
-                l = col[2] ? col[2] : '0',
-                a = hasOpacity && null != col[3] ? col[3] : '1';
-            h = parseFloat(h, 10);
-            s = '%' === s.slice(-1) ? parseFloat(s, 10) : parseFloat(s, 10)*100/255;
-            l = '%' === l.slice(-1) ? parseFloat(l, 10) : parseFloat(l, 10)*100/255;
-            a = parseFloat(a, 10);
-            return hsl2rgb(h, s, l, a);
-        }
-        if (m = s.match(rgbRE))
-        {
-            // rgb(a)
-            hasOpacity = 'rgba' === m[1].toLowerCase();
-            var col = m[2].split(',').map(trim),
-                r = col[0] ? col[0] : '0',
-                g = col[1] ? col[1] : '0',
-                b = col[2] ? col[2] : '0',
-                a = hasOpacity && null != col[3] ? col[3] : '1';
-            r = '%' === r.slice(-1) ? parseFloat(r, 10)*2.55 : parseFloat(r, 10);
-            g = '%' === g.slice(-1) ? parseFloat(g, 10)*2.55 : parseFloat(g, 10);
-            b = '%' === b.slice(-1) ? parseFloat(b, 10)*2.55 : parseFloat(b, 10);
-            a = parseFloat(a, 10);
-            return [r, g, b, a];
-        }
-        if (HAS.call(Color.keywords, s))
-        {
-            // keyword
-            return Color.keywords[s].slice();
-        }
-    },
-    interpolate: function(r0, g0, b0, a0, r1, g1, b1, a1, t) {
+    parse: parse_color,
+    interpolate: function(a0, a1, t) {
         var t0 = (t||0), t1 = 1 - t0;
-        return [
-        clamp(stdMath.round(t1*r0 + t0*r1), 0, 255),
-        clamp(stdMath.round(t1*g0 + t0*g1), 0, 255),
-        clamp(stdMath.round(t1*b0 + t0*b1), 0, 255),
-        clamp(t1*a0 + t0*a1, 0, 1)
-        ];
+        return t1*a0 + t0*a1;
+    },
+    interpolateRGB: function(r0, g0, b0, a0, r1, g1, b1, a1, t) {
+        if (9 <= arguments.length)
+        {
+            var t0 = (t||0), t1 = 1 - t0;
+            return [
+            clamp(stdMath.round(t1*r0 + t0*r1), 0, 255),
+            clamp(stdMath.round(t1*g0 + t0*g1), 0, 255),
+            clamp(stdMath.round(t1*b0 + t0*b1), 0, 255),
+            clamp(t1*a0 + t0*a1, 0, 1)
+            ];
+        }
+        else
+        {
+            var t0 = (b0||0), t1 = 1 - t0, rgba0 = r0, rgba1 = g0;
+            return 3 < rgba0.length ? [
+            clamp(stdMath.round(t1*rgba0[0] + t0*rgba1[0]), 0, 255),
+            clamp(stdMath.round(t1*rgba0[1] + t0*rgba1[1]), 0, 255),
+            clamp(stdMath.round(t1*rgba0[2] + t0*rgba1[2]), 0, 255),
+            clamp(t1*rgba0[3] + t0*rgba1[3], 0, 1)
+            ] : [
+            clamp(stdMath.round(t1*rgba0[0] + t0*rgba1[0]), 0, 255),
+            clamp(stdMath.round(t1*rgba0[1] + t0*rgba1[1]), 0, 255),
+            clamp(stdMath.round(t1*rgba0[2] + t0*rgba1[2]), 0, 255)
+            ];
+        }
     },
     toCSS: function(r, g, b, a) {
-        return 3 < arguments.length ? 'rgba('+r+','+g+','+b+','+a+')' : 'rgb('+r+','+g+','+b+')';
+        if (1 === arguments.length)
+        {
+            var rgba = r;
+            return 3 < rgba.length ? 'rgba('+rgba[0]+','+rgba[1]+','+rgba[2]+','+rgba[3]+')' : 'rgb('+rgba[0]+','+rgba[1]+','+rgba[2]+')';
+        }
+        else
+        {
+            return 3 < arguments.length ? 'rgba('+r+','+g+','+b+','+a+')' : 'rgb('+r+','+g+','+b+')';
+        }
     }
 };
 Geometrize.Color = Color;

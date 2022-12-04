@@ -124,14 +124,14 @@ var Bezier1 = makeClass(Bezier, {
     },
     hasPoint: function(point) {
         var p = this._points;
-        return !!point_between(point, p[0], p[1]);
+        return !!point_on_line_segment(point, p[0], p[1]);
     },
     intersects: function(other) {
         var i, p;
         if (other instanceof Point)
         {
             p = this._points;
-            i = point_between(other, p[0], p[1]);
+            i = point_on_line_segment(other, p[0], p[1]);
             return i ? [other] : false;
         }
         else if (other instanceof Line)

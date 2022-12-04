@@ -68,7 +68,8 @@ const tween = Tween({
         shape: square,
         stroke: 'orange'
     },
-    duration: 1000
+    duration: 1000,
+    easing: 'ease-in'
 });
 plane.add(tween);
 document.getElementById('tween').addEventListener('click', () => {
