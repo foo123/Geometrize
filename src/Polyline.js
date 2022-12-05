@@ -129,16 +129,14 @@ var Polyline = makeClass(Curve, {
         var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._points);
         return strict ? 1 === inside : 0 < inside;
     },
-    f: function(t, i) {
-        var p = this.points;
-        return bezier1(t, [p[i], p[i+1]]);
+    f: function(t) {
+        var p = this._points, n = p.length - 1, i = stdMath.floor(t*n);
+        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
     },
     getPointAt: function(t) {
         t = Num(t);
         if (0 > t || 1 < t) return null;
-        // 0-1/n, 1/n-2/n,..,(n-1)/n,n/n
-        var n = this.points.length-1;
-        return Point(this.f(t, stdMath.floor(n * t)));
+        return Point(this.f(t));
     },
     intersects: function(other) {
         var i;

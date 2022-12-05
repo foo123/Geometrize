@@ -159,6 +159,12 @@ var Point = makeClass(Primitive, {
             y: this.y
         };
     },
+    toBezier3: function() {
+        var x = this.x, y = this.y;
+        return [
+        [{x:x, y:y}, {x:x, y:y}, {x:x, y:y}, {x:x, y:y}]
+        ];
+    },
     toSVG: function(svg) {
         return SVG('circle', {
             'id': [this.id, false],

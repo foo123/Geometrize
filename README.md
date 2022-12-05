@@ -58,15 +58,35 @@ const square = Polygon([
     [cx+r,cy+r]
 ]);
 const tween = Tween({
-    from: {
-        shape: circle,
-        stroke: 'cyan'
+    keyframes: {
+        "0%": {
+            shape: circle,
+            style: {
+                stroke: 'cyan'
+            },
+            easing: 'ease-out'
+        },
+        "30%": {
+            shape: square,
+            transform: {
+                rotate: [0, square.getCenter().x, square.getCenter().y]
+            },
+            style: {
+                stroke: 'orange'
+            },
+            easing: 'ease-out-elastic'
+        },
+        "100%": {
+            shape: square,
+            transform: {
+                rotate: [45, square.getCenter().x, square.getCenter().y]
+            },
+            style: {
+                stroke: 'blue'
+            }
+        }
     },
-    to: {
-        shape: square,
-        stroke: 'orange'
-    },
-    duration: 1000
+    duration: 2000
 });
 plane.add(tween);
 tween.start();

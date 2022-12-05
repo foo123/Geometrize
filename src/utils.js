@@ -583,6 +583,11 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
         subdivide_curve(points, f, m, r, pixelSize, middle, right);
     }
 }
+function interpolate(x0, x1, t)
+{
+    var t0 = (t||0), t1 = 1 - t0;
+    return t1*x0 + t0*x1;
+}
 function bezier(c)
 {
     // 1D bezier interpolation curve

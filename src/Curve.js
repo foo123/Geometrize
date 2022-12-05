@@ -110,7 +110,7 @@ var Curve = makeClass(Primitive, {
                 {
                     _lines = sample_curve(function(t) {
                         var pt = self.f(t);
-                        return _matrix ? _matrix.transform(pt, pt) : pt;
+                        return /*_matrix ? _matrix.transform(pt, pt) :*/ pt;
                     }, NUM_POINTS, PIXEL_SIZE, true);
                 }
                 return _lines;

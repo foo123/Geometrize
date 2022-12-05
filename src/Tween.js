@@ -90,12 +90,12 @@ function prepare_tween(tween, fps)
         };
     }
     var t = {
-        duration: null == tween.duration ? 1000 : (tween.duration || 0),
-        fps: fps,
-        nframes: 0,
-        keyframes: null,
-        kf: 0,
-        current: null
+            duration: null == tween.duration ? 1000 : (tween.duration || 0),
+            fps: fps,
+            nframes: 0,
+            keyframes: null,
+            kf: 0,
+            current: null
         },
         maxCurves = -Infinity,
         easing = is_function(tween.easing) ? tween.easing : (is_string(tween.easing) && HAS.call(Tween.Easing, tween.easing) ? Tween.Easing[tween.easing] : Tween.Easing.linear)
@@ -103,59 +103,65 @@ function prepare_tween(tween, fps)
     t.nframes = stdMath.ceil(t.duration/1000*t.fps);
     t.keyframes = Object.keys(tween.keyframes || EMPTY_OBJ).map(function(key) {
         var kf = tween.keyframes[key] || EMPTY_OBJ,
-            stroke = is_string(kf.stroke) ? Color.parse(kf.stroke) : null,
-            fill = is_string(kf.fill) ? Color.parse(kf.fill) : null,
+            transform = kf.transform || EMPTY_OBJ,
+            style = kf.style || EMPTY_OBJ,
+            stroke = is_string(style.stroke) ? Color.parse(style.stroke) : null,
+            fill = is_string(style.fill) ? Color.parse(style.fill) : null,
+            rotate = transform.rotate || [0, 0, 0],
             shape = kf.shape && is_function(kf.shape.toBezier3) ? kf.shape.toBezier3() : []
         ;
         maxCurves = stdMath.max(maxCurves, shape.length);
         return {
-            frame: stdMath.round((parseFloat(key, 10) || 0)*t.nframes / 100),
+            frame: stdMath.round((parseFloat(key, 10) || 0)/100*(t.nframes - 1)),
             easing: is_function(kf.easing) ? kf.easing : (is_string(kf.easing) && HAS.call(Tween.Easing, kf.easing) ? Tween.Easing[kf.easing] : easing),
             shape: shape,
-            'stroke': stroke ? stroke.slice(0, 3) : null,
-            'stroke-opacity': stroke ? stroke[3] : 1,
-            'fill': fill ? fill.slice(0, 3) : null,
-            'fill-opacity': fill ? fill[3] : 1
+            transform: {
+                scale: (transform.scale || [1, 1]).slice(0, 2),
+                rotate: !is_array(rotate) ? [(+rotate)||0, 0, 0] : (rotate.length < 3 ? [rotate[0]||0, rotate[1]||0, rotate[2]||0] : rotate.slice(0, 3)),
+                translate: (transform.translate || [0, 0]).slice(0, 2)
+            },
+            style: {
+                'stroke': stroke ? stroke.slice(0, 3) : null,
+                'stroke-opacity': stroke ? stroke[3] : 1,
+                'fill': fill ? fill.slice(0, 3) : null,
+                'fill-opacity': fill ? fill[3] : 1
+            }
         };
     }).sort(function(a, b) {return a.frame - b.frame});
+    var add_curves = function(curves, nCurves) {
+        if (curves.length < nCurves)
+        {
+            var i = curves.length ? 1 : 0,  p = [{x:0, y:0}, {x:0, y:0}];
+            nCurves -= curves.length;
+            while (0 < nCurves)
+            {
+                if (i >= 1) p = [curves[i-1][3], curves[i-1][3]];
+                curves.splice(i, 0, [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]);
+                --nCurves;
+                i += curves.length > i+1 ? 2 : 1;
+            }
+        }
+    };
     t.keyframes.forEach(function(kf) {
         add_curves(kf.shape, maxCurves);
     });
     return t;
 }
-function add_curves(curves, nCurves)
+function first_frame(tween)
 {
-    if (curves.length < nCurves)
-    {
-        var i = curves.length ? 1 : 0,  p = [{x:0, y:0}, {x:0, y:0}];
-        nCurves -= curves.length;
-        while (0 < nCurves)
-        {
-            if (i >= 1) p = [curves[i-1][3], curves[i-1][3]];
-            curves.splice(i, 0, [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]);
-            --nCurves;
-            i += curves.length > i+1 ? 2 : 1;
-        }
-    }
+    tween.kf = 0;
+    var frame = tween.keyframes[tween.kf];
+    tween.current = {
+        frame: 0,
+        shape: frame.shape,
+        transform: frame.transform,
+        style: frame.style
+    };
 }
 function next_frame(tween)
 {
     ++tween.current.frame;
-    if (tween.current.frame > tween.nframes) return false;
-    if (tween.current.frame === tween.nframes)
-    {
-        var lastkf = tween.keyframes[tween.keyframes.length-1];
-        if (tween.current.shape !== lastkf.shape)
-        {
-
-            tween.current.shape = lastkf.shape;
-            tween.current['stroke'] = lastkf['stroke'];
-            tween.current['stroke-opacity'] = lastkf['stroke-opacity'];
-            tween.current['fill'] = lastkf['fill'];
-            tween.current['fill-opacity'] = lastkf['fill-opacity'];
-        }
-        return true;
-    }
+    if (tween.current.frame >= tween.nframes) return false;
     if (tween.current.frame >= tween.keyframes[tween.kf+1].frame)
     {
         if (tween.kf+2 < tween.keyframes.length)
@@ -164,23 +170,43 @@ function next_frame(tween)
     }
     var a = tween.keyframes[tween.kf],
         b = tween.keyframes[tween.kf+1],
-        t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1),
-        et = a.easing(t)
+        _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1),
+        t = a.easing(_t),
+        // translation
+        tx = interpolate(a.transform.translate[0]||0, b.transform.translate[0]||0, t),
+        ty = interpolate(a.transform.translate[1]||0, b.transform.translate[1]||0, t),
+        // scale
+        sx = interpolate(a.transform.scale[0], b.transform.scale[0], t),
+        sy = interpolate(a.transform.scale[1], b.transform.scale[1], t),
+        // rotation of theta around (rx, ry)
+        theta = rad(interpolate(a.transform.rotate[0]||0, b.transform.rotate[0]||0, t)),
+        rx = sx*interpolate(a.transform.rotate[1]||0, b.transform.rotate[1]||0, t),
+        ry = sy*interpolate(a.transform.rotate[2]||0, b.transform.rotate[2]||0, t),
+        cos = 1, sin = 0
     ;
+    if (!is_almost_equal(theta, 0))
+    {
+        cos = stdMath.cos(theta);
+        sin = stdMath.sin(theta);
+    }
     tween.current.shape = a.shape.map(function(ai, i) {
         var bi = b.shape[i];
         return ai.map(function(aij, j) {
-           var bij = bi[j];
+           var bij = bi[j],
+               x = sx*(aij.x + t*(bij.x - aij.x)),
+               y = sy*(aij.y + t*(bij.y - aij.y));
            return {
-               x: aij.x + et*(bij.x - aij.x),
-               y: aij.y + et*(bij.y - aij.y)
-           };
+               x: cos*x - sin*y + rx - cos*rx + sin*ry + tx,
+               y: sin*x + cos*y + ry - cos*ry - sin*rx + ty
+           }
         });
     });
-    tween.current['stroke'] = a['stroke'] && b['stroke'] ? Color.interpolateRGB(a['stroke'], b['stroke'], t) : (b['stroke'] ? b['stroke'] : (a['stroke'] || tween.current['stroke']));
-    tween.current['stroke-opacity'] = Color.interpolate(a['stroke-opacity'], b['stroke-opacity'], t);
-    tween.current['fill'] = a['fill'] && b['fill'] ? Color.interpolateRGB(a['fill'], b['fill'], t) : (b['fill'] ? b['fill'] : (a['fill'] || tween.current['fill']));
-    tween.current['fill-opacity'] = Color.interpolate(a['fill-opacity'], b['fill-opacity'], t);
+    tween.current.style = {
+        'stroke': a.style['stroke'] && b.style['stroke'] ? Color.interpolateRGB(a.style['stroke'], b.style['stroke'], t) : (b.style['stroke'] ? b.style['stroke'] : (a.styke['stroke'] || tween.current.style['stroke'])),
+        'stroke-opacity': interpolate(a.style['stroke-opacity'], b.style['stroke-opacity'], t),
+        'fill': a.style['fill'] && b.style['fill'] ? Color.interpolateRGB(a.style['fill'], b.style['fill'], t) : (b.style['fill'] ? b.style['fill'] : (a.style['fill'] || tween.current.style['fill'])),
+        'fill-opacity': interpolate(a.style['fill-opacity'], b.style['fill-opacity'], t)
+    };
     return true;
 }
 
@@ -205,15 +231,7 @@ var Tween = makeClass(Primitive, {
             return self;
         };
         self.rewind = function() {
-            tween.kf = 0;
-            tween.current = {
-                frame: 0,
-                shape: tween.keyframes[0].shape,
-                'stroke': tween.keyframes[0]['stroke'],
-                'fill': tween.keyframes[0]['fill'],
-                'stroke': tween.keyframes[0]['stroke'],
-                'fill': tween.keyframes[0]['fill']
-            };
+            first_frame(tween);
             self.isChanged(true);
             return self;
         };
@@ -225,39 +243,22 @@ var Tween = makeClass(Primitive, {
             onEnd = is_function(cb) ? cb : null;
             return self;
         };
-        self.toSVG = function(svg) {
-            var path = tween.current.shape.map(function(cb) {
-                return 'M '+cb[0].x+' '+cb[0].y+' C '+cb[1].x+' '+cb[1].y+','+cb[2].x+' '+cb[2].y+','+cb[3].x+' '+cb[3].y;
-            }).join(' ');
-            if (tween.current['stroke'])
-            {
-                self.style['stroke'] = Color.toCSS(tween.current['stroke']);
-                self.style['stroke-opacity'] = tween.current['stroke-opacity'];
-            }
-            if (tween.current['fill'])
-            {
-                self.style['fill'] = Color.toCSS(tween.current['fill']);
-                self.style['fill-opacity'] = tween.current['fill-opacity'];
-            }
-            return SVG('path', {
-                'id': [self.id, false],
-                'd': [path, self.isChanged()],
-                'style': [self.style.toSVG(), self.style.isChanged()]
-            }, arguments.length ? svg : false);
-        };
         self.toSVGPath = function(svg) {
             var path = tween.current.shape.map(function(cb) {
                 return 'M '+cb[0].x+' '+cb[0].y+' C '+cb[1].x+' '+cb[1].y+','+cb[2].x+' '+cb[2].y+','+cb[3].x+' '+cb[3].y;
             }).join(' ');
-            if (tween.current['stroke'])
+            if (arguments.length)
             {
-                self.style['stroke'] = Color.toCSS(tween.current['stroke']);
-                self.style['stroke-opacity'] = tween.current['stroke-opacity'];
-            }
-            if (tween.current['fill'])
-            {
-                self.style['fill'] = Color.toCSS(tween.current['fill']);
-                self.style['fill-opacity'] = tween.current['fill-opacity'];
+                if (tween.current.style['stroke'])
+                {
+                    self.style['stroke'] = Color.toCSS(tween.current.style['stroke']);
+                    self.style['stroke-opacity'] = tween.current.style['stroke-opacity'];
+                }
+                if (tween.current.style['fill'])
+                {
+                    self.style['fill'] = Color.toCSS(tween.current.style['fill']);
+                    self.style['fill-opacity'] = tween.current.style['fill-opacity'];
+                }
             }
             return arguments.length ? SVG('path', {
                 'id': [self.id, false],
@@ -265,16 +266,19 @@ var Tween = makeClass(Primitive, {
                 'style': [self.style.toSVG(), self.style.isChanged()]
             }, svg) : path;
         };
+        self.toSVG = function(svg) {
+            return self.toSVGPath(arguments.length ? svg : false);
+        };
         self.toCanvas = function(ctx) {
             ctx.beginPath();
             ctx.lineWidth = this.style['stroke-width'];
-            ctx.strokeStyle = this.style['stroke'];
-            if ('none' !== this.style['fill']) ctx.fillStyle = this.style['fill'];
-            p.forEach(function(cb) {
+            ctx.strokeStyle = Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']]));
+            if (tween.current.style['fill']) ctx.fillStyle = Color.toCSS(tween.current.style['fill'].concat([tween.current.style['fill-opacity']]));
+            tween.current.shape.forEach(function(cb) {
                 ctx.moveTo(cb[0].x, cb[0].y);
                 ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);
             })
-            if ('none' !== this.style['fill']) ctx.fill();
+            if (tween.current.style['fill']) ctx.fill();
             ctx.stroke();
         };
         self.dispose = function() {
@@ -289,13 +293,18 @@ var Tween = makeClass(Primitive, {
         dt = stdMath.floor(1000/fps);
         tween = prepare_tween(tween, fps);
         animate = function animate() {
-            if (!run) return;
-            var has_next = next_frame(tween);
-            if (has_next)
+            if (!run || !tween) return;
+            if (next_frame(tween))
             {
                 self.isChanged(true);
-                setTimeout(animate, dt);
-                if ((tween.current.frame === tween.nframes) && onEnd) onEnd(self);
+                if (tween.current.frame+1 === tween.nframes)
+                {
+                    if (onEnd) onEnd(self);
+                }
+                else
+                {
+                    setTimeout(animate, dt);
+                }
             }
         };
         self.rewind();

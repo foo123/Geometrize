@@ -127,12 +127,15 @@ var Matrix = makeClass(null, {
 
         if (is_almost_zero(det2)) return null;
 
-        /*return new Matrix(
+        /*
+        var det = self.det();
+        return new Matrix(
         (a11*a22-a12*a21)/det, (a02*a21-a01*a22)/det, (a01*a12-a02*a11)/det,
         (a12*a20-a10*a22)/det, (a00*a22-a02*a20)/det, (a02*a10-a00*a12)/det,
         //(a10*a21-a11*a20)/det, (a01*a20-a00*a21)/det, (a00*a11-a01*a10)/det
         0, 0, 1
-        );*/
+        );
+        */
         i00 = a11/det2; i01 = -a01/det2;
         i10 = -a10/det2; i11 = a00/det2;
         return new Matrix(
@@ -156,6 +159,22 @@ var Matrix = makeClass(null, {
         }
         return newpoint;
     },
+    /*decompose: function() {
+        var self = this,
+            a00 = self.$00, a01 = self.$01, a02 = self.$02,
+            a10 = self.$10, a11 = self.$11, a12 = self.$12;
+        /*
+        https://live.sympy.org/
+        m = translation*shear*rotation*scale*translation0 = \displaystyle \left[\begin{matrix}sx \left(cost + shx sint\right) & sy \left(cost shx - sint\right) & \\sx \left(cost shy + sint\right) & sy \left(cost - shy sint\right) & sx tx_{0} \left(cost shy + sint\right) + sy ty_{0} \left(cost - shy sint\right) + ty\\0 & 0 & 1\end{matrix}\right]\
+        m2 = translation*rotation*shear*scale*translation0 = \displaystyle \left[\begin{matrix}sx \left(cost - shy sint\right) & sy \left(cost shx - sint\right) & sx tx_{0} \left(cost - shy sint\right) + sy ty_{0} \left(cost shx - sint\right) + tx\\sx \left(cost shy + sint\right) & sy \left(cost + shx sint\right) & sx tx_{0} \left(cost shy + sint\right) + sy ty_{0} \left(cost + shx sint\right) + ty\\0 & 0 & 1\end{matrix}\right]
+        a00 = sx*(cos - shy*sin);
+        a01 = sy*(cos*shx - sin);
+        a02 = sx*tx0*(cos - shy*sin) + sy*ty0*(cos*shx - sin) + tx;
+        a10 = sx*(cos*shy + sin);
+        a11 = sy*(cos + shx*sin);
+        a12 = sx*tx0*(cos*shy + sin) + sy*ty0*(cos + shx*sin) + ty;
+        * /
+    },*/
     getTranslation: function() {
         var self = this;
         return {
@@ -172,8 +191,8 @@ var Matrix = makeClass(null, {
             a = self.$00, b = self.$01,
             c = self.$10, d = self.$11;
         return {
-            x: sign(a)*stdMath.sqrt(a*a + b*b),
-            y: sign(d)*stdMath.sqrt(c*c + d*d)
+        x: sign(a)*hypot(a, b),
+        y: sign(d)*hypot(c, d)
         };
     },
     toArray: function() {
@@ -206,55 +225,64 @@ var Matrix = makeClass(null, {
         0,0,1
         );
     },
-    scale: function(sx, sy) {
-        return new Matrix(
-        Num(sx),0,0,
-        0,Num(sy),0,
-        0,0,1
-        );
-    },
-    reflectX: function() {
-        return new Matrix(
-        -1,0,0,
-        0,1,0,
-        0,0,1
-        );
-    },
-    reflectY: function() {
-        return new Matrix(
-        1,0,0,
-        0,-1,0,
-        0,0,1
-        );
-    },
-    shearX: function(s) {
-        return new Matrix(
-        1,Num(s),0,
-        0,1,0,
-        0,0,1
-        );
-    },
-    shearY: function(s) {
-        return new Matrix(
-        1,0,0,
-        Num(s),1,0,
-        0,0,1
-        );
-    },
     translate: function(tx, ty) {
         return new Matrix(
-        1,0,Num(tx),
-        0,1,Num(ty),
-        0,0,1
+        1, 0, Num(tx),
+        0, 1, Num(ty),
+        0, 0, 1
         );
     },
     rotate: function(theta) {
         theta = Num(theta);
         var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
         return new Matrix(
-        cos,-sin,0,
-        sin,cos,0,
-        0,0,1
+        cos, -sin, 0,
+        sin,  cos, 0,
+        0,    0,   1
+        );
+    },
+    rotateAroundPoint: function(x, y, theta) {
+        theta = Num(theta);
+        var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
+        return new Matrix(
+        cos, -sin, x - cos*x + sin*y,
+        sin,  cos, y - cos*y - sin*x,
+        0,    0,   1
+        );
+    },
+    scale: function(sx, sy) {
+        return new Matrix(
+        Num(sx), 0,       0,
+        0,       Num(sy), 0,
+        0,       0,       1
+        );
+    },
+    reflectX: function() {
+        return new Matrix(
+        -1, 0, 0,
+        0,  1, 0,
+        0,  0, 1
+        );
+    },
+    reflectY: function() {
+        return new Matrix(
+        1,  0, 0,
+        0, -1, 0,
+        0,  0, 1
+        );
+    },
+    shearX: function(s) {
+        return new Matrix(
+        1, Num(s), 0,
+        0, 1,      0,
+        0, 0,      1
+        );
+    },
+    shearY: function(s) {
+        return new Matrix(
+        1,      0, 0,
+        Num(s), 1, 0,
+        0,      0, 1
         );
     },
     arrayTex: function(array, rows, cols) {

@@ -33,12 +33,13 @@ function hex2rgb(h)
 }
 function hsl2rgb(h, s, l, a)
 {
-    var c, hp, x, m, r, g, b;
+    var c, hp, d, x, m, r, g, b;
     s /= 100;
     l /= 100;
     c = (1 - abs(2*l - 1))*s;
     hp = h/60;
-    x = c*(1 - abs((hp - stdMath.floor(hp / 2)) - 1));
+    d = stdMath.floor(hp / 2);
+    x = c*(1 - abs(hp - 2*d - 1));
     m = l - c/2;
     if (hp >= 0 && hp < 1)
     {
@@ -309,10 +310,6 @@ var Color = {
     ,'yellowgreen'         : [  154,205,50   ,1]
     },
     parse: parse_color,
-    interpolate: function(a0, a1, t) {
-        var t0 = (t||0), t1 = 1 - t0;
-        return t1*a0 + t0*a1;
-    },
     interpolateRGB: function(r0, g0, b0, a0, r1, g1, b1, a1, t) {
         if (9 <= arguments.length)
         {

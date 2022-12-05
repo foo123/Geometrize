@@ -193,6 +193,10 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
+                    /*
+                    x: 0 = -st*rX*cs[0]*dtheta - ct*rY*cs[1]*dtheta
+                    y: 0 = ct*rY*cs[0]*dtheta - st*rX*cs[1]*dtheta
+                    */
                     _bbox = {
                         ymin: -Infinity,
                         xmin: -Infinity,
