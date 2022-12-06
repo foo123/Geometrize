@@ -1,25 +1,65 @@
-// Tween between 2D shapes
+// https://easings.net/
 var Easing = {
-    // https://easings.net/
-    // x is in [0, 1], 0 start, 1 end of animation
-    // lin
+    // x is in [0, 1], 0=start, 1=end of animation
+    // linear
     'linear': function(x) {
         return x;
     },
-    // quad
-    'ease-in': function(x) {
+    // quadratic
+    'ease-in-quad': function(x) {
         return x*x;
     },
-    'ease-out': function(x) {
+    'ease-out-quad': function(x) {
         var xp = 1 - x;
         return 1 - xp*xp;
     },
-    'ease-in-out': function(x) {
+    'ease-in-out-quad': function(x) {
         return x < 0.5 ? 2*x*x : 1 - stdMath.pow(2 - 2*x, 2)/2;
+    },
+    // cubic
+    'ease-in-cubic': function(x) {
+        return x*x*x;
+    },
+    'ease-out-cubic': function(x) {
+        return 1 - stdMath.pow(1 - x, 3);
+    },
+    'ease-in-out-cubic': function(x) {
+        return x < 0.5 ? 4*x*x*x : 1 - stdMath.pow(2 - 2*x, 3)/2;
     },
     // cubic bezier
     'cubic-bezier': function(c0, c1, c2, c3) {
         return bezier([c0, c1, c2, c3]);
+    },
+    // exponential
+    'ease-in-expo': function(x) {
+        return 0 === x ? 0 : stdMath.pow(2, 10*x - 10);
+    },
+    'ease-out-expo': function(x) {
+        return 1 === x ? 1 : 1 - stdMath.pow(2, -10*x);
+    },
+    'ease-in-out-expo': function(x) {
+        return 0 === x
+              ? 0
+              : (1 === x
+              ? 1
+              : (x < 0.5
+              ? stdMath.pow(2, 20*x - 10)/2
+              : (2 - stdMath.pow(2, 10 - 20*x))/2));
+    },
+    // back
+    'ease-in-back': function(x) {
+        var c1 = 1.70158, c3 = c1 + 1;
+        return c3*x*x*x - c1*x*x;
+    },
+    'ease-out-back': function(x) {
+        var c1 = 1.70158, c3 = c1 + 1, xp = x - 1;
+        return 1 + c3*stdMath.pow(xp, 3) + c1*stdMath.pow(xp, 2);
+    },
+    'ease-in-out-back': function(x) {
+        var c1 = 1.70158, c2 = c1*1.525;
+        return x < 0.5
+            ? (stdMath.pow(2*x, 2)*((c2 + 1)*2*x - c2))/2
+            : (stdMath.pow(2*x - 2, 2)*((c2 + 1)*(x*2 - 2) + c2) + 2)/2;
     },
     //elastic
     'ease-in-elastic': function(x) {
@@ -79,9 +119,13 @@ function ease_out_bounce(x)
     x1 = x - 2.625
     return n1*(x1/d1)*x1 + 0.984375;
 }
+Easing['ease-in'] = Easing['ease-in-quad'];
+Easing['ease-out'] = Easing['ease-out-quad'];
+Easing['ease-in-out'] = Easing['ease-in-out-quad'];
+
 function prepare_tween(tween, fps)
 {
-    tween = tween || EMPTY_OBJ;
+    tween = tween || {};
     if (!tween.keyframes)
     {
         tween.keyframes = {
@@ -91,52 +135,75 @@ function prepare_tween(tween, fps)
     }
     var t = {
             duration: null == tween.duration ? 1000 : (tween.duration || 0),
+            delay: tween.delay || 0,
             fps: fps,
             nframes: 0,
             keyframes: null,
             kf: 0,
             current: null
         },
+        shapes = {},
         maxCurves = -Infinity,
         easing = is_function(tween.easing) ? tween.easing : (is_string(tween.easing) && HAS.call(Tween.Easing, tween.easing) ? Tween.Easing[tween.easing] : Tween.Easing.linear)
     ;
     t.nframes = stdMath.ceil(t.duration/1000*t.fps);
     t.keyframes = Object.keys(tween.keyframes || EMPTY_OBJ).map(function(key) {
         var kf = tween.keyframes[key] || EMPTY_OBJ,
+            shape = kf.shape && is_function(kf.shape.bezierPoints) ? (shapes[kf.shape.id] || kf.shape.bezierPoints()) : [],
             transform = kf.transform || EMPTY_OBJ,
+            sc = transform.scale || EMPTY_OBJ,
+            rot = transform.rotate || EMPTY_OBJ,
+            rotAngle = rot.angle || 0,
+            rotPoint = rot.point || {x:0, y:0},
+            tr = transform.translate || EMPTY_OBJ,
             style = kf.style || EMPTY_OBJ,
-            stroke = is_string(style.stroke) ? Color.parse(style.stroke) : null,
-            fill = is_string(style.fill) ? Color.parse(style.fill) : null,
-            rotate = transform.rotate || [0, 0, 0],
-            shape = kf.shape && is_function(kf.shape.toBezier3) ? kf.shape.toBezier3() : []
+            stroke = is_string(style.stroke) ? (Color.parse(style.stroke) || style.stroke) : null,
+            fill = is_string(style.fill) ? (Color.parse(style.fill) || style.fill) : null,
+            hasStroke = is_array(stroke),
+            hasFill = is_array(fill)
         ;
+        if (kf.shape && kf.shape.id && (null == shapes[kf.shape.id])) shapes[kf.shape.id] = shape;
         maxCurves = stdMath.max(maxCurves, shape.length);
         return {
             frame: stdMath.round((parseFloat(key, 10) || 0)/100*(t.nframes - 1)),
-            easing: is_function(kf.easing) ? kf.easing : (is_string(kf.easing) && HAS.call(Tween.Easing, kf.easing) ? Tween.Easing[kf.easing] : easing),
             shape: shape,
             transform: {
-                scale: (transform.scale || [1, 1]).slice(0, 2),
-                rotate: !is_array(rotate) ? [(+rotate)||0, 0, 0] : (rotate.length < 3 ? [rotate[0]||0, rotate[1]||0, rotate[2]||0] : rotate.slice(0, 3)),
-                translate: (transform.translate || [0, 0]).slice(0, 2)
+                scale: {
+                    x: (null == sc.x ? 1 : sc.x) || 0,
+                    y: (null == sc.y ? 1 : sc.y) || 0
+                },
+                rotate: {
+                    angle: rad(rotAngle || 0),
+                    point: {
+                        x: rotPoint.x || 0,
+                        y: rotPoint.y || 0
+                    }
+                },
+                translate: {
+                    x: tr.x || 0,
+                    y: tr.y || 0
+                }
             },
             style: {
-                'stroke': stroke ? stroke.slice(0, 3) : null,
-                'stroke-opacity': stroke ? stroke[3] : 1,
-                'fill': fill ? fill.slice(0, 3) : null,
-                'fill-opacity': fill ? fill[3] : 1
-            }
+                'stroke': hasStroke ? stroke.slice(0, 3) : stroke,
+                'stroke-opacity': hasStroke ? stroke[3] : 1,
+                'fill': hasFill ? fill.slice(0, 3) : fill,
+                'fill-opacity': hasFill ? fill[3] : 1,
+                hasStroke: hasStroke,
+                hasFill: hasFill
+            },
+            easing: is_function(kf.easing) ? kf.easing : (is_string(kf.easing) && HAS.call(Tween.Easing, kf.easing) ? Tween.Easing[kf.easing] : easing)
         };
     }).sort(function(a, b) {return a.frame - b.frame});
     var add_curves = function(curves, nCurves) {
         if (curves.length < nCurves)
         {
-            var i = curves.length ? 1 : 0,  p = [{x:0, y:0}, {x:0, y:0}];
+            var i = curves.length ? 1 : 0,  p = {x:0, y:0};
             nCurves -= curves.length;
             while (0 < nCurves)
             {
-                if (i >= 1) p = [curves[i-1][3], curves[i-1][3]];
-                curves.splice(i, 0, [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]);
+                if (i >= 1) p = curves[i-1][3];
+                curves.splice(i, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
                 --nCurves;
                 i += curves.length > i+1 ? 2 : 1;
             }
@@ -150,10 +217,47 @@ function prepare_tween(tween, fps)
 function first_frame(tween)
 {
     tween.kf = 0;
-    var frame = tween.keyframes[tween.kf];
+    var frame = tween.keyframes[tween.kf],
+        a = frame,
+        // translation
+        tx = a.transform.translate.x,
+        ty = a.transform.translate.y,
+        // scale
+        sx = a.transform.scale.x,
+        sy = a.transform.scale.y,
+        // rotation of angle around point (xrot, yrot)
+        angle = a.transform.rotate.angle,
+        xrot = sx*a.transform.rotate.point.x,
+        yrot = sy*a.transform.rotate.point.y,
+        cos = 1, sin = 0,
+        as = a.shape, ai, aij,
+        i, j, n = as.length, x, y,
+        s, cs = new Array(n)
+    ;
+    if (!is_almost_equal(angle, 0))
+    {
+        cos = stdMath.cos(angle);
+        sin = stdMath.sin(angle);
+    }
+    for (i=0; i<n; ++i)
+    {
+        ai = as[i];
+        s = new Array(4);
+        for (j=0; j<4; ++j)
+        {
+            aij = ai[j];
+            x = sx*aij.x;
+            y = sy*aij.y;
+            s[j] = {
+            x: cos*x - sin*y + xrot - cos*xrot + sin*yrot + tx,
+            y: sin*x + cos*y + yrot - cos*yrot - sin*xrot + ty
+           };
+        }
+        cs[i] = s;
+    }
     tween.current = {
         frame: 0,
-        shape: frame.shape,
+        shape: cs,
         transform: frame.transform,
         style: frame.style
     };
@@ -166,50 +270,63 @@ function next_frame(tween)
     {
         if (tween.kf+2 < tween.keyframes.length)
             ++tween.kf;
-
     }
     var a = tween.keyframes[tween.kf],
         b = tween.keyframes[tween.kf+1],
         _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1),
         t = a.easing(_t),
         // translation
-        tx = interpolate(a.transform.translate[0]||0, b.transform.translate[0]||0, t),
-        ty = interpolate(a.transform.translate[1]||0, b.transform.translate[1]||0, t),
+        tx = interpolate(a.transform.translate.x, b.transform.translate.x, t),
+        ty = interpolate(a.transform.translate.y, b.transform.translate.y, t),
         // scale
-        sx = interpolate(a.transform.scale[0], b.transform.scale[0], t),
-        sy = interpolate(a.transform.scale[1], b.transform.scale[1], t),
-        // rotation of theta around (rx, ry)
-        theta = rad(interpolate(a.transform.rotate[0]||0, b.transform.rotate[0]||0, t)),
-        rx = sx*interpolate(a.transform.rotate[1]||0, b.transform.rotate[1]||0, t),
-        ry = sy*interpolate(a.transform.rotate[2]||0, b.transform.rotate[2]||0, t),
-        cos = 1, sin = 0
+        sx = interpolate(a.transform.scale.x, b.transform.scale.x, t),
+        sy = interpolate(a.transform.scale.y, b.transform.scale.y, t),
+        // rotation of angle around point (xrot, yrot)
+        angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t),
+        xrot = sx*interpolate(a.transform.rotate.point.x, b.transform.rotate.point.x, t),
+        yrot = sy*interpolate(a.transform.rotate.point.y, b.transform.rotate.point.y, t),
+        cos = 1, sin = 0,
+        as = a.shape, bs = b.shape,
+        ai, bi, aij, bij,
+        i, j, n = as.length, x, y,
+        s, cs = new Array(n)
     ;
-    if (!is_almost_equal(theta, 0))
+    if (!is_almost_equal(angle, 0))
     {
-        cos = stdMath.cos(theta);
-        sin = stdMath.sin(theta);
+        cos = stdMath.cos(angle);
+        sin = stdMath.sin(angle);
     }
-    tween.current.shape = a.shape.map(function(ai, i) {
-        var bi = b.shape[i];
-        return ai.map(function(aij, j) {
-           var bij = bi[j],
-               x = sx*(aij.x + t*(bij.x - aij.x)),
-               y = sy*(aij.y + t*(bij.y - aij.y));
-           return {
-               x: cos*x - sin*y + rx - cos*rx + sin*ry + tx,
-               y: sin*x + cos*y + ry - cos*ry - sin*rx + ty
-           }
-        });
-    });
+    for (i=0; i<n; ++i)
+    {
+        ai = as[i];
+        bi = bs[i];
+        s = new Array(4);
+        for (j=0; j<4; ++j)
+        {
+            aij = ai[j];
+            bij = bi[j];
+            x = sx*(aij.x + t*(bij.x - aij.x));
+            y = sy*(aij.y + t*(bij.y - aij.y));
+            s[j] = {
+            x: cos*x - sin*y + xrot - cos*xrot + sin*yrot + tx,
+            y: sin*x + cos*y + yrot - cos*yrot - sin*xrot + ty
+           };
+        }
+        cs[i] = s;
+    }
+    tween.current.shape = cs;
     tween.current.style = {
-        'stroke': a.style['stroke'] && b.style['stroke'] ? Color.interpolateRGB(a.style['stroke'], b.style['stroke'], t) : (b.style['stroke'] ? b.style['stroke'] : (a.styke['stroke'] || tween.current.style['stroke'])),
+        'stroke': a.style.hasStroke && b.style.hasStroke ? interpolateRGB(a.style['stroke'], b.style['stroke'], t) : (b.style['stroke'] ? b.style['stroke'] : (a.style['stroke'] || tween.current.style['stroke'])),
         'stroke-opacity': interpolate(a.style['stroke-opacity'], b.style['stroke-opacity'], t),
-        'fill': a.style['fill'] && b.style['fill'] ? Color.interpolateRGB(a.style['fill'], b.style['fill'], t) : (b.style['fill'] ? b.style['fill'] : (a.style['fill'] || tween.current.style['fill'])),
-        'fill-opacity': interpolate(a.style['fill-opacity'], b.style['fill-opacity'], t)
+        'fill': a.style.hasFill && b.style.hasFill ? interpolateRGB(a.style['fill'], b.style['fill'], t) : (b.style['fill'] ? b.style['fill'] : (a.style['fill'] || tween.current.style['fill'])),
+        'fill-opacity': interpolate(a.style['fill-opacity'], b.style['fill-opacity'], t),
+        hasStroke: a.style.hasStroke && b.style.hasStroke,
+        hasFill: a.style.hasFill && b.style.hasFill
     };
     return true;
 }
 
+// Tween between 2D shapes
 var Tween = makeClass(Primitive, {
     constructor: function Tween(tween) {
         var self = this, run = false,
@@ -223,7 +340,7 @@ var Tween = makeClass(Primitive, {
         self.start = function() {
             run = true;
             if ((0 === tween.current.frame) && onStart) onStart(self);
-            setTimeout(animate, dt);
+            setTimeout(animate, (tween.delay || 0) + dt);
             return self;
         };
         self.stop = function() {
@@ -251,12 +368,12 @@ var Tween = makeClass(Primitive, {
             {
                 if (tween.current.style['stroke'])
                 {
-                    self.style['stroke'] = Color.toCSS(tween.current.style['stroke']);
+                    self.style['stroke'] = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke']) : tween.current.style['stroke'];
                     self.style['stroke-opacity'] = tween.current.style['stroke-opacity'];
                 }
                 if (tween.current.style['fill'])
                 {
-                    self.style['fill'] = Color.toCSS(tween.current.style['fill']);
+                    self.style['fill'] = tween.current.style.hasFill ? Color.toCSS(tween.current.style['fill']) : tween.current.style['fill'];
                     self.style['fill-opacity'] = tween.current.style['fill-opacity'];
                 }
             }
@@ -272,8 +389,11 @@ var Tween = makeClass(Primitive, {
         self.toCanvas = function(ctx) {
             ctx.beginPath();
             ctx.lineWidth = this.style['stroke-width'];
-            ctx.strokeStyle = Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']]));
-            if (tween.current.style['fill']) ctx.fillStyle = Color.toCSS(tween.current.style['fill'].concat([tween.current.style['fill-opacity']]));
+            ctx.strokeStyle = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']])) : (tween.current.style['stroke'] || this.style['stroke']);
+            if (tween.current.style['fill'])
+            {
+                ctx.fillStyle = tween.current.style.hasFill ? Color.toCSS(tween.current.style['fill'].concat([tween.current.style['fill-opacity']])) : tween.current.style['fill'];
+            }
             tween.current.shape.forEach(function(cb) {
                 ctx.moveTo(cb[0].x, cb[0].y);
                 ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);

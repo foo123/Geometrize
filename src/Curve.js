@@ -233,8 +233,8 @@ var Curve = makeClass(Primitive, {
     toLines: function() {
         return this._lines;
     },
-    toBezier3: function() {
-        return this;
+    bezierPoints: function() {
+        return [];
     },
     toTex: function() {
         return '\\text{Curve}';

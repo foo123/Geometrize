@@ -135,11 +135,7 @@ var Circle = makeClass(Curve, {
     },
     f: function(t) {
         var c = this.center, r = this.radius;
-        t *= TWO_PI;
-        return {
-            x: c.x + r*stdMath.cos(t),
-            y: c.y + r*stdMath.sin(t)
-        };
+        return arc(t*TWO_PI, c.x, c.y, r, r, 1, 0);
     },
     getPointAt: function(t) {
         t = Num(t);
@@ -168,29 +164,13 @@ var Circle = makeClass(Curve, {
         }
         return false;
     },
-    toBezier3: function() {
-        var r = this.radius,
-            c = this.center,
-            b3 = function(cx, cy, rx, ry, rev) {
-                /*0.55228*/
-                return rev ? [
-                {x:cx, y:cy - ry},
-                {x:cx - 0.551915024494*rx, y:cy - ry},
-                {x:cx - rx, y:cy - 0.551915024494*ry},
-                {x:cx - rx, y:cy}
-                ] : [
-                {x:cx - rx, y:cy},
-                {x:cx - rx, y:cy - 0.551915024494*ry},
-                {x:cx - 0.551915024494*rx, y:cy - ry},
-                {x:cx, y:cy - ry}
-                ];
-            }
-        ;
+    bezierPoints: function() {
+        var c = this.center, r = this.radius;
         return [
-        b3(c.x, c.y, -r, r, 0),
-        b3(c.x, c.y, r, r, 1),
-        b3(c.x, c.y, r, -r, 0),
-        b3(c.x, c.y, -r, -r, 1)
+        arc2bezier(0, -PI/2, c.x, c.y, r, r, 1, 0, 0),
+        arc2bezier(-PI/2, -PI/2, c.x, c.y, r, r, 1, 0, /*1*/0),
+        arc2bezier(-PI, -PI/2, c.x, c.y, r, r, 1, 0, 0),
+        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, r, r, 1, 0, /*1*/0)
         ];
     },
     toSVG: function(svg) {

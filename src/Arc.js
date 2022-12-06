@@ -193,15 +193,19 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
-                    /*
-                    x: 0 = -st*rX*cs[0]*dtheta - ct*rY*cs[1]*dtheta
-                    y: 0 = ct*rY*cs[0]*dtheta - st*rX*cs[1]*dtheta
-                    */
+                    var dtheta = self.dtheta,
+                        p0, p1, p2, p3, p4;
+                    // yminmax = [-90, 90], xminmax = [0, 180];
+                    p0 = self.f(0);
+                    p1 = self.f(0.25);
+                    p2 = self.f(0.5);
+                    p3 = self.f(0.75);
+                    p4 = self.f(1);
                     _bbox = {
-                        ymin: -Infinity,
-                        xmin: -Infinity,
-                        ymax: Infinity,
-                        xmax: Infinity
+                        ymin: stdMath.min(p0.y, p1.y, p2.y, p3.y, p4.y),
+                        xmin: stdMath.min(p0.x, p1.x, p2.x, p3.x, p4.x),
+                        ymax: stdMath.max(p0.y, p1.y, p2.y, p3.y, p4.y),
+                        xmax: stdMath.max(p0.x, p1.x, p2.x, p3.x, p4.x)
                     };
                 }
                 return _bbox;
@@ -268,19 +272,10 @@ var Arc = makeClass(Curve, {
         return this._hull;
     },
     f: function(t) {
-        var c = this.center,
-            theta = this.theta,
-            dtheta = this.dtheta,
-            rX = this.rX,
-            rY = this.rY,
-            cs = this.cs,
-            ct = stdMath.cos(theta + t*dtheta),
-            st = stdMath.sin(theta + t*dtheta)
-        ;
-        return {
-            x: c.x + rX*cs[0]*ct - rY*cs[1]*st,
-            y: c.y + rY*cs[0]*st + rX*cs[1]*ct
-        };
+        var c = this.center, cs = this.cs,
+            rx = this.rX, ry = this.rX,
+            theta = this.theta, dtheta = this.dtheta;
+        return arc(theta + t*dtheta, c.x, c.y, rx, ry, cs[0], cs[1]);
     },
     getPointAt: function(t) {
         t = Num(t);
@@ -319,57 +314,25 @@ var Arc = makeClass(Curve, {
         }
         return false;
     },
-    toBezier3: function() {
-        var rx = this.rX,
+    bezierPoints: function() {
+        var c = this.center,
+            rx = this.rX,
             ry = this.rY,
-            c = this.center,
             cs = this.cs,
             cos = cs[0],
             sin = cs[1],
             theta = this.theta,
             dtheta = this.dtheta,
-            arc = function(x, y) {
-                x *= rx;
-                y *= ry;
-                return {
-                x:cos*x - sin*y + c.x,
-                y:sin*x + cos*y + c.y
-                };
-            },
-            b3 = function(theta, dtheta, rev) {
-                var f = is_almost_equal(dtheta, PI/2)
-                    ? 0.551915024494
-                    : (is_almost_equal(dtheta, -PI/2)
-                    ? -0.551915024494
-                    : stdMath.tan(dtheta/4)*4/3),
-                    x1 = stdMath.cos(theta),
-                    y1 = stdMath.sin(theta),
-                    x2 = stdMath.cos(theta + dtheta),
-                    y2 = stdMath.sin(theta + dtheta)
-                ;
-                return rev ? [
-                arc(x2, y2),
-                arc(x2 + y2*f, y2 - x2*f),
-                arc(x1 - y1*f, y1 + x1*f),
-                arc(x1, y1)
-                ] : [
-                arc(x1, y1),
-                arc(x1 - y1*f, y1 + x1*f),
-                arc(x2 + y2*f, y2 - x2*f),
-                arc(x2, y2)
-                ];
-            },
-            r = abs(dtheta) / (PI/2),
+            r = abs(dtheta)/(PI/2),
             i, j, n, beziers
         ;
-
         if (is_almost_equal(r, 1)) r = 1;
         n = stdMath.max(stdMath.ceil(r), 1);
         dtheta /= n;
         beziers = new Array(n)
         for (j=0,i=0; i<n; ++i,j=1-j,theta+=dtheta)
         {
-            beziers[i] = b3(theta, dtheta/*, j*/);
+            beziers[i] = arc2bezier(theta, dtheta, c.x, c.y, rx, ry, cos, sin/*, j*/);
         }
         return beziers;
     },

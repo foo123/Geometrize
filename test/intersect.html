@@ -38,6 +38,7 @@ body {
 </head><body>
 <h1>Geometrize Intersections</h1>
 <button id="intersections" class="button">find intersections</button>
+<button id="bbox" class="button">bounding boxes</button>
 <button id="image" class="button">get image</button>
 <div id="container"></div>
 <div id="img" style="border-top:1px solid #565656"></div>
@@ -45,7 +46,7 @@ body {
 <script>
 (function() {
 "use strict";
-const {Plane, Ellipse, Circle, Arc, Line} = Geometrize;
+const {Plane, Ellipse, Circle, Arc, Line, Polygon} = Geometrize;
 const plane = Plane(document.getElementById('container'), 300, 300);
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
@@ -54,6 +55,12 @@ const line1 = Line([20,20], [60,60]).setStyle('stroke', 'blue');
 const line2 = Line([50,2], [20,70]).setStyle('stroke', 'green');
 const line3 = Line([60,160], [300,0]).setStyle('stroke', 'orange');
 const line4 = Line([60,120], [300,-40]).setStyle('stroke', 'cyan');
+
+const drawBoundingBox = (shape, color) => {
+    const box = shape.getBoundingBox();
+    plane.add(Polygon([[box.xmin,box.ymin],[box.xmax,box.ymin],[box.xmax,box.ymax],[box.xmin,box.ymax]]).setStyle('stroke', color||'red'));
+};
+
 let intersections = [];
 
 plane.add(line1);
@@ -75,6 +82,12 @@ document.getElementById('intersections').addEventListener('click', () => {
     intersections.forEach(p => {
         plane.add(p.setStyle('stroke', 'red').setStyle('stroke-width', 2));
     });
+}, false);
+
+document.getElementById('bbox').addEventListener('click', () => {
+    drawBoundingBox(circle, 'orange');
+    drawBoundingBox(ellipse, 'red');
+    drawBoundingBox(arc, 'blue');
 }, false);
 
 document.getElementById('image').addEventListener('click', () => {

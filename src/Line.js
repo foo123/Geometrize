@@ -182,7 +182,7 @@ var Bezier1 = makeClass(Bezier, {
     distanceToPoint: function(point) {
         return point_line_segment_distance(point, this._points[0], this._points[1]);
     },
-    toBezier3: function() {
+    bezierPoints: function() {
         var p = this._points;
         return [
         [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]

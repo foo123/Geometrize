@@ -585,6 +585,7 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
 }
 function interpolate(x0, x1, t)
 {
+    // 0 <= t <= 1
     var t0 = (t||0), t1 = 1 - t0;
     return t1*x0 + t0*x1;
 }
@@ -597,7 +598,7 @@ function bezier(c)
         c2 = (1 < order ? c[2] : c1) || 0,
         c3 = (2 < order ? c[3] : c2) || 0
     ;
-    // t \in [0, 1]
+    // 0 <= t <= 1
     return (function(c0, c1, c2, c3) {
         return 3 <= order ? function(t) {
             // only up to cubic
@@ -618,10 +619,12 @@ function bezier(c)
 }
 /*function bezier0(t, p)
 {
+    // 0 <= t <= 1
     return p[0];
 }*/
 function bezier1(t, p)
 {
+    // 0 <= t <= 1
     var b00 = p[0], b01 = p[1], t1 = t, t0 = 1 - t;
     return {
         x: t0*b00.x + t1*b01.x,
@@ -630,11 +633,69 @@ function bezier1(t, p)
 }
 function bezier2(t, p)
 {
+    // 0 <= t <= 1
     return bezier1(t, [bezier1(t, [p[0], p[1]]), bezier1(t, [p[1], p[2]])]);
 }
 function bezier3(t, p)
 {
+    // 0 <= t <= 1
     return bezier1(t, [bezier2(t, [p[0], p[1], p[2]]), bezier2(t, [p[1], p[2], p[3]])]);
+}
+function arc(t, cx, cy, rx, ry, cos, sin)
+{
+    // t is angle in radians around arc
+    if (null == cos)
+    {
+        cos = 1;
+        sin = 0;
+    }
+    var x = rx*stdMath.cos(t), y = ry*stdMath.sin(t);
+    return {
+        x: cx + cos*x - sin*y,
+        y: cy + sin*x + cos*y
+    };
+}
+function toarc(x, y, cx, cy, rx, ry, cos, sin)
+{
+    // x, y is point on unit circle arc
+    if (null == cos)
+    {
+        cos = 1;
+        sin = 0;
+    }
+    x *= rx;
+    y *= ry;
+    return {
+        x: cx + cos*x - sin*y,
+        y: cy + sin*x + cos*y
+    };
+}
+function arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin, reverse)
+{
+    if (null == cos)
+    {
+        cos = 1;
+        sin = 0;
+    }
+    var f = is_almost_equal(abs(dtheta), PI/2)
+        ? sign(dtheta)*0.551915024494/*0.55228*/
+        : stdMath.tan(dtheta/4)*4/3,
+        x1 = stdMath.cos(theta),
+        y1 = stdMath.sin(theta),
+        x2 = stdMath.cos(theta + dtheta),
+        y2 = stdMath.sin(theta + dtheta)
+    ;
+    return reverse ? [
+    toarc(x2, y2, cx, cy, rx, ry, cos, sin),
+    toarc(x2 + y2*f, y2 - x2*f, cx, cy, rx, ry, cos, sin),
+    toarc(x1 - y1*f, y1 + x1*f, cx, cy, rx, ry, cos, sin),
+    toarc(x1, y1, cx, cy, rx, ry, cos, sin)
+    ] : [
+    toarc(x1, y1, cx, cy, rx, ry, cos, sin),
+    toarc(x1 - y1*f, y1 + x1*f, cx, cy, rx, ry, cos, sin),
+    toarc(x2 + y2*f, y2 - x2*f, cx, cy, rx, ry, cos, sin),
+    toarc(x2, y2, cx, cy, rx, ry, cos, sin)
+    ];
 }
 function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {

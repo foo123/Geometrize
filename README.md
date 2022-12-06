@@ -40,12 +40,14 @@ intersections.forEach(p => {
 
 **Shape Tween** (in progress)
 
-![geometrize circle to square tween](/shapetween.gif)
+![geometrize tween between multiple shapes](/shapetween.gif)
 
 ```javascript
-const {Plane, Tween, Polygon, Circle} = Geometrize,
-    r = 50, cx = 100, cy = 100;
+const {Plane, Tween, Polygon, Circle, Ellipse, Arc} = Geometrize;
+const r = 50, rx = 50, ry = 20, cx = 100, cy = 100, angle = -30;
 const plane = Plane(document.getElementById('container'), 300, 300);
+const ellipse = Ellipse([cx, cy], rx, ry, angle);
+const arc = Arc(ellipse.getPointAt(0), ellipse.getPointAt(0.6), rx, ry, angle, 0, 0);
 const circle = Circle([cx,cy], r);
 const square = Polygon([
     [cx+r,cy],
@@ -60,33 +62,60 @@ const square = Polygon([
 const tween = Tween({
     keyframes: {
         "0%": {
+            shape: arc,
+            style: {
+                stroke: 'cyan'
+            },
+            easing: 'ease-out'
+        },
+        "25%": {
+            shape: ellipse,
+            style: {
+                stroke: 'orange'
+            },
+            easing: 'ease-out'
+        },
+        "50%": {
             shape: circle,
             style: {
                 stroke: 'cyan'
             },
             easing: 'ease-out'
         },
-        "30%": {
+        "75%": {
             shape: square,
             transform: {
-                rotate: [0, square.getCenter().x, square.getCenter().y]
+                rotate: {
+                    angle: 0,
+                    point: {
+                        x: square.getCenter().x,
+                        y: square.getCenter().y
+                    }
+                }
             },
             style: {
                 stroke: 'orange'
             },
-            easing: 'ease-out-elastic'
+            easing: 'ease-out-back'
         },
         "100%": {
             shape: square,
             transform: {
-                rotate: [45, square.getCenter().x, square.getCenter().y]
+                rotate: {
+                    angle: -45,
+                    point: {
+                        x: square.getCenter().x,
+                        y: square.getCenter().y
+                    }
+                }
             },
             style: {
                 stroke: 'blue'
             }
         }
     },
-    duration: 2000
+    duration: 4000,
+    delay: 400
 });
 plane.add(tween);
 tween.start();

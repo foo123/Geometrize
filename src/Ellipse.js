@@ -131,17 +131,12 @@ var Ellipse = makeClass(Curve, {
             get: function() {
                 if (null == _hull)
                 {
-                    var c = self.center, rX = _radiusX.val(), rX = _radiusY.val(),
-                        m = new Matrix(
-                            _cos, -_sin, c.x,
-                            _sin, _cos, c.y,
-                            0, 0, 1
-                        );
+                    var c = self.center, rx = _radiusX.val(), ry = _radiusY.val();
                     _hull = [
-                        new Point(-rX, -rY).transform(m),
-                        new Point(rX, -rY).transform(m),
-                        new Point(rX, rY).transform(m),
-                        new Point(-rX, rY).transform(m)
+                        new Point(toarc(-1, -1, c.x, c.y, rx, ry, _cos, _sin)),
+                        new Point(toarc(1, -1, c.x, c.y, rx, ry, _cos, _sin)),
+                        new Point(toarc(1, 1, c.x, c.y, rx, ry, _cos, _sin)),
+                        new Point(toarc(-1, 1, c.x, c.y, rx, ry, _cos, _sin))
                     ];
                 }
                 return _hull;
@@ -196,17 +191,9 @@ var Ellipse = makeClass(Curve, {
         return this._hull;
     },
     f: function(t) {
-        var c = this.center,
-            rX = this.radiusX,
-            rY = this.radiusY,
-            cs = this.cs,
-            ct = stdMath.cos(t*TWO_PI),
-            st = stdMath.sin(t*TWO_PI)
-        ;
-        return {
-            x: c.x + rX*cs[0]*ct - rY*cs[1]*st,
-            y: c.y + rY*cs[0]*st + rX*cs[1]*ct
-        };
+        var c = this.center, cs = this.cs,
+            rx = this.radiusX, ry = this.radiusY;
+        return arc(t*TWO_PI, c.x, c.y, rx, ry, cs[0], cs[1]);
     },
     getPointAt: function(t) {
         t = Num(t);
@@ -241,33 +228,15 @@ var Ellipse = makeClass(Curve, {
         }
         return false;
     },
-    toBezier3: function() {
-        var rx = this.radiusX,
-            ry = this.radiusY,
-            c = this.center,
-            cs = this.cs,
-            b3 = function(cx, cy, rx, ry, cos, sin, rev) {
-                var x1 = -rx, y1 = 0,
-                    x2 = -0.551915024494*rx, y2 = -0.551915024494*ry,
-                    x3 = 0, y3 = -ry;
-                return rev ? [
-                {x:cx + cos*x3 - sin*y3, y:cy + sin*x3 + cos*y3},
-                {x:cx + cos*x2 - sin*y3, y:cy + sin*x2 + cos*y3},
-                {x:cx + cos*x1 - sin*y2, y:cy + sin*x1 + cos*y2},
-                {x:cx + cos*x1 - sin*y1, y:cy + sin*x1 + cos*y1}
-                ] : [
-                {x:cx + cos*x1 - sin*y1, y:cy + sin*x1 + cos*y1},
-                {x:cx + cos*x1 - sin*y2, y:cy + sin*x1 + cos*y2},
-                {x:cx + cos*x2 - sin*y3, y:cy + sin*x2 + cos*y3},
-                {x:cx + cos*x3 - sin*y3, y:cy + sin*x3 + cos*y3}
-                ];
-            }
-        ;
+    bezierPoints: function() {
+        var c = this.center, cs = this.cs,
+            cos = cs[0], sin = cs[1],
+            rx = this.radiusX, ry = this.radiusY;
         return [
-        b3(c.x, c.y, -rx, ry, cs[0], cs[1], 0),
-        b3(c.x, c.y, rx, ry, cs[0], cs[1], 1),
-        b3(c.x, c.y, rx, -ry, cs[0], cs[1], 0),
-        b3(c.x, c.y, -rx, -ry, cs[0], cs[1], 1)
+        arc2bezier(0, -PI/2, c.x, c.y, rx, ry, cos, sin, 0),
+        arc2bezier(-PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin, /*1*/0),
+        arc2bezier(-PI, -PI/2, c.x, c.y, rx, ry, cos, sin, 0),
+        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin, /*1*/0)
         ];
     },
     toSVG: function(svg) {

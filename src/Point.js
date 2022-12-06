@@ -159,7 +159,7 @@ var Point = makeClass(Primitive, {
             y: this.y
         };
     },
-    toBezier3: function() {
+    bezierPoints: function() {
         var x = this.x, y = this.y;
         return [
         [{x:x, y:y}, {x:x, y:y}, {x:x, y:y}, {x:x, y:y}]

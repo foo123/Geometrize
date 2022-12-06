@@ -185,7 +185,7 @@ var Polyline = makeClass(Curve, {
             return dist;
         }, Infinity));
     },
-    toBezier3: function() {
+    bezierPoints: function() {
         var p = this._points, n = p.length;
         return p.reduce(function(b, _, i) {
             if (i+1 < n)
