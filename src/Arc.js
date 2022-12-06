@@ -193,20 +193,18 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
-                    var dtheta = self.dtheta,
-                        p0, p1, p2, p3, p4;
-                    // yminmax = [-90, 90], xminmax = [0, 180];
-                    p0 = self.f(0);
-                    p1 = self.f(0.25);
-                    p2 = self.f(0.5);
-                    p3 = self.f(0.75);
-                    p4 = self.f(1);
-                    _bbox = {
-                        ymin: stdMath.min(p0.y, p1.y, p2.y, p3.y, p4.y),
-                        xmin: stdMath.min(p0.x, p1.x, p2.x, p3.x, p4.x),
-                        ymax: stdMath.max(p0.y, p1.y, p2.y, p3.y, p4.y),
-                        xmax: stdMath.max(p0.x, p1.x, p2.x, p3.x, p4.x)
-                    };
+                    _bbox = self._lines.reduce(function(_bbox, p) {
+                        _bbox.ymin = stdMath.min(_bbox.ymin, p.y);
+                        _bbox.xmin = stdMath.min(_bbox.xmin, p.x);
+                        _bbox.ymax = stdMath.max(_bbox.ymax, p.y);
+                        _bbox.xmax = stdMath.max(_bbox.xmax, p.x);
+                        return _bbox;
+                    }, {
+                        ymin: Infinity,
+                        xmin: Infinity,
+                        ymax: -Infinity,
+                        xmax: -Infinity
+                    });
                 }
                 return _bbox;
             },
@@ -217,7 +215,13 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _hull)
                 {
-                    _hull = convex_hull(self._lines);
+                    var b = self._bbox;
+                    _hull = [
+                    new Point([b.xmin, b.ymin]),
+                    new Point([b.xmax, b.ymin]),
+                    new Point([b.xmax, b.ymax]),
+                    new Point([b.xmin, b.ymax])
+                    ];
                 }
                 return _hull;
             },
@@ -272,10 +276,8 @@ var Arc = makeClass(Curve, {
         return this._hull;
     },
     f: function(t) {
-        var c = this.center, cs = this.cs,
-            rx = this.rX, ry = this.rX,
-            theta = this.theta, dtheta = this.dtheta;
-        return arc(theta + t*dtheta, c.x, c.y, rx, ry, cs[0], cs[1]);
+        var c = this.center, cs = this.cs;
+        return arc(this.theta + t*this.dtheta, c.x, c.y, this.rX, this.rY, cs[0], cs[1]);
     },
     getPointAt: function(t) {
         t = Num(t);
@@ -323,7 +325,7 @@ var Arc = makeClass(Curve, {
             sin = cs[1],
             theta = this.theta,
             dtheta = this.dtheta,
-            r = abs(dtheta)/(PI/2),
+            r = 2*abs(dtheta)/PI,
             i, j, n, beziers
         ;
         if (is_almost_equal(r, 1)) r = 1;

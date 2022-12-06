@@ -167,10 +167,10 @@ var Circle = makeClass(Curve, {
     bezierPoints: function() {
         var c = this.center, r = this.radius;
         return [
-        arc2bezier(0, -PI/2, c.x, c.y, r, r, 1, 0, 0),
-        arc2bezier(-PI/2, -PI/2, c.x, c.y, r, r, 1, 0, /*1*/0),
-        arc2bezier(-PI, -PI/2, c.x, c.y, r, r, 1, 0, 0),
-        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, r, r, 1, 0, /*1*/0)
+        arc2bezier(0, -PI/2, c.x, c.y, r, r, 1, 0/*, 0*/),
+        arc2bezier(-PI/2, -PI/2, c.x, c.y, r, r, 1, 0/*, 1*/),
+        arc2bezier(-PI, -PI/2, c.x, c.y, r, r, 1, 0/*, 0*/),
+        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, r, r, 1, 0/*, 1*/)
         ];
     },
     toSVG: function(svg) {

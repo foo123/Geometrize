@@ -114,12 +114,22 @@ var Ellipse = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
-                    var ch = self._hull;
+                    var c = self.center,
+                        rx = _radiusX.val(), ry = _radiusY.val(),
+                        o1 = toarc(-1, 0, c.x, c.y, rx, ry, _cos, _sin),
+                        o2 = toarc(1, 0, c.x, c.y, rx, ry, _cos, _sin),
+                        o3 = toarc(0, -1, c.x, c.y, rx, ry, _cos, _sin),
+                        o4 = toarc(0, 1, c.x, c.y, rx, ry, _cos, _sin),
+                        r1 = toarc(-_cos, -_sin, c.x, c.y, rx, ry, _cos, _sin),
+                        r2 = toarc(_cos, _sin, c.x, c.y, rx, ry, _cos, _sin),
+                        r3 = toarc(_sin, -_cos, c.x, c.y, rx, ry, _cos, _sin),
+                        r4 = toarc(-_sin, _cos, c.x, c.y, rx, ry, _cos, _sin)
+                    ;
                     _bbox = {
-                        ymin: stdMath.min(ch[0].y,ch[1].y,ch[2].y,ch[3].y),
-                        xmin: stdMath.min(ch[0].x,ch[1].x,ch[2].x,ch[3].x),
-                        ymax: stdMath.max(ch[0].y,ch[1].y,ch[2].y,ch[3].y),
-                        xmax: stdMath.max(ch[0].x,ch[1].x,ch[2].x,ch[3].x)
+                        ymin: stdMath.min(o1.y,o2.y,o3.y,o4.y,r1.y,r2.y,r3.y,r4.y),
+                        xmin: stdMath.min(o1.x,o2.x,o3.x,o4.x,r1.x,r2.x,r3.x,r4.x),
+                        ymax: stdMath.max(o1.y,o2.y,o3.y,o4.y,r1.y,r2.y,r3.y,r4.y),
+                        xmax: stdMath.max(o1.x,o2.x,o3.x,o4.x,r1.x,r2.x,r3.x,r4.x)
                     };
                 }
                 return _bbox;
@@ -191,9 +201,8 @@ var Ellipse = makeClass(Curve, {
         return this._hull;
     },
     f: function(t) {
-        var c = this.center, cs = this.cs,
-            rx = this.radiusX, ry = this.radiusY;
-        return arc(t*TWO_PI, c.x, c.y, rx, ry, cs[0], cs[1]);
+        var c = this.center, cs = this.cs;
+        return arc(t*TWO_PI, c.x, c.y, this.radiusX, this.radiusY, cs[0], cs[1]);
     },
     getPointAt: function(t) {
         t = Num(t);
@@ -233,10 +242,10 @@ var Ellipse = makeClass(Curve, {
             cos = cs[0], sin = cs[1],
             rx = this.radiusX, ry = this.radiusY;
         return [
-        arc2bezier(0, -PI/2, c.x, c.y, rx, ry, cos, sin, 0),
-        arc2bezier(-PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin, /*1*/0),
-        arc2bezier(-PI, -PI/2, c.x, c.y, rx, ry, cos, sin, 0),
-        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin, /*1*/0)
+        arc2bezier(0, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 0*/),
+        arc2bezier(-PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 1*/),
+        arc2bezier(-PI, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 0*/),
+        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 1*/)
         ];
     },
     toSVG: function(svg) {
