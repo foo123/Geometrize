@@ -351,12 +351,6 @@ var Arc = makeClass(Curve, {
     hasMatrix: function() {
         return false;
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     f: function(t) {
         var c = this.center, cs = this.cs;
         return arc(this.theta + t*this.dtheta, c.x, c.y, this.rX, this.rY, cs[0], cs[1]);

@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.5.0 (2022-12-07 11:36:48)
+*   @version 0.5.0 (2022-12-07 16:52:30)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.5.0 (2022-12-07 11:36:48)
+*   @version 0.5.0 (2022-12-07 16:52:30)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -334,23 +334,13 @@ var Matrix = makeClass(null, {
         }
         return newpoint;
     },
-    /*decompose: function() {
-        var self = this,
-            a00 = self.$00, a01 = self.$01, a02 = self.$02,
-            a10 = self.$10, a11 = self.$11, a12 = self.$12;
-        /*
-        https://live.sympy.org/
-        m = translation*shear*rotation*scale*translation0 = \displaystyle \left[\begin{matrix}sx \left(cost + shx sint\right) & sy \left(cost shx - sint\right) & \\sx \left(cost shy + sint\right) & sy \left(cost - shy sint\right) & sx tx_{0} \left(cost shy + sint\right) + sy ty_{0} \left(cost - shy sint\right) + ty\\0 & 0 & 1\end{matrix}\right]\
-        m2 = translation*rotation*shear*scale*translation0 = \displaystyle \left[\begin{matrix}sx \left(cost - shy sint\right) & sy \left(cost shx - sint\right) & sx tx_{0} \left(cost - shy sint\right) + sy ty_{0} \left(cost shx - sint\right) + tx\\sx \left(cost shy + sint\right) & sy \left(cost + shx sint\right) & sx tx_{0} \left(cost shy + sint\right) + sy ty_{0} \left(cost + shx sint\right) + ty\\0 & 0 & 1\end{matrix}\right]
-        a00 = sx*(cos - shy*sin);
-        a01 = sy*(cos*shx - sin);
-        a02 = sx*tx0*(cos - shy*sin) + sy*ty0*(cos*shx - sin) + tx;
-        a10 = sx*(cos*shy + sin);
-        a11 = sy*(cos + shx*sin);
-        a12 = sx*tx0*(cos*shy + sin) + sy*ty0*(cos + shx*sin) + ty;
-        * /
-    },*/
     getTranslation: function() {
+        /*
+        if matrix can be factored as:
+        T * R * S = |1 0 tx| * |cos -sin 0| * |sx 0  0| = |sxcos -sysin tx| = |00 01 02|
+                    |0 1 ty|   |sin cos  0|   |0  sy 0|   |sxsin sycos  ty|   |10 11 12|
+                    |0 0 1 |   |0   0    1|   |0  0  1|   |0      0     1 |   |20 21 22|
+        */
         var self = this;
         return {
             x: self.$02,
@@ -358,16 +348,28 @@ var Matrix = makeClass(null, {
         };
     },
     getRotationAngle: function() {
+        /*
+        if matrix can be factored as:
+        T * R * S = |1 0 tx| * |cos -sin 0| * |sx 0  0| = |sxcos -sysin tx| = |00 01 02|
+                    |0 1 ty|   |sin cos  0|   |0  sy 0|   |sxsin sycos  ty|   |10 11 12|
+                    |0 0 1 |   |0   0    1|   |0  0  1|   |0      0     1 |   |20 21 22|
+        */
         var self = this;
-        return stdMath.atan2(-self.$01, self.$00);
+        return stdMath.atan2(self.$10, self.$00);
     },
     getScale: function() {
+        /*
+        if matrix can be factored as:
+        T * R * S = |1 0 tx| * |cos -sin 0| * |sx 0  0| = |sxcos -sysin tx| = |00 01 02|
+                    |0 1 ty|   |sin cos  0|   |0  sy 0|   |sxsin sycos  ty|   |10 11 12|
+                    |0 0 1 |   |0   0    1|   |0  0  1|   |0      0     1 |   |20 21 22|
+        */
         var self = this,
-            a = self.$00, b = self.$01,
+            a = self.$00, b = -self.$01,
             c = self.$10, d = self.$11;
         return {
-        x: sign(a)*hypot(a, b),
-        y: sign(d)*hypot(c, d)
+        x: sign(a)*hypot(a, c),
+        y: sign(d)*hypot(b, d)
         };
     },
     toArray: function() {
@@ -384,7 +386,7 @@ var Matrix = makeClass(null, {
     },
     toCSS: function() {
         var self = this;
-        return 'matrix('+Str(self.$00)+', '+Str(self.$10)+', '+Str(self.$01)+', '+Str(self.$11)+', '+Str(self.$02)+', '+Str(self.$12)+')';
+        return 'matrix('+Str(self.$00)+','+Str(self.$10)+','+Str(self.$01)+','+Str(self.$11)+','+Str(self.$02)+','+Str(self.$12)+')';
     },
     toTex: function() {
         return Matrix.arrayTex(this.toArray(), 3, 3);
@@ -1341,10 +1343,7 @@ var Curve = makeClass(Primitive, {
             get: function() {
                 if (null == _lines)
                 {
-                    _lines = sample_curve(function(t) {
-                        var pt = self.f(t);
-                        return /*_matrix ? _matrix.transform(pt, pt) :*/ pt;
-                    }, NUM_POINTS, PIXEL_SIZE, true);
+                    _lines = sample_curve(self.f.bind(self), NUM_POINTS, PIXEL_SIZE, true);
                 }
                 return _lines;
             },
@@ -1415,7 +1414,27 @@ var Curve = makeClass(Primitive, {
             enumerable: true,
             configurable: true
         });
+        def(self, '_bbox', {
+            get: function() {
+                return {
+                    ymin: -Infinity,
+                    xmin: -Infinity,
+                    ymax: Infinity,
+                    xmax: Infinity
+                };
+            },
+            enumerable: false,
+            configurable: true
+        });
+        def(self, '_hull', {
+            get: function() {
+                return [];
+            },
+            enumerable: false,
+            configurable: true
+        });
     },
+    name: 'Curve',
     dispose: function() {
         var self = this;
         if (self.points)
@@ -1460,11 +1479,23 @@ var Curve = makeClass(Primitive, {
     f: function(t) {
         return null;
     },
+    getBoundingBox: function() {
+        var bb = this._bbox;
+        return {
+        ymin: bb.ymin,
+        xmin: bb.xmin,
+        ymax: bb.ymax,
+        xmax: bb.xmax
+        };
+    },
+    getConvexHull: function() {
+        return this._hull.map(function(p) {return p.clone();});
+    },
     getPointAt: function(t) {
         return null;
     },
-    toLines: function() {
-        return this._lines;
+    polylinePoints: function() {
+        return this._lines.slice();
     },
     bezierPoints: function() {
         return [];
@@ -1494,6 +1525,7 @@ var Bezier = makeClass(Curve, {
             configurable: false
         });
     },
+    name: 'Bezier',
     toTex: function() {
         return '\\text{Bezier}';
     },
@@ -1626,7 +1658,7 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _bbox)
                 {
                     _bbox = _curves.reduce(function(_bbox, curve) {
-                        var box = curve.getBoundingBox();
+                        var box = curve._bbox;
                         _bbox.ymin = stdMath.min(_bbox.ymin, box.ymin);
                         _bbox.xmin = stdMath.min(_bbox.xmin, box.xmin);
                         _bbox.ymax = stdMath.max(_bbox.ymax, box.ymax);
@@ -1649,7 +1681,7 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _hull)
                 {
                     _hull = convex_hull(_curves.reduce(function(hulls, curve) {
-                        hulls.push.apply(hulls, curve.getConvexHull());
+                        hulls.push.apply(hulls, curve._hull);
                         return hulls;
                     }, []));
                 }
@@ -1670,6 +1702,7 @@ var CompositeCurve = makeClass(Curve, {
             return Primitive.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'CompositeCurve',
     dispose: function() {
         var self = this;
         if (self.curves)
@@ -1710,12 +1743,6 @@ var CompositeCurve = makeClass(Curve, {
         var c = this.curves;
         return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     hasPoint: function(point) {
         for (var c=this.curves, n=c.length, i=0; i<n; ++i)
         {
@@ -1740,10 +1767,16 @@ var CompositeCurve = makeClass(Curve, {
         }
         return false;
     },
-    toLines: function() {
+    polylinePoints: function() {
         return this.curves.reduce(function(lines, curve) {
-            lines.push.apply(lines, curve.toLines());
+            lines.push.apply(lines, curve.polylinePoints());
             return lines;
+        }, []);
+    },
+    bezierPoints: function() {
+        return this.curves.reduce(function(beziers, curve) {
+            beziers.push.apply(beziers, curve.bezierPoints());
+            return beziers;
         }, []);
     },
     toTex: function() {
@@ -1766,6 +1799,11 @@ var Bezier1 = makeClass(Bezier, {
         if (start instanceof Bezier1) return start;
         if (!(self instanceof Bezier1)) return new Bezier1(start, end);
 
+        if (is_array(start) && null == end)
+        {
+            end = start[1];
+            start = start[0];
+        }
         self.$super('constructor', [[start, end]]);
 
         def(self, 'start', {
@@ -1872,12 +1910,6 @@ var Bezier1 = makeClass(Bezier, {
     transform: function(matrix) {
         return new Line(this.start.transform(matrix), this.end.transform(matrix));
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     hasPoint: function(point) {
         var p = this._points;
         return !!point_on_line_segment(point, p[0], p[1]);
@@ -1916,7 +1948,9 @@ var Bezier1 = makeClass(Bezier, {
         }
         else if (other instanceof Bezier2)
         {
-            return false;
+            p = this._points;
+            i = line_qbezier_intersection(p[0], p[1], null, other._points);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {
@@ -2102,12 +2136,6 @@ var Polyline = makeClass(Curve, {
     isConvex: function() {
         return this._is_convex;
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     hasPoint: function(point) {
         return point_on_polyline(point, this._points);
     },
@@ -2149,6 +2177,11 @@ var Polyline = makeClass(Curve, {
         else if (other instanceof Arc)
         {
             i = polyline_arc_intersection(this._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Bezier2)
+        {
+            i = polyline_qbezier_intersection(this._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Polyline)
@@ -2573,12 +2606,6 @@ var Arc = makeClass(Curve, {
     hasMatrix: function() {
         return false;
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     f: function(t) {
         var c = this.center, cs = this.cs;
         return arc(this.theta + t*this.dtheta, c.x, c.y, this.rX, this.rY, cs[0], cs[1]);
@@ -2682,8 +2709,171 @@ var Arc = makeClass(Curve, {
 });
 Geometrize.Arc = Arc;
 // 2D Quadratic Bezier class
-var Bezier2 = makeClass(Bezier, {});
-Geometrize.Bezier2 = Bezier2;
+var Bezier2 = makeClass(Bezier, {
+    constructor: function Bezier2(points) {
+        var self = this,
+            _length = null,
+            _bbox = null,
+            _hull = null
+        ;
+
+        if (points instanceof Bezier2) return points;
+        if (!(self instanceof Bezier2)) return new Bezier2(points);
+
+        self.$super('constructor', [points]);
+
+        def(self, 'length', {
+            get: function() {
+                if (null == _length)
+                {
+                    // approximate
+                    _length = polyline_length(self._lines);
+                }
+                return _length;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, '_bbox', {
+            get: function() {
+                if (null == _bbox)
+                {
+                    var p = self._points,
+                        p1 = p[0], p2 = p[1], p3 = p[2],
+                        xmin = stdMath.min(p1.x, p2.x, p3.x),
+                        xmax = stdMath.max(p1.x, p2.x, p3.x),
+                        ymin = stdMath.min(p1.y, p2.y, p3.y),
+                        ymax = stdMath.max(p1.y, p2.y, p3.y)
+                    ;
+                    _bbox = {
+                        ymin: ymin,
+                        xmin: xmin,
+                        ymax: ymax,
+                        xmax: xmax
+                    };
+                }
+                return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    var bb = self._bbox;
+                    _hull = [
+                        new Point(bb.xmin, bb.ymin),
+                        new Point(bb.xmax, bb.ymin),
+                        new Point(bb.xmax, bb.ymax),
+                        new Point(bb.xmin, bb.ymax)
+                    ];
+                }
+                return _hull;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
+            {
+                _length = null;
+                _bbox = null;
+                _hull = null;
+            }
+            return self.$super('isChanged', arguments);
+        };
+    },
+    name: 'QBezier',
+    clone: function() {
+        return new Bezier2(this.points.map(function(p) {return p.clone();}));
+    },
+    transform: function(matrix) {
+        return new Bezier2(this.points.map(function(p) {return p.transform(matrix);}));
+    },
+    hasPoint: function(point) {
+        return point_on_qbezier(point, this._points)
+    },
+    intersects: function(other) {
+        var i;
+        if (other instanceof Point)
+        {
+            i = point_on_qbezier(other, this._points)
+            return i ? [other] : false;
+        }
+        else if (other instanceof Circle)
+        {
+            i = polyline_circle_intersection(this._lines, other.center, other.radius);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Ellipse)
+        {
+            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Arc)
+        {
+            i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Bezier2)
+        {
+            i = polyline_qbezier_intersection(this._lines, other._points);
+            return i ? i.map(Point) : false;
+        }
+        else if ((other instanceof Primitive))
+        {
+            return other.intersects(this);
+        }
+        return false;
+    },
+    f: function(t) {
+        return bezier2(t, this._points);
+    },
+    getPointAt: function(t) {
+        t = Num(t);
+        return 0 > t || 1 < t ? null : Point(this.f(t));
+    },
+    bezierPoints: function() {
+        var p = this._points;
+        return [
+        [
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x + (p[1].x - p[0].x)*2/3, y:p[0].y + (p[1].y - p[0].y)*2/3},
+        {x:p[2].x + (p[1].x - p[2].x)*2/3, y:p[2].y + (p[1].y - p[2].y)*2/3},
+        {x:p[2].x, y:p[2].y}
+        ]
+        ];
+    },
+    toSVG: function(svg) {
+        return this.toSVGPath(arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var p = this._points,
+            path = 'M '+Str(p[0].x)+' '+Str(p[0].y)+' Q '+Str(p[1].x)+' '+Str(p[1].y)+','+Str(p[2].x)+' '+Str(p[2].y);
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var p = this._points;
+        ctx.beginPath();
+        ctx.lineWidth = this.style['stroke-width'];
+        ctx.strokeStyle = this.style['stroke'];
+        ctx.moveTo(p[0].x, p[0].y);
+        ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
+        ctx.stroke();
+    },
+    toTex: function() {
+        return '\\text{QBezier: }\\left('+this.points.map(Tex).join(',')+'\\right)';
+    },
+    toString: function() {
+        return 'QBezier('+this.points.map(Str).join(',')+')';
+    }
+});
+Geometrize.QBezier = Geometrize.Bezier2 = Bezier2;
 // 2D Cubic Bezier class
 var Bezier3 = makeClass(Bezier, {});
 Geometrize.Bezier3 = Bezier3;
@@ -2822,12 +3012,6 @@ var Polygon = makeClass(Curve, {
     isConvex: function() {
         return this._is_convex;
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     hasPoint: function(point) {
         return 2 === point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
     },
@@ -2868,6 +3052,11 @@ var Polygon = makeClass(Curve, {
         else if (other instanceof Arc)
         {
             i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Bezier2)
+        {
+            i = polyline_qbezier_intersection(this._lines, other._points);
             return i ? i.map(Point) : false;
         }
         else if ((other instanceof Polyline) || (other instanceof Polygon))
@@ -3117,12 +3306,6 @@ var Circle = makeClass(Curve, {
     },
     hasMatrix: function() {
         return false;
-    },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
     },
     f: function(t) {
         var c = this.center, r = this.radius;
@@ -3401,12 +3584,6 @@ var Ellipse = makeClass(Curve, {
     },
     hasMatrix: function() {
         return false;
-    },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
     },
     f: function(t) {
         var c = this.center, cs = this.cs;
@@ -4230,6 +4407,34 @@ function point_on_arc(p, center, radiusX, radiusY, cs, theta, dtheta)
     t = (t - theta)/dtheta;
     return (t >= 0) && (t <= 1);
 }
+function point_on_qbezier(p, c)
+{
+    //x = t^{2} \left(x_{1} - 2 x_{2} + x_{3}\right) + t \left(- 2 x_{1} + 2 x_{2}\right) + x_{1}
+    var tx, ty;
+    tx = quad_solve(c[0].x - 2*c[1].x + c[2].x, -2*c[0].x + 2*c[1].x, c[0].x - p.x);
+    if (!tx) return false;
+    if (1 < tx.length && (0 > tx[1] || 1 < tx[1])) tx.pop();
+    if (tx.length && (0 > tx[0] || 1 < tx[0])) tx.shift();
+    if (!tx.length) return false;
+    ty = quad_solve(c[0].y - 2*c[1].y + c[2].y, -2*c[0].y + 2*c[1].y, c[0].y - p.y);
+    if (!ty) return false;
+    if (1 < ty.length && (0 > ty[1] || 1 < ty[1])) ty.pop();
+    if (ty.length && (0 > ty[0] || 1 < ty[0])) ty.shift();
+    if (!ty.length) return false;
+    if (1 < tx.length && 1 < ty.length)
+    {
+        return (is_almost_equal(tx[0], ty[0]) && is_almost_equal(tx[1], ty[1])) || (is_almost_equal(tx[0], ty[1]) && is_almost_equal(tx[1], ty[0]));
+    }
+    else if (1 < tx.length && 1 === ty.length)
+    {
+        return is_almost_equal(tx[0], ty[0]) || is_almost_equal(tx[1], ty[0]);
+    }
+    else if (1 < ty.length && 1 === tx.length)
+    {
+        return is_almost_equal(ty[0], tx[0]) || is_almost_equal(ty[1], tx[0]);
+    }
+    return is_almost_equal(tx[0], ty[0]);
+}
 function point_on_polyline(p, polyline_points)
 {
     for (var i=0,n=polyline_points.length-1; i<n; ++i)
@@ -4343,26 +4548,18 @@ function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_bezier2_intersection(p1, p2, c)
+function line_qbezier_intersection(p1, p2, abcdef, c)
 {
+    if (null == abcdef) abcdef = qbezier2quadratic(c);
     var p = new Array(2), pi = 0, i, n,
-        M = p2.y - p1.y,
-        N = p1.x - p2.x,
-        K = p2.x*p1.y - p1.x*p2.y,
-        A = c[0].y*c[0].y - 4*c[0].y*c[1].y + 2*c[0].y*c[2].y + 4*c[1].y*c[1].y - 4*c[1].y*c[2].y + c[2].y*c[2].y,
-        B = c[0].x*c[0].x - 4*c[0].x*c[1].x + 2*c[0].x*c[2].x + 4*c[1].x*c[1].x - 4*c[1].x*c[2].x + c[2].x*c[2].x,
-        C = -2*c[0].x*c[0].y + 4*c[0].x*c[1].y - 2*c[0].x*c[2].y + 4*c[1].x*c[0].y - 8*c[1].x*c[1].y + 4*c[1].x*c[2].y - 2*c[2].x*c[0].y + 4*c[2].x*c[1].y - 2*c[2].x*c[2].y,
-        D = 2*c[0].x*c[0].y*c[2].y - 4*c[0].x*c[1].y*c[1].y + 4*c[0].x*c[1].y*c[2].y - 2*c[0].x*c[2].y*c[2].y + 4*c[1].x*c[0].y*c[1].y - 8*c[1].x*c[0].y*c[2].y + 4*c[1].x*c[1].y*c[2].y - 2*c[2].x*c[0].y*c[0].y + 4*c[2].x*c[0].y*c[1].y + 2*c[2].x*c[0].y*c[2].y - 4*c[2].x*c[1].y*c[1].y,
-        E = -2*c[0].x*c[0].x*c[2].y + 4*c[0].x*c[1].x*c[1].y + 4*c[0].x*c[1].x*c[2].y + 2*c[0].x*c[2].x*c[0].y - 8*c[0].x*c[2].x*c[1].y + 2*c[0].x*c[2].x*c[2].y - 4*c[1].x*c[1].x*c[0].y - 4*c[1].x*c[1].x*c[2].y + 4*c[1].x*c[2].x*c[0].y + 4*c[1].x*c[2].x*c[1].y - 2*c[2].x*c[2].x*c[0].y,
-        F = c[0].x*c[0].x*c[2].y*c[2].y - 4*c[0].x*c[1].x*c[1].y*c[2].y - 2*c[0].x*c[2].x*c[0].y*c[2].y + 4*c[0].x*c[2].x*c[1].y*c[1].y + 4*c[1].x*c[1].x*c[0].y*c[2].y - 4*c[1].x*c[2].x*c[0].y*c[1].y + c[2].x*c[2].x*c[0].y*c[0].y,
         s = line_quadratic_intersection(
-        M, N, K,
-        A, B, C, D, E, F
+        p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
+        abcdef[0], abcdef[1], abcdef[2], abcdef[3], abcdef[4], abcdef[5]
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2))
+        if (point_on_line_segment(s[i], p1, p2) && point_on_qbezier(s[i], c))
             p[pi++] = s[i];
     }
     p.length = pi;
@@ -4446,6 +4643,17 @@ function polyline_arc_intersection(polyline_points, center, radiusX, radiusY, cs
     for (j=0; j<n; ++j)
     {
         p = line_arc_intersection(polyline_points[j], polyline_points[j+1], abcdef, center, radiusX, radiusY, cs, theta, dtheta);
+        if (p) i.push.apply(i, p);
+    }
+    return i.length ? i : false;
+}
+function polyline_qbezier_intersection(polyline_points, control_points)
+{
+    var i = [], j, k, p, n = polyline_points.length-1,
+        abcdef = qbezier2quadratic(control_points);
+    for (j=0; j<n; ++j)
+    {
+        p = line_qbezier_intersection(polyline_points[j], polyline_points[j+1], abcdef, control_points);
         if (p) i.push.apply(i, p);
     }
     return i.length ? i : false;
@@ -4700,6 +4908,16 @@ function ellipse2quadratic(center, radiusX, radiusY, cs)
         B = 2*(b*b - a*a)*sin_a*cos_a;
     return [A, C, B, -2*A*x0 - B*y0, -B*x0 - 2*C*y0, A*x0*x0 + B*x0*y0 + C*y0*y0 - a*a*b*b];
 }
+function qbezier2quadratic(c)
+{
+    var A = c[0].y*c[0].y - 4*c[0].y*c[1].y + 2*c[0].y*c[2].y + 4*c[1].y*c[1].y - 4*c[1].y*c[2].y + c[2].y*c[2].y,
+    B = c[0].x*c[0].x - 4*c[0].x*c[1].x + 2*c[0].x*c[2].x + 4*c[1].x*c[1].x - 4*c[1].x*c[2].x + c[2].x*c[2].x,
+    C = -2*c[0].x*c[0].y + 4*c[0].x*c[1].y - 2*c[0].x*c[2].y + 4*c[1].x*c[0].y - 8*c[1].x*c[1].y + 4*c[1].x*c[2].y - 2*c[2].x*c[0].y + 4*c[2].x*c[1].y - 2*c[2].x*c[2].y,
+    D = 2*c[0].x*c[0].y*c[2].y - 4*c[0].x*c[1].y*c[1].y + 4*c[0].x*c[1].y*c[2].y - 2*c[0].x*c[2].y*c[2].y + 4*c[1].x*c[0].y*c[1].y - 8*c[1].x*c[0].y*c[2].y + 4*c[1].x*c[1].y*c[2].y - 2*c[2].x*c[0].y*c[0].y + 4*c[2].x*c[0].y*c[1].y + 2*c[2].x*c[0].y*c[2].y - 4*c[2].x*c[1].y*c[1].y,
+    E = -2*c[0].x*c[0].x*c[2].y + 4*c[0].x*c[1].x*c[1].y + 4*c[0].x*c[1].x*c[2].y + 2*c[0].x*c[2].x*c[0].y - 8*c[0].x*c[2].x*c[1].y + 2*c[0].x*c[2].x*c[2].y - 4*c[1].x*c[1].x*c[0].y - 4*c[1].x*c[1].x*c[2].y + 4*c[1].x*c[2].x*c[0].y + 4*c[1].x*c[2].x*c[1].y - 2*c[2].x*c[2].x*c[0].y,
+    F = c[0].x*c[0].x*c[2].y*c[2].y - 4*c[0].x*c[1].x*c[1].y*c[2].y - 2*c[0].x*c[2].x*c[0].y*c[2].y + 4*c[0].x*c[2].x*c[1].y*c[1].y + 4*c[1].x*c[1].x*c[0].y*c[2].y - 4*c[1].x*c[2].x*c[0].y*c[1].y + c[2].x*c[2].x*c[0].y*c[0].y;
+    return [A, B, C, D, E, F];
+}
 function sample_curve(f, n, pixelSize, do_refine)
 {
     if (null == n) n = NUM_POINTS;
@@ -4781,21 +4999,34 @@ function bezier(c)
 function bezier1(t, p)
 {
     // 0 <= t <= 1
-    var b00 = p[0], b01 = p[1], t1 = t, t0 = 1 - t;
+    var t1 = t, t0 = 1 - t;
     return {
-        x: t0*b00.x + t1*b01.x,
-        y: t0*b00.y + t1*b01.y
+        x: t0*p[0].x + t1*p[1].x,
+        y: t0*p[0].y + t1*p[1].y
     };
 }
 function bezier2(t, p)
 {
     // 0 <= t <= 1
-    return bezier1(t, [bezier1(t, [p[0], p[1]]), bezier1(t, [p[1], p[2]])]);
+    //return bezier1(t, [bezier1(t, [p[0], p[1]]), bezier1(t, [p[1], p[2]])]);
+   var t0 = t, t1 = 1 - t, t11 = t1*t1, t10 = 2*t1*t0, t00 = t0*t0;
+   return {
+       x: t11*p[0].x + t10*p[1].x + t00*p[2].x,
+       y: t11*p[0].y + t10*p[1].y + t00*p[2].y
+   };
 }
 function bezier3(t, p)
 {
     // 0 <= t <= 1
-    return bezier1(t, [bezier2(t, [p[0], p[1], p[2]]), bezier2(t, [p[1], p[2], p[3]])]);
+    //return bezier1(t, [bezier2(t, [p[0], p[1], p[2]]), bezier2(t, [p[1], p[2], p[3]])]);
+    var t0 = t, t1 = 1 - t,
+        t0t0 = t0*t0, t1t1 = t1*t1,
+        t111 = t1*t1t1, t000 = t0t0*t0,
+        t110 = 3*t1t1*t0, t100 = 3*t1*t0t0;
+   return {
+       x: t111*p[0].x + t110*p[1].x + t100*p[2].x + t000*p[3].x,
+       y: t111*p[0].y + t110*p[1].y + t100*p[2].y + t000*p[3].y
+   };
 }
 function arc(t, cx, cy, rx, ry, cos, sin)
 {

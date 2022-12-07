@@ -74,6 +74,34 @@ function point_on_arc(p, center, radiusX, radiusY, cs, theta, dtheta)
     t = (t - theta)/dtheta;
     return (t >= 0) && (t <= 1);
 }
+function point_on_qbezier(p, c)
+{
+    //x = t^{2} \left(x_{1} - 2 x_{2} + x_{3}\right) + t \left(- 2 x_{1} + 2 x_{2}\right) + x_{1}
+    var tx, ty;
+    tx = quad_solve(c[0].x - 2*c[1].x + c[2].x, -2*c[0].x + 2*c[1].x, c[0].x - p.x);
+    if (!tx) return false;
+    if (1 < tx.length && (0 > tx[1] || 1 < tx[1])) tx.pop();
+    if (tx.length && (0 > tx[0] || 1 < tx[0])) tx.shift();
+    if (!tx.length) return false;
+    ty = quad_solve(c[0].y - 2*c[1].y + c[2].y, -2*c[0].y + 2*c[1].y, c[0].y - p.y);
+    if (!ty) return false;
+    if (1 < ty.length && (0 > ty[1] || 1 < ty[1])) ty.pop();
+    if (ty.length && (0 > ty[0] || 1 < ty[0])) ty.shift();
+    if (!ty.length) return false;
+    if (1 < tx.length && 1 < ty.length)
+    {
+        return (is_almost_equal(tx[0], ty[0]) && is_almost_equal(tx[1], ty[1])) || (is_almost_equal(tx[0], ty[1]) && is_almost_equal(tx[1], ty[0]));
+    }
+    else if (1 < tx.length && 1 === ty.length)
+    {
+        return is_almost_equal(tx[0], ty[0]) || is_almost_equal(tx[1], ty[0]);
+    }
+    else if (1 < ty.length && 1 === tx.length)
+    {
+        return is_almost_equal(ty[0], tx[0]) || is_almost_equal(ty[1], tx[0]);
+    }
+    return is_almost_equal(tx[0], ty[0]);
+}
 function point_on_polyline(p, polyline_points)
 {
     for (var i=0,n=polyline_points.length-1; i<n; ++i)
@@ -187,26 +215,18 @@ function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_bezier2_intersection(p1, p2, c)
+function line_qbezier_intersection(p1, p2, abcdef, c)
 {
+    if (null == abcdef) abcdef = qbezier2quadratic(c);
     var p = new Array(2), pi = 0, i, n,
-        M = p2.y - p1.y,
-        N = p1.x - p2.x,
-        K = p2.x*p1.y - p1.x*p2.y,
-        A = c[0].y*c[0].y - 4*c[0].y*c[1].y + 2*c[0].y*c[2].y + 4*c[1].y*c[1].y - 4*c[1].y*c[2].y + c[2].y*c[2].y,
-        B = c[0].x*c[0].x - 4*c[0].x*c[1].x + 2*c[0].x*c[2].x + 4*c[1].x*c[1].x - 4*c[1].x*c[2].x + c[2].x*c[2].x,
-        C = -2*c[0].x*c[0].y + 4*c[0].x*c[1].y - 2*c[0].x*c[2].y + 4*c[1].x*c[0].y - 8*c[1].x*c[1].y + 4*c[1].x*c[2].y - 2*c[2].x*c[0].y + 4*c[2].x*c[1].y - 2*c[2].x*c[2].y,
-        D = 2*c[0].x*c[0].y*c[2].y - 4*c[0].x*c[1].y*c[1].y + 4*c[0].x*c[1].y*c[2].y - 2*c[0].x*c[2].y*c[2].y + 4*c[1].x*c[0].y*c[1].y - 8*c[1].x*c[0].y*c[2].y + 4*c[1].x*c[1].y*c[2].y - 2*c[2].x*c[0].y*c[0].y + 4*c[2].x*c[0].y*c[1].y + 2*c[2].x*c[0].y*c[2].y - 4*c[2].x*c[1].y*c[1].y,
-        E = -2*c[0].x*c[0].x*c[2].y + 4*c[0].x*c[1].x*c[1].y + 4*c[0].x*c[1].x*c[2].y + 2*c[0].x*c[2].x*c[0].y - 8*c[0].x*c[2].x*c[1].y + 2*c[0].x*c[2].x*c[2].y - 4*c[1].x*c[1].x*c[0].y - 4*c[1].x*c[1].x*c[2].y + 4*c[1].x*c[2].x*c[0].y + 4*c[1].x*c[2].x*c[1].y - 2*c[2].x*c[2].x*c[0].y,
-        F = c[0].x*c[0].x*c[2].y*c[2].y - 4*c[0].x*c[1].x*c[1].y*c[2].y - 2*c[0].x*c[2].x*c[0].y*c[2].y + 4*c[0].x*c[2].x*c[1].y*c[1].y + 4*c[1].x*c[1].x*c[0].y*c[2].y - 4*c[1].x*c[2].x*c[0].y*c[1].y + c[2].x*c[2].x*c[0].y*c[0].y,
         s = line_quadratic_intersection(
-        M, N, K,
-        A, B, C, D, E, F
+        p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
+        abcdef[0], abcdef[1], abcdef[2], abcdef[3], abcdef[4], abcdef[5]
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2))
+        if (point_on_line_segment(s[i], p1, p2) && point_on_qbezier(s[i], c))
             p[pi++] = s[i];
     }
     p.length = pi;
@@ -290,6 +310,17 @@ function polyline_arc_intersection(polyline_points, center, radiusX, radiusY, cs
     for (j=0; j<n; ++j)
     {
         p = line_arc_intersection(polyline_points[j], polyline_points[j+1], abcdef, center, radiusX, radiusY, cs, theta, dtheta);
+        if (p) i.push.apply(i, p);
+    }
+    return i.length ? i : false;
+}
+function polyline_qbezier_intersection(polyline_points, control_points)
+{
+    var i = [], j, k, p, n = polyline_points.length-1,
+        abcdef = qbezier2quadratic(control_points);
+    for (j=0; j<n; ++j)
+    {
+        p = line_qbezier_intersection(polyline_points[j], polyline_points[j+1], abcdef, control_points);
         if (p) i.push.apply(i, p);
     }
     return i.length ? i : false;
@@ -544,6 +575,16 @@ function ellipse2quadratic(center, radiusX, radiusY, cs)
         B = 2*(b*b - a*a)*sin_a*cos_a;
     return [A, C, B, -2*A*x0 - B*y0, -B*x0 - 2*C*y0, A*x0*x0 + B*x0*y0 + C*y0*y0 - a*a*b*b];
 }
+function qbezier2quadratic(c)
+{
+    var A = c[0].y*c[0].y - 4*c[0].y*c[1].y + 2*c[0].y*c[2].y + 4*c[1].y*c[1].y - 4*c[1].y*c[2].y + c[2].y*c[2].y,
+    B = c[0].x*c[0].x - 4*c[0].x*c[1].x + 2*c[0].x*c[2].x + 4*c[1].x*c[1].x - 4*c[1].x*c[2].x + c[2].x*c[2].x,
+    C = -2*c[0].x*c[0].y + 4*c[0].x*c[1].y - 2*c[0].x*c[2].y + 4*c[1].x*c[0].y - 8*c[1].x*c[1].y + 4*c[1].x*c[2].y - 2*c[2].x*c[0].y + 4*c[2].x*c[1].y - 2*c[2].x*c[2].y,
+    D = 2*c[0].x*c[0].y*c[2].y - 4*c[0].x*c[1].y*c[1].y + 4*c[0].x*c[1].y*c[2].y - 2*c[0].x*c[2].y*c[2].y + 4*c[1].x*c[0].y*c[1].y - 8*c[1].x*c[0].y*c[2].y + 4*c[1].x*c[1].y*c[2].y - 2*c[2].x*c[0].y*c[0].y + 4*c[2].x*c[0].y*c[1].y + 2*c[2].x*c[0].y*c[2].y - 4*c[2].x*c[1].y*c[1].y,
+    E = -2*c[0].x*c[0].x*c[2].y + 4*c[0].x*c[1].x*c[1].y + 4*c[0].x*c[1].x*c[2].y + 2*c[0].x*c[2].x*c[0].y - 8*c[0].x*c[2].x*c[1].y + 2*c[0].x*c[2].x*c[2].y - 4*c[1].x*c[1].x*c[0].y - 4*c[1].x*c[1].x*c[2].y + 4*c[1].x*c[2].x*c[0].y + 4*c[1].x*c[2].x*c[1].y - 2*c[2].x*c[2].x*c[0].y,
+    F = c[0].x*c[0].x*c[2].y*c[2].y - 4*c[0].x*c[1].x*c[1].y*c[2].y - 2*c[0].x*c[2].x*c[0].y*c[2].y + 4*c[0].x*c[2].x*c[1].y*c[1].y + 4*c[1].x*c[1].x*c[0].y*c[2].y - 4*c[1].x*c[2].x*c[0].y*c[1].y + c[2].x*c[2].x*c[0].y*c[0].y;
+    return [A, B, C, D, E, F];
+}
 function sample_curve(f, n, pixelSize, do_refine)
 {
     if (null == n) n = NUM_POINTS;
@@ -625,21 +666,34 @@ function bezier(c)
 function bezier1(t, p)
 {
     // 0 <= t <= 1
-    var b00 = p[0], b01 = p[1], t1 = t, t0 = 1 - t;
+    var t1 = t, t0 = 1 - t;
     return {
-        x: t0*b00.x + t1*b01.x,
-        y: t0*b00.y + t1*b01.y
+        x: t0*p[0].x + t1*p[1].x,
+        y: t0*p[0].y + t1*p[1].y
     };
 }
 function bezier2(t, p)
 {
     // 0 <= t <= 1
-    return bezier1(t, [bezier1(t, [p[0], p[1]]), bezier1(t, [p[1], p[2]])]);
+    //return bezier1(t, [bezier1(t, [p[0], p[1]]), bezier1(t, [p[1], p[2]])]);
+   var t0 = t, t1 = 1 - t, t11 = t1*t1, t10 = 2*t1*t0, t00 = t0*t0;
+   return {
+       x: t11*p[0].x + t10*p[1].x + t00*p[2].x,
+       y: t11*p[0].y + t10*p[1].y + t00*p[2].y
+   };
 }
 function bezier3(t, p)
 {
     // 0 <= t <= 1
-    return bezier1(t, [bezier2(t, [p[0], p[1], p[2]]), bezier2(t, [p[1], p[2], p[3]])]);
+    //return bezier1(t, [bezier2(t, [p[0], p[1], p[2]]), bezier2(t, [p[1], p[2], p[3]])]);
+    var t0 = t, t1 = 1 - t,
+        t0t0 = t0*t0, t1t1 = t1*t1,
+        t111 = t1*t1t1, t000 = t0t0*t0,
+        t110 = 3*t1t1*t0, t100 = 3*t1*t0t0;
+   return {
+       x: t111*p[0].x + t110*p[1].x + t100*p[2].x + t000*p[3].x,
+       y: t111*p[0].y + t110*p[1].y + t100*p[2].y + t000*p[3].y
+   };
 }
 function arc(t, cx, cy, rx, ry, cos, sin)
 {

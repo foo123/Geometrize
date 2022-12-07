@@ -133,12 +133,6 @@ var Polygon = makeClass(Curve, {
     isConvex: function() {
         return this._is_convex;
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     hasPoint: function(point) {
         return 2 === point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
     },
@@ -179,6 +173,11 @@ var Polygon = makeClass(Curve, {
         else if (other instanceof Arc)
         {
             i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Bezier2)
+        {
+            i = polyline_qbezier_intersection(this._lines, other._points);
             return i ? i.map(Point) : false;
         }
         else if ((other instanceof Polyline) || (other instanceof Polygon))

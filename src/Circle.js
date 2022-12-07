@@ -127,12 +127,6 @@ var Circle = makeClass(Curve, {
     hasMatrix: function() {
         return false;
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     f: function(t) {
         var c = this.center, r = this.radius;
         return arc(t*TWO_PI, c.x, c.y, r, r, 1, 0);

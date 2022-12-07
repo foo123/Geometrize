@@ -108,10 +108,7 @@ var Curve = makeClass(Primitive, {
             get: function() {
                 if (null == _lines)
                 {
-                    _lines = sample_curve(function(t) {
-                        var pt = self.f(t);
-                        return /*_matrix ? _matrix.transform(pt, pt) :*/ pt;
-                    }, NUM_POINTS, PIXEL_SIZE, true);
+                    _lines = sample_curve(self.f.bind(self), NUM_POINTS, PIXEL_SIZE, true);
                 }
                 return _lines;
             },
@@ -182,7 +179,27 @@ var Curve = makeClass(Primitive, {
             enumerable: true,
             configurable: true
         });
+        def(self, '_bbox', {
+            get: function() {
+                return {
+                    ymin: -Infinity,
+                    xmin: -Infinity,
+                    ymax: Infinity,
+                    xmax: Infinity
+                };
+            },
+            enumerable: false,
+            configurable: true
+        });
+        def(self, '_hull', {
+            get: function() {
+                return [];
+            },
+            enumerable: false,
+            configurable: true
+        });
     },
+    name: 'Curve',
     dispose: function() {
         var self = this;
         if (self.points)
@@ -227,11 +244,23 @@ var Curve = makeClass(Primitive, {
     f: function(t) {
         return null;
     },
+    getBoundingBox: function() {
+        var bb = this._bbox;
+        return {
+        ymin: bb.ymin,
+        xmin: bb.xmin,
+        ymax: bb.ymax,
+        xmax: bb.xmax
+        };
+    },
+    getConvexHull: function() {
+        return this._hull.map(function(p) {return p.clone();});
+    },
     getPointAt: function(t) {
         return null;
     },
-    toLines: function() {
-        return this._lines;
+    polylinePoints: function() {
+        return this._lines.slice();
     },
     bezierPoints: function() {
         return [];
@@ -261,6 +290,7 @@ var Bezier = makeClass(Curve, {
             configurable: false
         });
     },
+    name: 'Bezier',
     toTex: function() {
         return '\\text{Bezier}';
     },
@@ -393,7 +423,7 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _bbox)
                 {
                     _bbox = _curves.reduce(function(_bbox, curve) {
-                        var box = curve.getBoundingBox();
+                        var box = curve._bbox;
                         _bbox.ymin = stdMath.min(_bbox.ymin, box.ymin);
                         _bbox.xmin = stdMath.min(_bbox.xmin, box.xmin);
                         _bbox.ymax = stdMath.max(_bbox.ymax, box.ymax);
@@ -416,7 +446,7 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _hull)
                 {
                     _hull = convex_hull(_curves.reduce(function(hulls, curve) {
-                        hulls.push.apply(hulls, curve.getConvexHull());
+                        hulls.push.apply(hulls, curve._hull);
                         return hulls;
                     }, []));
                 }
@@ -437,6 +467,7 @@ var CompositeCurve = makeClass(Curve, {
             return Primitive.prototype.isChanged.apply(self, arguments);
         };
     },
+    name: 'CompositeCurve',
     dispose: function() {
         var self = this;
         if (self.curves)
@@ -477,12 +508,6 @@ var CompositeCurve = makeClass(Curve, {
         var c = this.curves;
         return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     hasPoint: function(point) {
         for (var c=this.curves, n=c.length, i=0; i<n; ++i)
         {
@@ -507,10 +532,16 @@ var CompositeCurve = makeClass(Curve, {
         }
         return false;
     },
-    toLines: function() {
+    polylinePoints: function() {
         return this.curves.reduce(function(lines, curve) {
-            lines.push.apply(lines, curve.toLines());
+            lines.push.apply(lines, curve.polylinePoints());
             return lines;
+        }, []);
+    },
+    bezierPoints: function() {
+        return this.curves.reduce(function(beziers, curve) {
+            beziers.push.apply(beziers, curve.bezierPoints());
+            return beziers;
         }, []);
     },
     toTex: function() {

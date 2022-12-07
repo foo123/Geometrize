@@ -159,23 +159,13 @@ var Matrix = makeClass(null, {
         }
         return newpoint;
     },
-    /*decompose: function() {
-        var self = this,
-            a00 = self.$00, a01 = self.$01, a02 = self.$02,
-            a10 = self.$10, a11 = self.$11, a12 = self.$12;
-        /*
-        https://live.sympy.org/
-        m = translation*shear*rotation*scale*translation0 = \displaystyle \left[\begin{matrix}sx \left(cost + shx sint\right) & sy \left(cost shx - sint\right) & \\sx \left(cost shy + sint\right) & sy \left(cost - shy sint\right) & sx tx_{0} \left(cost shy + sint\right) + sy ty_{0} \left(cost - shy sint\right) + ty\\0 & 0 & 1\end{matrix}\right]\
-        m2 = translation*rotation*shear*scale*translation0 = \displaystyle \left[\begin{matrix}sx \left(cost - shy sint\right) & sy \left(cost shx - sint\right) & sx tx_{0} \left(cost - shy sint\right) + sy ty_{0} \left(cost shx - sint\right) + tx\\sx \left(cost shy + sint\right) & sy \left(cost + shx sint\right) & sx tx_{0} \left(cost shy + sint\right) + sy ty_{0} \left(cost + shx sint\right) + ty\\0 & 0 & 1\end{matrix}\right]
-        a00 = sx*(cos - shy*sin);
-        a01 = sy*(cos*shx - sin);
-        a02 = sx*tx0*(cos - shy*sin) + sy*ty0*(cos*shx - sin) + tx;
-        a10 = sx*(cos*shy + sin);
-        a11 = sy*(cos + shx*sin);
-        a12 = sx*tx0*(cos*shy + sin) + sy*ty0*(cos + shx*sin) + ty;
-        * /
-    },*/
     getTranslation: function() {
+        /*
+        if matrix can be factored as:
+        T * R * S = |1 0 tx| * |cos -sin 0| * |sx 0  0| = |sxcos -sysin tx| = |00 01 02|
+                    |0 1 ty|   |sin cos  0|   |0  sy 0|   |sxsin sycos  ty|   |10 11 12|
+                    |0 0 1 |   |0   0    1|   |0  0  1|   |0      0     1 |   |20 21 22|
+        */
         var self = this;
         return {
             x: self.$02,
@@ -183,16 +173,28 @@ var Matrix = makeClass(null, {
         };
     },
     getRotationAngle: function() {
+        /*
+        if matrix can be factored as:
+        T * R * S = |1 0 tx| * |cos -sin 0| * |sx 0  0| = |sxcos -sysin tx| = |00 01 02|
+                    |0 1 ty|   |sin cos  0|   |0  sy 0|   |sxsin sycos  ty|   |10 11 12|
+                    |0 0 1 |   |0   0    1|   |0  0  1|   |0      0     1 |   |20 21 22|
+        */
         var self = this;
-        return stdMath.atan2(-self.$01, self.$00);
+        return stdMath.atan2(self.$10, self.$00);
     },
     getScale: function() {
+        /*
+        if matrix can be factored as:
+        T * R * S = |1 0 tx| * |cos -sin 0| * |sx 0  0| = |sxcos -sysin tx| = |00 01 02|
+                    |0 1 ty|   |sin cos  0|   |0  sy 0|   |sxsin sycos  ty|   |10 11 12|
+                    |0 0 1 |   |0   0    1|   |0  0  1|   |0      0     1 |   |20 21 22|
+        */
         var self = this,
-            a = self.$00, b = self.$01,
+            a = self.$00, b = -self.$01,
             c = self.$10, d = self.$11;
         return {
-        x: sign(a)*hypot(a, b),
-        y: sign(d)*hypot(c, d)
+        x: sign(a)*hypot(a, c),
+        y: sign(d)*hypot(b, d)
         };
     },
     toArray: function() {
@@ -209,7 +211,7 @@ var Matrix = makeClass(null, {
     },
     toCSS: function() {
         var self = this;
-        return 'matrix('+Str(self.$00)+', '+Str(self.$10)+', '+Str(self.$01)+', '+Str(self.$11)+', '+Str(self.$02)+', '+Str(self.$12)+')';
+        return 'matrix('+Str(self.$00)+','+Str(self.$10)+','+Str(self.$01)+','+Str(self.$11)+','+Str(self.$02)+','+Str(self.$12)+')';
     },
     toTex: function() {
         return Matrix.arrayTex(this.toArray(), 3, 3);

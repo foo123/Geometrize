@@ -10,6 +10,11 @@ var Bezier1 = makeClass(Bezier, {
         if (start instanceof Bezier1) return start;
         if (!(self instanceof Bezier1)) return new Bezier1(start, end);
 
+        if (is_array(start) && null == end)
+        {
+            end = start[1];
+            start = start[0];
+        }
         self.$super('constructor', [[start, end]]);
 
         def(self, 'start', {
@@ -116,12 +121,6 @@ var Bezier1 = makeClass(Bezier, {
     transform: function(matrix) {
         return new Line(this.start.transform(matrix), this.end.transform(matrix));
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     hasPoint: function(point) {
         var p = this._points;
         return !!point_on_line_segment(point, p[0], p[1]);
@@ -160,7 +159,9 @@ var Bezier1 = makeClass(Bezier, {
         }
         else if (other instanceof Bezier2)
         {
-            return false;
+            p = this._points;
+            i = line_qbezier_intersection(p[0], p[1], null, other._points);
+            return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {

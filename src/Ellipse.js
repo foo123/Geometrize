@@ -197,12 +197,6 @@ var Ellipse = makeClass(Curve, {
     hasMatrix: function() {
         return false;
     },
-    getBoundingBox: function() {
-        return this._bbox;
-    },
-    getConvexHull: function() {
-        return this._hull;
-    },
     f: function(t) {
         var c = this.center, cs = this.cs;
         return arc(t*TWO_PI, c.x, c.y, this.radiusX, this.radiusY, cs[0], cs[1]);
