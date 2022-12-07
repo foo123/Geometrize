@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.4.0 (2022-12-07 09:44:25)
+*   @version 0.5.0 (2022-12-07 11:10:15)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.4.0 (2022-12-07 09:44:25)
+*   @version 0.5.0 (2022-12-07 11:10:15)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -38,7 +38,7 @@ var HAS = Object.prototype.hasOwnProperty,
     NOP = function() {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
-    Geometrize = {VERSION: "0.4.0", Math: {}}
+    Geometrize = {VERSION: "0.5.0", Math: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -2415,18 +2415,100 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
-                    _bbox = self._lines.reduce(function(_bbox, p) {
-                        _bbox.ymin = stdMath.min(_bbox.ymin, p.y);
-                        _bbox.xmin = stdMath.min(_bbox.xmin, p.x);
-                        _bbox.ymax = stdMath.max(_bbox.ymax, p.y);
-                        _bbox.xmax = stdMath.max(_bbox.xmax, p.x);
-                        return _bbox;
-                    }, {
-                        ymin: Infinity,
-                        xmin: Infinity,
-                        ymax: -Infinity,
-                        xmax: -Infinity
-                    });
+                    var o1 = self.start, o2 = self.end,
+                        c = self.center,
+                        rx = self.rX, ry = self.rY,
+                        theta = self.theta,
+                        dtheta = self.dtheta,
+                        theta2 = theta + dtheta,
+                        sweep = self.sweep, otherArc = false,
+                        tan = stdMath.tan(rad(self.angle)),
+                        p1, p2, p3, p4, t,
+                        xmin, xmax, ymin, ymax,
+                        txmin, txmax, tymin, tymax
+                    ;
+                    // get parameter t by zeroing directional derivatives along x and y
+                    // first get of whole ellipse
+                    // along x axis
+                    t = stdMath.atan2(-ry*tan, rx);
+                    if (t < 0) t += TWO_PI;
+                    p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+                    t += PI;
+                    p2 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+                    // along y axis
+                    t = stdMath.atan2(ry, rx*tan);
+                    if (t < 0) t += TWO_PI;
+                    p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+                    t += PI;
+                    p4 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+                    if (p2.x < p1.x)
+                    {
+                        xmin = p2;
+                        xmax = p1;
+                    }
+                    else
+                    {
+                        xmin = p1;
+                        xmax = p2;
+                    }
+                    if (p3.y < p4.y)
+                    {
+                        ymin = p3;
+                        ymax = p4;
+                    }
+                    else
+                    {
+                        ymin = p4;
+                        ymax = p3;
+                    }
+                    // refine bounding box by elliminating points not on the arc
+                    txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
+                    txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
+                    tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
+                    tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
+                    if (txmin < 0) txmin += TWO_PI;
+                    if (txmin > TWO_PI) txmin -= TWO_PI;
+                    if (txmax < 0) txmax += TWO_PI;
+                    if (txmax > TWO_PI) txmax -= TWO_PI;
+                    if (tymin < 0) tymin += TWO_PI;
+                    if (tymin > TWO_PI) tymin -= TWO_PI;
+                    if (tymax < 0) tymax += TWO_PI;
+                    if (tymax > TWO_PI) tymax -= TWO_PI;
+                    if (!self.sweep)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                    }
+                    if (theta > theta2)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                        otherArc = true;
+                    }
+                    if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
+                    {
+                        xmin = o1.x < o2.x ? o1 : o2;
+                    }
+                    if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
+                    {
+                        xmax = o1.x > o2.x ? o1 : o2;
+                    }
+                    if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
+                    {
+                        ymin = o1.y < o2.y ? o1 : o2;
+                    }
+                    if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
+                    {
+                        ymax = o1.y > o2.y ? o1 : o2;
+                    }
+                    _bbox = {
+                        ymin: ymin.y,
+                        xmin: xmin.x,
+                        ymax: ymax.y,
+                        xmax: xmax.x
+                    };
                 }
                 return _bbox;
             },
@@ -2846,6 +2928,67 @@ var Polygon = makeClass(Curve, {
     }
 });
 Geometrize.Polygon = Polygon;
+
+// 2D Rect class
+var Rect = makeClass(Polygon, {
+    constructor: function Rect(top, width, height) {
+        var self = this, topLeft, bottomRight;
+        if (top instanceof Rect) return top;
+        if (!(self instanceof Rect)) return new Rect(top, width, height);
+        topLeft = Point(top);
+        if (is_numeric(width) && is_numeric(height))
+        {
+            bottomRight = new Point(topLeft.x + Num(width), topLeft.y + Num(height));
+        }
+        else
+        {
+            bottomRight = Point(width);
+        }
+        self.$super('constructor', [[topLeft, new Point(bottomRight.x, topLeft.y), bottomRight, new Point(topLeft.x, bottomRight.y)]]);
+
+        def(self, 'topLeft', {
+            get: function() {
+                return self.points[0];
+            },
+            set: function(topLeft) {
+                self.points[0] = topLeft;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'bottomRight', {
+            get: function() {
+                return self.points[2];
+            },
+            set: function(bottomRight) {
+                self.points[2] = bottomRight;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'width', {
+            get: function() {
+                return abs(self.bottomRight.x - self.topLeft.x);
+            },
+            set: function(width) {
+                self.bottomRight.x = self.topLeft.x + Num(width);
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'height', {
+            get: function() {
+                return abs(self.bottomRight.y - self.topLeft.y);
+            },
+            set: function(height) {
+                self.bottomRight.y = self.topLeft.y + Num(height);
+            },
+            enumerable: true,
+            configurable: false
+        });
+    }
+});
+Geometrize.Rect = Rect;
 // 2D Circle class
 var Circle = makeClass(Curve, {
     constructor: function Circle(center, radius) {
@@ -3187,7 +3330,7 @@ var Ellipse = makeClass(Curve, {
                     p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
                     p2 = arc(t + PI, c.x, c.y, rx, ry, _cos, _sin);
                     // along y axis
-                    t = stdMath.atan2(ry, rx*tan)
+                    t = stdMath.atan2(ry, rx*tan);
                     p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
                     p4 = arc(t + PI, c.x, c.y, rx, ry, _cos, _sin);
                     _bbox = {
@@ -4736,6 +4879,10 @@ function is_almost_equal(a, b, eps)
     if (null == eps) eps = EPS;
     return abs(a - b) < eps;
 }
+function clamp(x, xmin, xmax)
+{
+    return stdMath.max(stdMath.min(x, xmax), xmin);
+}
 function sign(x)
 {
     return 0 > x ? -1 : 1;
@@ -4789,7 +4936,8 @@ function crossp(x1, y1, x2, y2)
 }
 function angle(x1, y1, x2, y2)
 {
-    return stdMath.acos(dotp(x1, y1, x2, y2)/hypot(x1, y1)/hypot(x2, y2));
+    var n1 = hypot(x1, y1), n2 = hypot(x2, y2);
+    return 0 === n1 || 0 === n2 ? 0 : stdMath.acos(dotp(x1, y1, x2, y2)/n1/n2);
 }
 function vector_angle(ux, uy, vx, vy)
 {
@@ -5019,10 +5167,6 @@ function unobserveArray(array, onDel)
     array.push.apply(array, values);
 
     return array;
-}
-function clamp(v, m, M)
-{
-    return stdMath.max(stdMath.min(v, M), m);
 }
 function equal(a, b)
 {

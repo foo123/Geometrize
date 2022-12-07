@@ -239,3 +239,64 @@ var Polygon = makeClass(Curve, {
     }
 });
 Geometrize.Polygon = Polygon;
+
+// 2D Rect class
+var Rect = makeClass(Polygon, {
+    constructor: function Rect(top, width, height) {
+        var self = this, topLeft, bottomRight;
+        if (top instanceof Rect) return top;
+        if (!(self instanceof Rect)) return new Rect(top, width, height);
+        topLeft = Point(top);
+        if (is_numeric(width) && is_numeric(height))
+        {
+            bottomRight = new Point(topLeft.x + Num(width), topLeft.y + Num(height));
+        }
+        else
+        {
+            bottomRight = Point(width);
+        }
+        self.$super('constructor', [[topLeft, new Point(bottomRight.x, topLeft.y), bottomRight, new Point(topLeft.x, bottomRight.y)]]);
+
+        def(self, 'topLeft', {
+            get: function() {
+                return self.points[0];
+            },
+            set: function(topLeft) {
+                self.points[0] = topLeft;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'bottomRight', {
+            get: function() {
+                return self.points[2];
+            },
+            set: function(bottomRight) {
+                self.points[2] = bottomRight;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'width', {
+            get: function() {
+                return abs(self.bottomRight.x - self.topLeft.x);
+            },
+            set: function(width) {
+                self.bottomRight.x = self.topLeft.x + Num(width);
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'height', {
+            get: function() {
+                return abs(self.bottomRight.y - self.topLeft.y);
+            },
+            set: function(height) {
+                self.bottomRight.y = self.topLeft.y + Num(height);
+            },
+            enumerable: true,
+            configurable: false
+        });
+    }
+});
+Geometrize.Rect = Rect;

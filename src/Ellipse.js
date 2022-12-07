@@ -125,7 +125,7 @@ var Ellipse = makeClass(Curve, {
                     p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
                     p2 = arc(t + PI, c.x, c.y, rx, ry, _cos, _sin);
                     // along y axis
-                    t = stdMath.atan2(ry, rx*tan)
+                    t = stdMath.atan2(ry, rx*tan);
                     p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
                     p4 = arc(t + PI, c.x, c.y, rx, ry, _cos, _sin);
                     _bbox = {

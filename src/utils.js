@@ -757,6 +757,10 @@ function is_almost_equal(a, b, eps)
     if (null == eps) eps = EPS;
     return abs(a - b) < eps;
 }
+function clamp(x, xmin, xmax)
+{
+    return stdMath.max(stdMath.min(x, xmax), xmin);
+}
 function sign(x)
 {
     return 0 > x ? -1 : 1;
@@ -810,7 +814,8 @@ function crossp(x1, y1, x2, y2)
 }
 function angle(x1, y1, x2, y2)
 {
-    return stdMath.acos(dotp(x1, y1, x2, y2)/hypot(x1, y1)/hypot(x2, y2));
+    var n1 = hypot(x1, y1), n2 = hypot(x2, y2);
+    return 0 === n1 || 0 === n2 ? 0 : stdMath.acos(dotp(x1, y1, x2, y2)/n1/n2);
 }
 function vector_angle(ux, uy, vx, vy)
 {
@@ -1040,10 +1045,6 @@ function unobserveArray(array, onDel)
     array.push.apply(array, values);
 
     return array;
-}
-function clamp(v, m, M)
-{
-    return stdMath.max(stdMath.min(v, M), m);
 }
 function equal(a, b)
 {
