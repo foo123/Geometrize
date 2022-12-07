@@ -38,6 +38,7 @@ body {
 </head><body>
 <h1>Geometrize Tween</h1>
 <button id="tween" class="button">start tween</button>
+<button id="reverse" class="button">reverse tween</button>
 <div id="container"></div>
 <script src="../build/Geometrize.js"></script>
 <script>
@@ -118,8 +119,13 @@ const tween = Tween({
     delay: 400
 });
 plane.add(tween);
+let reverseFlag = false;
 document.getElementById('tween').addEventListener('click', () => {
     tween.rewind().start();
+}, false);
+document.getElementById('reverse').addEventListener('click', () => {
+    reverseFlag = !reverseFlag;
+    tween.reverse(reverseFlag);
 }, false);
 })();
 </script>

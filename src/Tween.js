@@ -140,7 +140,8 @@ function prepare_tween(tween, fps)
             nframes: 0,
             keyframes: null,
             kf: 0,
-            current: null
+            current: null,
+            reverse: false
         },
         shapes = {},
         maxCurves = -Infinity,
@@ -216,7 +217,14 @@ function prepare_tween(tween, fps)
 }
 function first_frame(tween)
 {
-    tween.kf = 0;
+    if (tween.reverse)
+    {
+        tween.kf = tween.keyframes.length - 1;
+    }
+    else
+    {
+        tween.kf = 0;
+    }
     var frame = tween.keyframes[tween.kf],
         a = frame,
         // translation
@@ -256,25 +264,47 @@ function first_frame(tween)
         cs[i] = s;
     }
     tween.current = {
-        frame: 0,
+        frame: tween.reverse ? tween.nframes - 1 : 0,
         shape: cs,
         transform: frame.transform,
         style: frame.style
     };
 }
+function is_first_frame(tween)
+{
+    return tween.reverse ? (tween.nframes - 1 === tween.current.frame) : (0 === tween.current.frame);
+}
+function is_tween_finished(tween)
+{
+    return tween.reverse ? (0 > tween.current.frame) : (tween.current.frame >= tween.nframes);
+}
 function next_frame(tween)
 {
-    ++tween.current.frame;
-    if (tween.current.frame >= tween.nframes) return false;
-    if (tween.current.frame >= tween.keyframes[tween.kf+1].frame)
+    tween.current.frame += tween.reverse ? -1 : 1;
+    if (is_tween_finished(tween)) return false;
+    if (tween.reverse)
     {
-        if (tween.kf+2 < tween.keyframes.length)
-            ++tween.kf;
+        if (tween.current.frame <= tween.keyframes[tween.kf-1].frame)
+        {
+            if (tween.kf-2 >= 0)
+                --tween.kf;
+        }
+        var a = tween.keyframes[tween.kf],
+            b = tween.keyframes[tween.kf-1],
+            _t = abs(tween.current.frame - a.frame)/(a.frame - b.frame + 1);
     }
-    var a = tween.keyframes[tween.kf],
-        b = tween.keyframes[tween.kf+1],
-        _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1),
-        t = a.easing(_t),
+    else
+    {
+        if (tween.current.frame >= tween.keyframes[tween.kf+1].frame)
+        {
+            if (tween.kf+2 < tween.keyframes.length)
+                ++tween.kf;
+        }
+        var a = tween.keyframes[tween.kf],
+            b = tween.keyframes[tween.kf+1],
+            _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1);
+    }
+    var t = a.easing(_t),
         // translation
         tx = interpolate(a.transform.translate.x, b.transform.translate.x, t),
         ty = interpolate(a.transform.translate.y, b.transform.translate.y, t),
@@ -339,7 +369,7 @@ var Tween = makeClass(Primitive, {
         Primitive.call(self);
         self.start = function() {
             run = true;
-            if ((0 === tween.current.frame) && onStart) onStart(self);
+            if (is_first_frame(tween) && onStart) onStart(self);
             setTimeout(animate, (tween.delay || 0) + dt);
             return self;
         };
@@ -350,6 +380,10 @@ var Tween = makeClass(Primitive, {
         self.rewind = function() {
             first_frame(tween);
             self.isChanged(true);
+            return self;
+        };
+        self.reverse = function(bool) {
+            tween.reverse = !!bool;
             return self;
         };
         self.onStart = function(cb) {
@@ -417,9 +451,9 @@ var Tween = makeClass(Primitive, {
             if (next_frame(tween))
             {
                 self.isChanged(true);
-                if (tween.current.frame+1 === tween.nframes)
+                if (is_tween_finished(tween))
                 {
-                    if (onEnd) onEnd(self);
+                    if (onEnd) setTimeout(function() {onEnd(self);}, dt);
                 }
                 else
                 {
