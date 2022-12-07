@@ -116,20 +116,23 @@ var Ellipse = makeClass(Curve, {
                 {
                     var c = self.center,
                         rx = _radiusX.val(), ry = _radiusY.val(),
-                        o1 = toarc(-1, 0, c.x, c.y, rx, ry, _cos, _sin),
-                        o2 = toarc(1, 0, c.x, c.y, rx, ry, _cos, _sin),
-                        o3 = toarc(0, -1, c.x, c.y, rx, ry, _cos, _sin),
-                        o4 = toarc(0, 1, c.x, c.y, rx, ry, _cos, _sin),
-                        r1 = toarc(-_cos, -_sin, c.x, c.y, rx, ry, _cos, _sin),
-                        r2 = toarc(_cos, _sin, c.x, c.y, rx, ry, _cos, _sin),
-                        r3 = toarc(_sin, -_cos, c.x, c.y, rx, ry, _cos, _sin),
-                        r4 = toarc(-_sin, _cos, c.x, c.y, rx, ry, _cos, _sin)
+                        tan = stdMath.tan(rad(self.angle)),
+                        p1, p2, p3, p4, t
                     ;
+                    // get parameter t by zeroing directional derivatives along x and y
+                    // along x axis
+                    t = stdMath.atan2(-ry*tan, rx);
+                    p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+                    p2 = arc(t + PI, c.x, c.y, rx, ry, _cos, _sin);
+                    // along y axis
+                    t = stdMath.atan2(ry, rx*tan)
+                    p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+                    p4 = arc(t + PI, c.x, c.y, rx, ry, _cos, _sin);
                     _bbox = {
-                        ymin: stdMath.min(o1.y,o2.y,o3.y,o4.y,r1.y,r2.y,r3.y,r4.y),
-                        xmin: stdMath.min(o1.x,o2.x,o3.x,o4.x,r1.x,r2.x,r3.x,r4.x),
-                        ymax: stdMath.max(o1.y,o2.y,o3.y,o4.y,r1.y,r2.y,r3.y,r4.y),
-                        xmax: stdMath.max(o1.x,o2.x,o3.x,o4.x,r1.x,r2.x,r3.x,r4.x)
+                        ymin: stdMath.min(p3.y, p4.y),
+                        xmin: stdMath.min(p1.x, p2.x),
+                        ymax: stdMath.max(p3.y, p4.y),
+                        xmax: stdMath.max(p1.x, p2.x)
                     };
                 }
                 return _bbox;
