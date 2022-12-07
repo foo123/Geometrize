@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.5.0 (2022-12-07 16:52:30)
+*   @version 0.5.0 (2022-12-07 20:08:29)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.5.0 (2022-12-07 16:52:30)
+*   @version 0.5.0 (2022-12-07 20:08:29)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -1001,10 +1001,10 @@ var Primitive = makeClass(null, merge(null, {
         return [];
     },
     getCenter: function() {
-        var box = this.getBoundingBox();
+        var bb = this.getBoundingBox();
         return {
-            x: (box.xmin + box.xmax)/2,
-            y: (box.ymin + box.ymax)/2
+            x: (bb.xmin + bb.xmax)/2,
+            y: (bb.ymin + bb.ymax)/2
         };
     },
     hasPoint: function(point) {
@@ -2454,13 +2454,26 @@ var Arc = makeClass(Curve, {
                         theta = self.theta,
                         dtheta = self.dtheta,
                         theta2 = theta + dtheta,
-                        sweep = self.sweep, otherArc = false,
+                        otherArc = false,
                         tan = stdMath.tan(rad(self.angle)),
                         p1, p2, p3, p4, t,
                         xmin, xmax, ymin, ymax,
                         txmin, txmax, tymin, tymax
                     ;
-                    // get parameter t by zeroing directional derivatives along x and y
+                    if (!self.sweep)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                    }
+                    if (theta > theta2)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                        otherArc = true;
+                    }
+                    // find min/max from zeroes of directional derivative along x and y
                     // first get of whole ellipse
                     // along x axis
                     t = stdMath.atan2(-ry*tan, rx);
@@ -2507,19 +2520,6 @@ var Arc = makeClass(Curve, {
                     if (tymin > TWO_PI) tymin -= TWO_PI;
                     if (tymax < 0) tymax += TWO_PI;
                     if (tymax > TWO_PI) tymax -= TWO_PI;
-                    if (!self.sweep)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                    }
-                    if (theta > theta2)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                        otherArc = true;
-                    }
                     if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
                     {
                         xmin = o1.x < o2.x ? o1 : o2;
@@ -2552,13 +2552,74 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _hull)
                 {
-                    var b = self._bbox;
+                    var bb = self._bbox;
                     _hull = [
-                    new Point([b.xmin, b.ymin]),
-                    new Point([b.xmax, b.ymin]),
-                    new Point([b.xmax, b.ymax]),
-                    new Point([b.xmin, b.ymax])
+                    new Point([bb.xmin, bb.ymin]),
+                    new Point([bb.xmax, bb.ymin]),
+                    new Point([bb.xmax, bb.ymax]),
+                    new Point([bb.xmin, bb.ymax])
                     ];
+                    /*var c = self.center, rx = self.rX, ry = self.rY,
+                        theta = self.theta, theta2 = theta + self.dtheta,
+                        o1 = self.start, o2 = self.end,
+                        xmin = toarc(-1, 0, c.x, c.y, rx, ry, _cos, _sin),
+                        xmax = toarc(1, 0, c.x, c.y, rx, ry, _cos, _sin),
+                        ymin = toarc(0, -1, c.x, c.y, rx, ry, _cos, _sin),
+                        ymax = toarc(0, 1, c.x, c.y, rx, ry, _cos, _sin),
+                        txmin, txmax, tymin, tymax, t, otherArc = false;
+                    if (!self.sweep)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                        t = o1;
+                        o1 = o2;
+                        o2 = t;
+                    }
+                    if (theta > theta2)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                        t = o1;
+                        o1 = o2;
+                        o2 = t;
+                        otherArc = true;
+                    }
+                    txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
+                    txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
+                    tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
+                    tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
+                    if (txmin < 0) txmin += TWO_PI;
+                    if (txmin > TWO_PI) txmin -= TWO_PI;
+                    if (txmax < 0) txmax += TWO_PI;
+                    if (txmax > TWO_PI) txmax -= TWO_PI;
+                    if (tymin < 0) tymin += TWO_PI;
+                    if (tymin > TWO_PI) tymin -= TWO_PI;
+                    if (tymax < 0) tymax += TWO_PI;
+                    if (tymax > TWO_PI) tymax -= TWO_PI;
+                    if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
+                    {
+                        xmin.x = o1.x < o2.x ? o1.x : o2.x;
+                    }
+                    if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
+                    {
+                        xmax.x = o1.x > o2.x ? o1.x : o2.x;
+                    }
+                    if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
+                    {
+                        ymin.y = o1.y < o2.y ? o1.y : o2.y;
+                    }
+                    if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
+                    {
+                        ymax.y = o1.y > o2.y ? o1.y : o2.y;
+                    }
+                    _hull = [
+                        new Point(xmin.x, ymin.y),
+                        new Point(xmax.x, ymin.y),
+                        new Point(xmax.x, ymax.y),
+                        new Point(xmin.x, ymax.y)
+                    ];*/
                 }
                 return _hull;
             },
@@ -2738,12 +2799,16 @@ var Bezier2 = makeClass(Bezier, {
             get: function() {
                 if (null == _bbox)
                 {
+                    // find min/max from zeroes of directional derivative along x and y
                     var p = self._points,
-                        p1 = p[0], p2 = p[1], p3 = p[2],
-                        xmin = stdMath.min(p1.x, p2.x, p3.x),
-                        xmax = stdMath.max(p1.x, p2.x, p3.x),
-                        ymin = stdMath.min(p1.y, p2.y, p3.y),
-                        ymax = stdMath.max(p1.y, p2.y, p3.y)
+                        ax = p[0].x - 2*p[1].x + p[2].x,
+                        px = is_strictly_equal(ax, 0) ? p[1] : self.f((p[0].x - p[1].x)/ax),
+                        ay = p[0].y - 2*p[1].y + p[2].y,
+                        py = is_strictly_equal(ay, 0) ? p[1] : self.f((p[0].y - p[1].y)/ay),
+                        xmin = stdMath.min(px.x, p[0].x, p[2].x),
+                        xmax = stdMath.max(px.x, p[0].x, p[2].x),
+                        ymin = stdMath.min(py.y, p[0].y, p[2].y),
+                        ymax = stdMath.max(py.y, p[0].y, p[2].y)
                     ;
                     _bbox = {
                         ymin: ymin,
@@ -3507,7 +3572,7 @@ var Ellipse = makeClass(Curve, {
                         tan = stdMath.tan(rad(self.angle)),
                         p1, p2, p3, p4, t
                     ;
-                    // get parameter t by zeroing directional derivatives along x and y
+                    // find min/max from zeroes of directional derivative along x and y
                     // along x axis
                     t = stdMath.atan2(-ry*tan, rx);
                     p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
@@ -4411,12 +4476,12 @@ function point_on_qbezier(p, c)
 {
     //x = t^{2} \left(x_{1} - 2 x_{2} + x_{3}\right) + t \left(- 2 x_{1} + 2 x_{2}\right) + x_{1}
     var tx, ty;
-    tx = quad_solve(c[0].x - 2*c[1].x + c[2].x, -2*c[0].x + 2*c[1].x, c[0].x - p.x);
+    tx = solve_quadratic(c[0].x - 2*c[1].x + c[2].x, -2*c[0].x + 2*c[1].x, c[0].x - p.x);
     if (!tx) return false;
     if (1 < tx.length && (0 > tx[1] || 1 < tx[1])) tx.pop();
     if (tx.length && (0 > tx[0] || 1 < tx[0])) tx.shift();
     if (!tx.length) return false;
-    ty = quad_solve(c[0].y - 2*c[1].y + c[2].y, -2*c[0].y + 2*c[1].y, c[0].y - p.y);
+    ty = solve_quadratic(c[0].y - 2*c[1].y + c[2].y, -2*c[0].y + 2*c[1].y, c[0].y - p.y);
     if (!ty) return false;
     if (1 < ty.length && (0 > ty[1] || 1 < ty[1])) ty.pop();
     if (ty.length && (0 > ty[0] || 1 < ty[0])) ty.shift();
@@ -4796,22 +4861,22 @@ function is_convex(points)
     }
     return 1 === abs(stdMath.round(angle_sum / TWO_PI));
 }
-function lin_solve(a, b)
+function solve_linear(a, b)
 {
     return is_strictly_equal(a, 0) ? false : [-b/a];
 }
-function quad_solve(a, b, c)
+function solve_quadratic(a, b, c)
 {
-    if (is_strictly_equal(a, 0)) return lin_solve(b, c);
+    if (is_strictly_equal(a, 0)) return solve_linear(b, c);
     var D = b*b - 4*a*c, DS = 0;
     if (is_almost_equal(D, 0)) return [-b/(2*a)];
     if (0 > D) return false;
     DS = sqrt(D);
     return [(-b-DS)/(2*a), (-b+DS)/(2*a)];
 }
-function cub_solve(a, b, c, d)
+function solve_cubic(a, b, c, d)
 {
-    if (is_strictly_equal(a, 0)) return quad_solve(b, c, d);
+    if (is_strictly_equal(a, 0)) return solve_quadratic(b, c, d);
     var A = b/a, B = c/a, C = d/a,
         Q = (3*B - A*A)/9, QS = 0,
         R = (9*A*B - 27*C - 2*pow(A, 3))/54,
@@ -4869,10 +4934,10 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
     var x, y, x1 = 0, y1 = 0, x2 = 0, y2 = 0, D = 0, R = 0, F = 0;
     if (is_strictly_equal(m, 0))
     {
-        y = lin_solve(n, k);
+        y = solve_linear(n, k);
         if (!y) return false;
         y1 = y[0];
-        x = quad_solve(a, c*y1+d, b*y1*y1+e*y1+f);
+        x = solve_quadratic(a, c*y1+d, b*y1*y1+e*y1+f);
         if (!x) return false;
         return 2 === x.length ? [{x:x[0],y:y1},{x:x[1],y:y1}] : [{x:x[0],y:y1}];
     }
@@ -5499,9 +5564,9 @@ function is_function(x)
 Geometrize.Math.deg = deg;
 Geometrize.Math.rad = rad;
 Geometrize.Math.hypot = hypot;
-Geometrize.Math.solve1 = lin_solve;
-Geometrize.Math.solve2 = quad_solve;
-Geometrize.Math.solve3 = cub_solve;
+Geometrize.Math.solveLinear = solve_linear;
+Geometrize.Math.solveQuadratic = solve_quadratic;
+Geometrize.Math.solveCubic = solve_cubic;
 
 // export it
 return Geometrize;

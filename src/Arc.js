@@ -199,13 +199,26 @@ var Arc = makeClass(Curve, {
                         theta = self.theta,
                         dtheta = self.dtheta,
                         theta2 = theta + dtheta,
-                        sweep = self.sweep, otherArc = false,
+                        otherArc = false,
                         tan = stdMath.tan(rad(self.angle)),
                         p1, p2, p3, p4, t,
                         xmin, xmax, ymin, ymax,
                         txmin, txmax, tymin, tymax
                     ;
-                    // get parameter t by zeroing directional derivatives along x and y
+                    if (!self.sweep)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                    }
+                    if (theta > theta2)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                        otherArc = true;
+                    }
+                    // find min/max from zeroes of directional derivative along x and y
                     // first get of whole ellipse
                     // along x axis
                     t = stdMath.atan2(-ry*tan, rx);
@@ -252,19 +265,6 @@ var Arc = makeClass(Curve, {
                     if (tymin > TWO_PI) tymin -= TWO_PI;
                     if (tymax < 0) tymax += TWO_PI;
                     if (tymax > TWO_PI) tymax -= TWO_PI;
-                    if (!self.sweep)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                    }
-                    if (theta > theta2)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                        otherArc = true;
-                    }
                     if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
                     {
                         xmin = o1.x < o2.x ? o1 : o2;
@@ -297,13 +297,74 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _hull)
                 {
-                    var b = self._bbox;
+                    var bb = self._bbox;
                     _hull = [
-                    new Point([b.xmin, b.ymin]),
-                    new Point([b.xmax, b.ymin]),
-                    new Point([b.xmax, b.ymax]),
-                    new Point([b.xmin, b.ymax])
+                    new Point([bb.xmin, bb.ymin]),
+                    new Point([bb.xmax, bb.ymin]),
+                    new Point([bb.xmax, bb.ymax]),
+                    new Point([bb.xmin, bb.ymax])
                     ];
+                    /*var c = self.center, rx = self.rX, ry = self.rY,
+                        theta = self.theta, theta2 = theta + self.dtheta,
+                        o1 = self.start, o2 = self.end,
+                        xmin = toarc(-1, 0, c.x, c.y, rx, ry, _cos, _sin),
+                        xmax = toarc(1, 0, c.x, c.y, rx, ry, _cos, _sin),
+                        ymin = toarc(0, -1, c.x, c.y, rx, ry, _cos, _sin),
+                        ymax = toarc(0, 1, c.x, c.y, rx, ry, _cos, _sin),
+                        txmin, txmax, tymin, tymax, t, otherArc = false;
+                    if (!self.sweep)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                        t = o1;
+                        o1 = o2;
+                        o2 = t;
+                    }
+                    if (theta > theta2)
+                    {
+                        t = theta;
+                        theta = theta2;
+                        theta2 = t;
+                        t = o1;
+                        o1 = o2;
+                        o2 = t;
+                        otherArc = true;
+                    }
+                    txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
+                    txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
+                    tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
+                    tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
+                    if (txmin < 0) txmin += TWO_PI;
+                    if (txmin > TWO_PI) txmin -= TWO_PI;
+                    if (txmax < 0) txmax += TWO_PI;
+                    if (txmax > TWO_PI) txmax -= TWO_PI;
+                    if (tymin < 0) tymin += TWO_PI;
+                    if (tymin > TWO_PI) tymin -= TWO_PI;
+                    if (tymax < 0) tymax += TWO_PI;
+                    if (tymax > TWO_PI) tymax -= TWO_PI;
+                    if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
+                    {
+                        xmin.x = o1.x < o2.x ? o1.x : o2.x;
+                    }
+                    if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
+                    {
+                        xmax.x = o1.x > o2.x ? o1.x : o2.x;
+                    }
+                    if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
+                    {
+                        ymin.y = o1.y < o2.y ? o1.y : o2.y;
+                    }
+                    if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
+                    {
+                        ymax.y = o1.y > o2.y ? o1.y : o2.y;
+                    }
+                    _hull = [
+                        new Point(xmin.x, ymin.y),
+                        new Point(xmax.x, ymin.y),
+                        new Point(xmax.x, ymax.y),
+                        new Point(xmin.x, ymax.y)
+                    ];*/
                 }
                 return _hull;
             },

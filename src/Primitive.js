@@ -78,10 +78,10 @@ var Primitive = makeClass(null, merge(null, {
         return [];
     },
     getCenter: function() {
-        var box = this.getBoundingBox();
+        var bb = this.getBoundingBox();
         return {
-            x: (box.xmin + box.xmax)/2,
-            y: (box.ymin + box.ymax)/2
+            x: (bb.xmin + bb.xmax)/2,
+            y: (bb.ymin + bb.ymax)/2
         };
     },
     hasPoint: function(point) {

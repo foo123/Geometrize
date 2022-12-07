@@ -28,12 +28,16 @@ var Bezier2 = makeClass(Bezier, {
             get: function() {
                 if (null == _bbox)
                 {
+                    // find min/max from zeroes of directional derivative along x and y
                     var p = self._points,
-                        p1 = p[0], p2 = p[1], p3 = p[2],
-                        xmin = stdMath.min(p1.x, p2.x, p3.x),
-                        xmax = stdMath.max(p1.x, p2.x, p3.x),
-                        ymin = stdMath.min(p1.y, p2.y, p3.y),
-                        ymax = stdMath.max(p1.y, p2.y, p3.y)
+                        ax = p[0].x - 2*p[1].x + p[2].x,
+                        px = is_strictly_equal(ax, 0) ? p[1] : self.f((p[0].x - p[1].x)/ax),
+                        ay = p[0].y - 2*p[1].y + p[2].y,
+                        py = is_strictly_equal(ay, 0) ? p[1] : self.f((p[0].y - p[1].y)/ay),
+                        xmin = stdMath.min(px.x, p[0].x, p[2].x),
+                        xmax = stdMath.max(px.x, p[0].x, p[2].x),
+                        ymin = stdMath.min(py.y, p[0].y, p[2].y),
+                        ymax = stdMath.max(py.y, p[0].y, p[2].y)
                     ;
                     _bbox = {
                         ymin: ymin,

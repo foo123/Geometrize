@@ -3,7 +3,7 @@
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-<title>Geometrize Intersections</title>
+<title>Geometrize Intersections, Bounding Boxes, Convex Hulls</title>
 <style type="text/css">
 body {
     font-size: 16px;
@@ -36,7 +36,7 @@ body {
 }
 </style>
 </head><body>
-<h1>Geometrize Intersections</h1>
+<h1>Geometrize Intersections, Bounding Boxes, Convex Hulls</h1>
 <button id="intersections" class="button">find intersections</button>
 <button id="boxes" class="button">bounding boxes</button>
 <button id="hulls" class="button">convex hulls</button>
@@ -47,7 +47,7 @@ body {
 <script>
 (function() {
 "use strict";
-const {Plane, Ellipse, Circle, Arc, QBezier, Line, Polyline, Polygon} = Geometrize;
+const {Plane, Ellipse, Circle, Arc, QBezier, Line, Polyline, Polygon, Matrix} = Geometrize;
 const plane = Plane(document.getElementById('container'), 300, 300);
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
@@ -63,7 +63,7 @@ const drawBoundingBox = (shape, color) => {
     plane.add(Polygon([[box.xmin,box.ymin],[box.xmax,box.ymin],[box.xmax,box.ymax],[box.xmin,box.ymax]]).setStyle('stroke', color||'red'));
 };
 const drawConvexHull = (shape, color) => {
-    plane.add(Polygon(shape.getConvexHull().slice()).setStyle('stroke', color||'red'));
+    plane.add(Polygon(shape.getConvexHull()).setStyle('stroke', color||'red'));
 };
 
 let intersections = [];

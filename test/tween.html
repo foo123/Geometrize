@@ -38,17 +38,19 @@ body {
 </head><body>
 <h1>Geometrize Tween</h1>
 <button id="tween" class="button">start tween</button>
-<button id="reverse" class="button">reverse tween</button>
+<button id="reverse" class="button">reverse tween <span id="check"> </span></button>
 <div id="container"></div>
 <script src="../build/Geometrize.js"></script>
 <script>
 (function() {
 "use strict";
-const {Plane, Tween, Polygon, Circle, Ellipse, Arc} = Geometrize;
+const {Plane, Tween, Polygon, Circle, Ellipse, Arc, QBezier, Point} = Geometrize;
 const r = 50, rx = 50, ry = 20, cx = 100, cy = 100, angle = -30;
 const plane = Plane(document.getElementById('container'), 300, 300);
+const point = Point(cx, cy);
 const ellipse = Ellipse([cx, cy], rx, ry, angle);
 const arc = Arc(ellipse.getPointAt(0), ellipse.getPointAt(0.6), rx, ry, angle, 0, 0);
+const qbezier = QBezier([[cx+2*rx, cy+ry], [cx+rx, cy-5*ry], [cx-2*rx, cy]]);
 const circle = Circle([cx,cy], r);
 const square = Polygon([
     [cx+r,cy],
@@ -63,20 +65,34 @@ const square = Polygon([
 const tween = Tween({
     keyframes: {
         "0%": {
+            shape: point,
+            style: {
+                stroke: 'red'
+            },
+            easing: 'ease-out'
+        },
+        "15%": {
             shape: arc,
             style: {
                 stroke: 'cyan'
             },
             easing: 'ease-out'
         },
-        "25%": {
+        "30%": {
+            shape: qbezier,
+            style: {
+                stroke: 'orange'
+            },
+            easing: 'ease-out'
+        },
+        "45%": {
             shape: ellipse,
             style: {
                 stroke: 'orange'
             },
             easing: 'ease-out'
         },
-        "50%": {
+        "60%": {
             shape: circle,
             style: {
                 stroke: 'cyan'
@@ -115,17 +131,18 @@ const tween = Tween({
             }
         }
     },
-    duration: 4000,
+    duration: 7000,
     delay: 400
 });
 plane.add(tween);
-let reverseFlag = false;
+let isReverse = false;
 document.getElementById('tween').addEventListener('click', () => {
     tween.rewind().start();
 }, false);
 document.getElementById('reverse').addEventListener('click', () => {
-    reverseFlag = !reverseFlag;
-    tween.reverse(reverseFlag);
+    isReverse = !isReverse;
+    document.getElementById('check').textContent = isReverse ? '✔' : ' ';
+    tween.reverse(isReverse);
 }, false);
 })();
 </script>

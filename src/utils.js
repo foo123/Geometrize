@@ -78,12 +78,12 @@ function point_on_qbezier(p, c)
 {
     //x = t^{2} \left(x_{1} - 2 x_{2} + x_{3}\right) + t \left(- 2 x_{1} + 2 x_{2}\right) + x_{1}
     var tx, ty;
-    tx = quad_solve(c[0].x - 2*c[1].x + c[2].x, -2*c[0].x + 2*c[1].x, c[0].x - p.x);
+    tx = solve_quadratic(c[0].x - 2*c[1].x + c[2].x, -2*c[0].x + 2*c[1].x, c[0].x - p.x);
     if (!tx) return false;
     if (1 < tx.length && (0 > tx[1] || 1 < tx[1])) tx.pop();
     if (tx.length && (0 > tx[0] || 1 < tx[0])) tx.shift();
     if (!tx.length) return false;
-    ty = quad_solve(c[0].y - 2*c[1].y + c[2].y, -2*c[0].y + 2*c[1].y, c[0].y - p.y);
+    ty = solve_quadratic(c[0].y - 2*c[1].y + c[2].y, -2*c[0].y + 2*c[1].y, c[0].y - p.y);
     if (!ty) return false;
     if (1 < ty.length && (0 > ty[1] || 1 < ty[1])) ty.pop();
     if (ty.length && (0 > ty[0] || 1 < ty[0])) ty.shift();
@@ -463,22 +463,22 @@ function is_convex(points)
     }
     return 1 === abs(stdMath.round(angle_sum / TWO_PI));
 }
-function lin_solve(a, b)
+function solve_linear(a, b)
 {
     return is_strictly_equal(a, 0) ? false : [-b/a];
 }
-function quad_solve(a, b, c)
+function solve_quadratic(a, b, c)
 {
-    if (is_strictly_equal(a, 0)) return lin_solve(b, c);
+    if (is_strictly_equal(a, 0)) return solve_linear(b, c);
     var D = b*b - 4*a*c, DS = 0;
     if (is_almost_equal(D, 0)) return [-b/(2*a)];
     if (0 > D) return false;
     DS = sqrt(D);
     return [(-b-DS)/(2*a), (-b+DS)/(2*a)];
 }
-function cub_solve(a, b, c, d)
+function solve_cubic(a, b, c, d)
 {
-    if (is_strictly_equal(a, 0)) return quad_solve(b, c, d);
+    if (is_strictly_equal(a, 0)) return solve_quadratic(b, c, d);
     var A = b/a, B = c/a, C = d/a,
         Q = (3*B - A*A)/9, QS = 0,
         R = (9*A*B - 27*C - 2*pow(A, 3))/54,
@@ -536,10 +536,10 @@ function line_quadratic_intersection(m, n, k, a, b, c, d, e, f)
     var x, y, x1 = 0, y1 = 0, x2 = 0, y2 = 0, D = 0, R = 0, F = 0;
     if (is_strictly_equal(m, 0))
     {
-        y = lin_solve(n, k);
+        y = solve_linear(n, k);
         if (!y) return false;
         y1 = y[0];
-        x = quad_solve(a, c*y1+d, b*y1*y1+e*y1+f);
+        x = solve_quadratic(a, c*y1+d, b*y1*y1+e*y1+f);
         if (!x) return false;
         return 2 === x.length ? [{x:x[0],y:y1},{x:x[1],y:y1}] : [{x:x[0],y:y1}];
     }
@@ -1166,7 +1166,7 @@ function is_function(x)
 Geometrize.Math.deg = deg;
 Geometrize.Math.rad = rad;
 Geometrize.Math.hypot = hypot;
-Geometrize.Math.solve1 = lin_solve;
-Geometrize.Math.solve2 = quad_solve;
-Geometrize.Math.solve3 = cub_solve;
+Geometrize.Math.solveLinear = solve_linear;
+Geometrize.Math.solveQuadratic = solve_quadratic;
+Geometrize.Math.solveCubic = solve_cubic;
 

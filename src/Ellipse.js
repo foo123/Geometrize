@@ -119,7 +119,7 @@ var Ellipse = makeClass(Curve, {
                         tan = stdMath.tan(rad(self.angle)),
                         p1, p2, p3, p4, t
                     ;
-                    // get parameter t by zeroing directional derivatives along x and y
+                    // find min/max from zeroes of directional derivative along x and y
                     // along x axis
                     t = stdMath.atan2(-ry*tan, rx);
                     p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);

@@ -4,9 +4,17 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 0.5.0** (74 kB minified)
+**version: 0.5.0** (72 kB minified)
 
 Examples:
+
+**Bounding Boxes**
+
+![geometrize bounding boxes](/boundingboxes.png)
+
+**Convex Hulls**
+
+![geometrize convex hulls](/convexhulls.png)
 
 **Intersections**
 
@@ -40,7 +48,7 @@ intersections.forEach(p => {
 });
 ```
 
-**Shape Tween**
+**Shape Tweens**
 
 ![geometrize tween between multiple shapes](/shapetween.gif)
 
