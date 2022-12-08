@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.6.0 (2022-12-08 19:02:30)
+*   @version 0.6.0 (2022-12-08 22:04:06)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.6.0 (2022-12-08 19:02:30)
+*   @version 0.6.0 (2022-12-08 22:04:06)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -4084,6 +4084,8 @@ function first_frame(tween)
         cos = stdMath.cos(angle);
         sin = stdMath.sin(angle);
     }
+    tx += orx - cos*orx + sin*ory;
+    ty += ory - cos*ory - sin*orx;
     for (i=0; i<n; ++i)
     {
         ai = as[i];
@@ -4094,8 +4096,8 @@ function first_frame(tween)
             x = sx*(aij.x - osx) + osx;
             y = sy*(aij.y - osy) + osy;
             s[j] = {
-            x: cos*x - sin*y + orx - cos*orx + sin*ory + tx,
-            y: sin*x + cos*y + ory - cos*ory - sin*orx + ty
+            x: cos*x - sin*y + tx,
+            y: sin*x + cos*y + ty
            };
         }
         cs[i] = s;
@@ -4165,6 +4167,8 @@ function next_frame(tween)
         cos = stdMath.cos(angle);
         sin = stdMath.sin(angle);
     }
+    tx += orx - cos*orx + sin*ory;
+    ty += ory - cos*ory - sin*orx;
     for (i=0; i<n; ++i)
     {
         ai = as[i];
@@ -4177,8 +4181,8 @@ function next_frame(tween)
             x = sx*(aij.x + t*(bij.x - aij.x) - osx) + osx;
             y = sy*(aij.y + t*(bij.y - aij.y) - osy) + osy;
             s[j] = {
-            x: cos*x - sin*y + orx - cos*orx + sin*ory + tx,
-            y: sin*x + cos*y + ory - cos*ory - sin*orx + ty
+            x: cos*x - sin*y + tx,
+            y: sin*x + cos*y + ty
            };
         }
         cs[i] = s;
