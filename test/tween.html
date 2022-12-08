@@ -72,16 +72,16 @@ const tween = Tween({
             easing: 'ease-out'
         },
         "15%": {
-            shape: arc,
+            shape: qbezier,
             style: {
-                stroke: 'cyan'
+                stroke: 'orange'
             },
             easing: 'ease-out'
         },
         "30%": {
-            shape: qbezier,
+            shape: arc,
             style: {
-                stroke: 'orange'
+                stroke: 'cyan'
             },
             easing: 'ease-out'
         },
@@ -103,11 +103,11 @@ const tween = Tween({
             shape: square,
             transform: {
                 rotate: {
-                    angle: 0,
-                    point: {
+                    origin: {
                         x: square.getCenter().x,
                         y: square.getCenter().y
-                    }
+                    },
+                    angle: 0
                 }
             },
             style: {
@@ -119,11 +119,11 @@ const tween = Tween({
             shape: square,
             transform: {
                 rotate: {
-                    angle: -45,
-                    point: {
+                    origin: {
                         x: square.getCenter().x,
                         y: square.getCenter().y
-                    }
+                    },
+                    angle: -45
                 }
             },
             style: {

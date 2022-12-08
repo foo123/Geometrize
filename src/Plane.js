@@ -4,7 +4,6 @@ var Plane = makeClass(null, {
     constructor: function Plane(dom, width, height) {
         var self = this,
             svg = null,
-            canvas = null,
             svgEl = null,
             objects = null,
             intersections = null,
@@ -47,7 +46,7 @@ var Plane = makeClass(null, {
             {
                 if (!HAS.call(svgEl, o.id))
                 {
-                    svgEl[o.id] = undef;
+                    svgEl[o.id] = null;
                     objects.push(o);
                     isChanged = true;
                 }
@@ -85,10 +84,8 @@ var Plane = makeClass(null, {
             }) : [];
         };
         self.dispose = function() {
-            if (isBrowser && canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
             if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
             if (isBrowser) window.cancelAnimationFrame(raf);
-            canvas = null;
             svg = null;
             svgEl = null;
             objects = null;
@@ -128,7 +125,7 @@ var Plane = makeClass(null, {
                 if (o instanceof Primitive)
                 {
                     var el = svgEl[o.id];
-                    if (undef === el)
+                    if (null === el)
                     {
                         svgEl[o.id] = el = o.toSVG(null);
                         if (el) svg.appendChild(el);

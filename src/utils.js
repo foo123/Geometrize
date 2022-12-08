@@ -350,12 +350,14 @@ function line_cbezier_intersection(p1, p2, coeff, c)
             A*coeff[0].x + B*coeff[0].y,
             A*coeff[1].x + B*coeff[1].y,
             A*coeff[2].x + B*coeff[2].y,
-            A*coeff[3].x + B*coeff[3].y + C,
-        );
+            A*coeff[3].x + B*coeff[3].y + C
+        ), pt;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2) && point_on_cbezier(s[i], c))
-            p[pi++] = s[i];
+        if (0 > s[i] || 1 < s[i]) continue;
+        pt = bezier3(s[i], c);
+        if (point_on_line_segment(pt, p1, p2)/* && point_on_cbezier(pt, c)*/)
+            p[pi++] = pt;
     }
     p.length = pi;
     return p.length ? p : false;

@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.6.0 (2022-12-08 10:47:04)
+*   @version 0.6.0 (2022-12-08 19:02:30)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.6.0 (2022-12-08 10:47:04)
+*   @version 0.6.0 (2022-12-08 19:02:30)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -409,29 +409,28 @@ var Matrix = makeClass(null, {
         0, 0, 1
         );
     },
-    rotate: function(theta) {
+    rotate: function(theta, ox, oy) {
+        // (ox,oy) is rotation origin, default (0,0)
+        oy = Num(oy || 0);
+        ox = Num(ox || 0);
         theta = Num(theta);
         var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
         return new Matrix(
-        cos, -sin, 0,
-        sin,  cos, 0,
+        cos, -sin, ox - cos*ox + sin*oy,
+        sin,  cos, oy - cos*oy - sin*ox,
         0,    0,   1
         );
     },
-    rotateAroundPoint: function(x, y, theta) {
-        theta = Num(theta);
-        var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
+    scale: function(sx, sy, ox, oy) {
+        // (ox,oy) is scale origin, default (0,0)
+        oy = Num(oy || 0);
+        ox = Num(ox || 0);
+        sx = Num(sx);
+        sy = Num(sy);
         return new Matrix(
-        cos, -sin, x - cos*x + sin*y,
-        sin,  cos, y - cos*y - sin*x,
-        0,    0,   1
-        );
-    },
-    scale: function(sx, sy) {
-        return new Matrix(
-        Num(sx), 0,       0,
-        0,       Num(sy), 0,
-        0,       0,       1
+        sx, 0,  -sx*ox + ox,
+        0,  sy, -sy*oy + oy,
+        0,  0,  1
         );
     },
     reflectX: function() {
@@ -1242,6 +1241,8 @@ var Curve = makeClass(Primitive, {
             _points2 = null,
             _lines = null,
             _values = null,
+            _bbox = null,
+            _hull = null,
             onPointChange,
             onArrayChange,
             point_add,
@@ -1428,9 +1429,12 @@ var Curve = makeClass(Primitive, {
         });
         def(self, '_hull', {
             get: function() {
-                if (null == _hull)
+                var bb = null;
+                if (null == _bbox) bb = _bbox = self._bbox;
+                else bb = self._bbox;
+                if (null == _hull || _bbox !== bb)
                 {
-                    var bb = self._bbox;
+                    _bbox = bb;
                     _hull = [
                         new Point(bb.xmin, bb.ymin),
                         new Point(bb.xmax, bb.ymin),
@@ -1509,14 +1513,16 @@ var Curve = makeClass(Primitive, {
     getConvexHull: function() {
         return this._hull.map(function(p) {return p.clone();});
     },
-    getPointAt: function(t) {
-        return null;
-    },
     polylinePoints: function() {
         return this._lines.slice();
     },
     bezierPoints: function() {
-        return [];
+        return [
+        {x:0, y:0},
+        {x:0, y:0},
+        {x:0, y:0},
+        {x:0, y:0}
+        ];
     },
     toTex: function() {
         return '\\text{Curve}';
@@ -1676,11 +1682,11 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _bbox)
                 {
                     _bbox = _curves.reduce(function(_bbox, curve) {
-                        var box = curve._bbox;
-                        _bbox.ymin = stdMath.min(_bbox.ymin, box.ymin);
-                        _bbox.xmin = stdMath.min(_bbox.xmin, box.xmin);
-                        _bbox.ymax = stdMath.max(_bbox.ymax, box.ymax);
-                        _bbox.xmax = stdMath.max(_bbox.xmax, box.xmax);
+                        var bb = curve.getBoundingBox();
+                        _bbox.ymin = stdMath.min(_bbox.ymin, bb.ymin);
+                        _bbox.xmin = stdMath.min(_bbox.xmin, bb.xmin);
+                        _bbox.ymax = stdMath.max(_bbox.ymax, bb.ymax);
+                        _bbox.xmax = stdMath.max(_bbox.xmax, bb.xmax);
                         return _bbox;
                     }, {
                         ymin: Infinity,
@@ -2703,9 +2709,9 @@ var Arc = makeClass(Curve, {
             i, j, n, beziers
         ;
         if (is_almost_equal(r, 1)) r = 1;
-        n = stdMath.max(stdMath.ceil(r), 1);
+        n = stdMath.max(1, stdMath.ceil(r));
         dtheta /= n;
-        beziers = new Array(n)
+        beziers = new Array(n);
         for (j=0,i=0; i<n; ++i,j=1-j,theta+=dtheta)
         {
             beziers[i] = arc2bezier(theta, dtheta, c.x, c.y, rx, ry, cos, sin/*, j*/);
@@ -3978,9 +3984,9 @@ function prepare_tween(tween, fps)
             shape = kf.shape && is_function(kf.shape.bezierPoints) ? (shapes[kf.shape.id] || kf.shape.bezierPoints()) : [],
             transform = kf.transform || EMPTY_OBJ,
             sc = transform.scale || EMPTY_OBJ,
+            scOrig = sc.origin || {x:0, y:0},
             rot = transform.rotate || EMPTY_OBJ,
-            rotAngle = rot.angle || 0,
-            rotPoint = rot.point || {x:0, y:0},
+            rotOrig = rot.origin || {x:0, y:0},
             tr = transform.translate || EMPTY_OBJ,
             style = kf.style || EMPTY_OBJ,
             stroke = is_string(style.stroke) ? (Color.parse(style.stroke) || style.stroke) : null,
@@ -3995,15 +4001,19 @@ function prepare_tween(tween, fps)
             shape: shape,
             transform: {
                 scale: {
+                    origin: {
+                        x: scOrig.x || 0,
+                        y: scOrig.y || 0
+                    },
                     x: (null == sc.x ? 1 : sc.x) || 0,
                     y: (null == sc.y ? 1 : sc.y) || 0
                 },
                 rotate: {
-                    angle: rad(rotAngle || 0),
-                    point: {
-                        x: rotPoint.x || 0,
-                        y: rotPoint.y || 0
-                    }
+                    origin: {
+                        x: rotOrig.x || 0,
+                        y: rotOrig.y || 0
+                    },
+                    angle: rad(rot.angle || 0)
                 },
                 translate: {
                     x: tr.x || 0,
@@ -4052,16 +4062,18 @@ function first_frame(tween)
     }
     var frame = tween.keyframes[tween.kf],
         a = frame,
-        // translation
+        // translate
         tx = a.transform.translate.x,
         ty = a.transform.translate.y,
         // scale
+        osx = a.transform.scale.origin.x,
+        osy = a.transform.scale.origin.y,
         sx = a.transform.scale.x,
         sy = a.transform.scale.y,
-        // rotation of angle around point (xrot, yrot)
+        // rotate
+        orx = a.transform.rotate.origin.x,
+        ory = a.transform.rotate.origin.y,
         angle = a.transform.rotate.angle,
-        xrot = sx*a.transform.rotate.point.x,
-        yrot = sy*a.transform.rotate.point.y,
         cos = 1, sin = 0,
         as = a.shape, ai, aij,
         i, j, n = as.length, x, y,
@@ -4079,11 +4091,11 @@ function first_frame(tween)
         for (j=0; j<4; ++j)
         {
             aij = ai[j];
-            x = sx*aij.x;
-            y = sy*aij.y;
+            x = sx*(aij.x - osx) + osx;
+            y = sy*(aij.y - osy) + osy;
             s[j] = {
-            x: cos*x - sin*y + xrot - cos*xrot + sin*yrot + tx,
-            y: sin*x + cos*y + yrot - cos*yrot - sin*xrot + ty
+            x: cos*x - sin*y + orx - cos*orx + sin*ory + tx,
+            y: sin*x + cos*y + ory - cos*ory - sin*orx + ty
            };
         }
         cs[i] = s;
@@ -4130,16 +4142,18 @@ function next_frame(tween)
             _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1);
     }
     var t = a.easing(_t),
-        // translation
+        // translate
         tx = interpolate(a.transform.translate.x, b.transform.translate.x, t),
         ty = interpolate(a.transform.translate.y, b.transform.translate.y, t),
         // scale
+        osx = interpolate(a.transform.scale.origin.x, b.transform.scale.origin.x, t),
+        osy = interpolate(a.transform.scale.origin.y, b.transform.scale.origin.y, t),
         sx = interpolate(a.transform.scale.x, b.transform.scale.x, t),
         sy = interpolate(a.transform.scale.y, b.transform.scale.y, t),
-        // rotation of angle around point (xrot, yrot)
+        // rotate
+        orx = interpolate(a.transform.rotate.origin.x, b.transform.rotate.origin.x, t),
+        ory = interpolate(a.transform.rotate.origin.y, b.transform.rotate.origin.y, t),
         angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t),
-        xrot = sx*interpolate(a.transform.rotate.point.x, b.transform.rotate.point.x, t),
-        yrot = sy*interpolate(a.transform.rotate.point.y, b.transform.rotate.point.y, t),
         cos = 1, sin = 0,
         as = a.shape, bs = b.shape,
         ai, bi, aij, bij,
@@ -4160,11 +4174,11 @@ function next_frame(tween)
         {
             aij = ai[j];
             bij = bi[j];
-            x = sx*(aij.x + t*(bij.x - aij.x));
-            y = sy*(aij.y + t*(bij.y - aij.y));
+            x = sx*(aij.x + t*(bij.x - aij.x) - osx) + osx;
+            y = sy*(aij.y + t*(bij.y - aij.y) - osy) + osy;
             s[j] = {
-            x: cos*x - sin*y + xrot - cos*xrot + sin*yrot + tx,
-            y: sin*x + cos*y + yrot - cos*yrot - sin*xrot + ty
+            x: cos*x - sin*y + orx - cos*orx + sin*ory + tx,
+            y: sin*x + cos*y + ory - cos*ory - sin*orx + ty
            };
         }
         cs[i] = s;
@@ -4302,7 +4316,6 @@ var Plane = makeClass(null, {
     constructor: function Plane(dom, width, height) {
         var self = this,
             svg = null,
-            canvas = null,
             svgEl = null,
             objects = null,
             intersections = null,
@@ -4345,7 +4358,7 @@ var Plane = makeClass(null, {
             {
                 if (!HAS.call(svgEl, o.id))
                 {
-                    svgEl[o.id] = undef;
+                    svgEl[o.id] = null;
                     objects.push(o);
                     isChanged = true;
                 }
@@ -4383,10 +4396,8 @@ var Plane = makeClass(null, {
             }) : [];
         };
         self.dispose = function() {
-            if (isBrowser && canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
             if (isBrowser && svg && svg.parentNode) svg.parentNode.removeChild(svg);
             if (isBrowser) window.cancelAnimationFrame(raf);
-            canvas = null;
             svg = null;
             svgEl = null;
             objects = null;
@@ -4426,7 +4437,7 @@ var Plane = makeClass(null, {
                 if (o instanceof Primitive)
                 {
                     var el = svgEl[o.id];
-                    if (undef === el)
+                    if (null === el)
                     {
                         svgEl[o.id] = el = o.toSVG(null);
                         if (el) svg.appendChild(el);
@@ -4823,12 +4834,14 @@ function line_cbezier_intersection(p1, p2, coeff, c)
             A*coeff[0].x + B*coeff[0].y,
             A*coeff[1].x + B*coeff[1].y,
             A*coeff[2].x + B*coeff[2].y,
-            A*coeff[3].x + B*coeff[3].y + C,
-        );
+            A*coeff[3].x + B*coeff[3].y + C
+        ), pt;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2) && point_on_cbezier(s[i], c))
-            p[pi++] = s[i];
+        if (0 > s[i] || 1 < s[i]) continue;
+        pt = bezier3(s[i], c);
+        if (point_on_line_segment(pt, p1, p2)/* && point_on_cbezier(pt, c)*/)
+            p[pi++] = pt;
     }
     p.length = pi;
     return p.length ? p : false;

@@ -153,9 +153,9 @@ function prepare_tween(tween, fps)
             shape = kf.shape && is_function(kf.shape.bezierPoints) ? (shapes[kf.shape.id] || kf.shape.bezierPoints()) : [],
             transform = kf.transform || EMPTY_OBJ,
             sc = transform.scale || EMPTY_OBJ,
+            scOrig = sc.origin || {x:0, y:0},
             rot = transform.rotate || EMPTY_OBJ,
-            rotAngle = rot.angle || 0,
-            rotPoint = rot.point || {x:0, y:0},
+            rotOrig = rot.origin || {x:0, y:0},
             tr = transform.translate || EMPTY_OBJ,
             style = kf.style || EMPTY_OBJ,
             stroke = is_string(style.stroke) ? (Color.parse(style.stroke) || style.stroke) : null,
@@ -170,15 +170,19 @@ function prepare_tween(tween, fps)
             shape: shape,
             transform: {
                 scale: {
+                    origin: {
+                        x: scOrig.x || 0,
+                        y: scOrig.y || 0
+                    },
                     x: (null == sc.x ? 1 : sc.x) || 0,
                     y: (null == sc.y ? 1 : sc.y) || 0
                 },
                 rotate: {
-                    angle: rad(rotAngle || 0),
-                    point: {
-                        x: rotPoint.x || 0,
-                        y: rotPoint.y || 0
-                    }
+                    origin: {
+                        x: rotOrig.x || 0,
+                        y: rotOrig.y || 0
+                    },
+                    angle: rad(rot.angle || 0)
                 },
                 translate: {
                     x: tr.x || 0,
@@ -227,16 +231,18 @@ function first_frame(tween)
     }
     var frame = tween.keyframes[tween.kf],
         a = frame,
-        // translation
+        // translate
         tx = a.transform.translate.x,
         ty = a.transform.translate.y,
         // scale
+        osx = a.transform.scale.origin.x,
+        osy = a.transform.scale.origin.y,
         sx = a.transform.scale.x,
         sy = a.transform.scale.y,
-        // rotation of angle around point (xrot, yrot)
+        // rotate
+        orx = a.transform.rotate.origin.x,
+        ory = a.transform.rotate.origin.y,
         angle = a.transform.rotate.angle,
-        xrot = sx*a.transform.rotate.point.x,
-        yrot = sy*a.transform.rotate.point.y,
         cos = 1, sin = 0,
         as = a.shape, ai, aij,
         i, j, n = as.length, x, y,
@@ -254,11 +260,11 @@ function first_frame(tween)
         for (j=0; j<4; ++j)
         {
             aij = ai[j];
-            x = sx*aij.x;
-            y = sy*aij.y;
+            x = sx*(aij.x - osx) + osx;
+            y = sy*(aij.y - osy) + osy;
             s[j] = {
-            x: cos*x - sin*y + xrot - cos*xrot + sin*yrot + tx,
-            y: sin*x + cos*y + yrot - cos*yrot - sin*xrot + ty
+            x: cos*x - sin*y + orx - cos*orx + sin*ory + tx,
+            y: sin*x + cos*y + ory - cos*ory - sin*orx + ty
            };
         }
         cs[i] = s;
@@ -305,16 +311,18 @@ function next_frame(tween)
             _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1);
     }
     var t = a.easing(_t),
-        // translation
+        // translate
         tx = interpolate(a.transform.translate.x, b.transform.translate.x, t),
         ty = interpolate(a.transform.translate.y, b.transform.translate.y, t),
         // scale
+        osx = interpolate(a.transform.scale.origin.x, b.transform.scale.origin.x, t),
+        osy = interpolate(a.transform.scale.origin.y, b.transform.scale.origin.y, t),
         sx = interpolate(a.transform.scale.x, b.transform.scale.x, t),
         sy = interpolate(a.transform.scale.y, b.transform.scale.y, t),
-        // rotation of angle around point (xrot, yrot)
+        // rotate
+        orx = interpolate(a.transform.rotate.origin.x, b.transform.rotate.origin.x, t),
+        ory = interpolate(a.transform.rotate.origin.y, b.transform.rotate.origin.y, t),
         angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t),
-        xrot = sx*interpolate(a.transform.rotate.point.x, b.transform.rotate.point.x, t),
-        yrot = sy*interpolate(a.transform.rotate.point.y, b.transform.rotate.point.y, t),
         cos = 1, sin = 0,
         as = a.shape, bs = b.shape,
         ai, bi, aij, bij,
@@ -335,11 +343,11 @@ function next_frame(tween)
         {
             aij = ai[j];
             bij = bi[j];
-            x = sx*(aij.x + t*(bij.x - aij.x));
-            y = sy*(aij.y + t*(bij.y - aij.y));
+            x = sx*(aij.x + t*(bij.x - aij.x) - osx) + osx;
+            y = sy*(aij.y + t*(bij.y - aij.y) - osy) + osy;
             s[j] = {
-            x: cos*x - sin*y + xrot - cos*xrot + sin*yrot + tx,
-            y: sin*x + cos*y + yrot - cos*yrot - sin*xrot + ty
+            x: cos*x - sin*y + orx - cos*orx + sin*ory + tx,
+            y: sin*x + cos*y + ory - cos*ory - sin*orx + ty
            };
         }
         cs[i] = s;

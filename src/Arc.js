@@ -455,9 +455,9 @@ var Arc = makeClass(Curve, {
             i, j, n, beziers
         ;
         if (is_almost_equal(r, 1)) r = 1;
-        n = stdMath.max(stdMath.ceil(r), 1);
+        n = stdMath.max(1, stdMath.ceil(r));
         dtheta /= n;
-        beziers = new Array(n)
+        beziers = new Array(n);
         for (j=0,i=0; i<n; ++i,j=1-j,theta+=dtheta)
         {
             beziers[i] = arc2bezier(theta, dtheta, c.x, c.y, rx, ry, cos, sin/*, j*/);

@@ -234,29 +234,28 @@ var Matrix = makeClass(null, {
         0, 0, 1
         );
     },
-    rotate: function(theta) {
+    rotate: function(theta, ox, oy) {
+        // (ox,oy) is rotation origin, default (0,0)
+        oy = Num(oy || 0);
+        ox = Num(ox || 0);
         theta = Num(theta);
         var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
         return new Matrix(
-        cos, -sin, 0,
-        sin,  cos, 0,
+        cos, -sin, ox - cos*ox + sin*oy,
+        sin,  cos, oy - cos*oy - sin*ox,
         0,    0,   1
         );
     },
-    rotateAroundPoint: function(x, y, theta) {
-        theta = Num(theta);
-        var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
+    scale: function(sx, sy, ox, oy) {
+        // (ox,oy) is scale origin, default (0,0)
+        oy = Num(oy || 0);
+        ox = Num(ox || 0);
+        sx = Num(sx);
+        sy = Num(sy);
         return new Matrix(
-        cos, -sin, x - cos*x + sin*y,
-        sin,  cos, y - cos*y - sin*x,
-        0,    0,   1
-        );
-    },
-    scale: function(sx, sy) {
-        return new Matrix(
-        Num(sx), 0,       0,
-        0,       Num(sy), 0,
-        0,       0,       1
+        sx, 0,  -sx*ox + ox,
+        0,  sy, -sy*oy + oy,
+        0,  0,  1
         );
     },
     reflectX: function() {

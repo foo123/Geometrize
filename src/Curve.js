@@ -7,6 +7,8 @@ var Curve = makeClass(Primitive, {
             _points2 = null,
             _lines = null,
             _values = null,
+            _bbox = null,
+            _hull = null,
             onPointChange,
             onArrayChange,
             point_add,
@@ -193,9 +195,12 @@ var Curve = makeClass(Primitive, {
         });
         def(self, '_hull', {
             get: function() {
-                if (null == _hull)
+                var bb = null;
+                if (null == _bbox) bb = _bbox = self._bbox;
+                else bb = self._bbox;
+                if (null == _hull || _bbox !== bb)
                 {
-                    var bb = self._bbox;
+                    _bbox = bb;
                     _hull = [
                         new Point(bb.xmin, bb.ymin),
                         new Point(bb.xmax, bb.ymin),
@@ -274,14 +279,16 @@ var Curve = makeClass(Primitive, {
     getConvexHull: function() {
         return this._hull.map(function(p) {return p.clone();});
     },
-    getPointAt: function(t) {
-        return null;
-    },
     polylinePoints: function() {
         return this._lines.slice();
     },
     bezierPoints: function() {
-        return [];
+        return [
+        {x:0, y:0},
+        {x:0, y:0},
+        {x:0, y:0},
+        {x:0, y:0}
+        ];
     },
     toTex: function() {
         return '\\text{Curve}';
@@ -441,11 +448,11 @@ var CompositeCurve = makeClass(Curve, {
                 if (null == _bbox)
                 {
                     _bbox = _curves.reduce(function(_bbox, curve) {
-                        var box = curve._bbox;
-                        _bbox.ymin = stdMath.min(_bbox.ymin, box.ymin);
-                        _bbox.xmin = stdMath.min(_bbox.xmin, box.xmin);
-                        _bbox.ymax = stdMath.max(_bbox.ymax, box.ymax);
-                        _bbox.xmax = stdMath.max(_bbox.xmax, box.xmax);
+                        var bb = curve.getBoundingBox();
+                        _bbox.ymin = stdMath.min(_bbox.ymin, bb.ymin);
+                        _bbox.xmin = stdMath.min(_bbox.xmin, bb.xmin);
+                        _bbox.ymax = stdMath.max(_bbox.ymax, bb.ymax);
+                        _bbox.xmax = stdMath.max(_bbox.xmax, bb.xmax);
                         return _bbox;
                     }, {
                         ymin: Infinity,

@@ -4,7 +4,7 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 0.5.0** (72 kB minified)
+**version: 0.6.0** (76 kB minified)
 
 Examples:
 
@@ -21,26 +21,28 @@ Examples:
 ![geometrize intersections](/intersections.png)
 
 ```javascript
-const {Plane, Ellipse, Circle, Arc, QBezier, Line, Polyline, Polygon} = Geometrize;
+const {Plane, Ellipse, Circle, Arc, QBezier, CBezier, Line, Point} = Geometrize;
 const plane = Plane(document.getElementById('container'), 300, 300);
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
 const arc = Arc([100,100], [170,90], 30, 10, 30, 0, 1);
 const qbezier = QBezier([[80,110], [120,40], [160,120]]);
+const cbezier = CBezier([[40,80], [120,40], [140,200], [160,90]]);
 const line1 = Line([20,20], [60,60]).setStyle('stroke', 'blue');
 const line2 = Line([50,2], [20,70]).setStyle('stroke', 'green');
 const line3 = Line([60,160], [300,0]).setStyle('stroke', 'orange');
 const line4 = Line([60,120], [300,-40]).setStyle('stroke', 'cyan');
 let intersections = [];
 
-plane.add(line1);
-plane.add(line2);
-plane.add(line3);
-plane.add(line4);
 plane.add(ellipse);
 plane.add(circle);
 plane.add(arc);
 plane.add(qbezier);
+plane.add(cbezier);
+plane.add(line1);
+plane.add(line2);
+plane.add(line3);
+plane.add(line4);
 
 intersections = plane.getIntersections();
 intersections.forEach(p => {
@@ -96,11 +98,11 @@ const tween = Tween({
             shape: square,
             transform: {
                 rotate: {
-                    angle: 0,
-                    point: {
+                    origin: {
                         x: square.getCenter().x,
                         y: square.getCenter().y
-                    }
+                    },
+                    angle: 0
                 }
             },
             style: {
@@ -112,11 +114,11 @@ const tween = Tween({
             shape: square,
             transform: {
                 rotate: {
-                    angle: -45,
-                    point: {
+                    origin: {
                         x: square.getCenter().x,
                         y: square.getCenter().y
-                    }
+                    },
+                    angle: -45
                 }
             },
             style: {
