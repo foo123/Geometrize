@@ -81,29 +81,6 @@ var Bezier1 = makeClass(Bezier, {
             enumerable: false,
             configurable: false
         });
-        def(self, '_hull', {
-            get: function() {
-                if (null == _hull)
-                {
-                    var p = self._points,
-                        p1 = p[0], p2 = p[1],
-                        xmin = stdMath.min(p1.x, p2.x),
-                        xmax = stdMath.max(p1.x, p2.x),
-                        ymin = stdMath.min(p1.y, p2.y),
-                        ymax = stdMath.max(p1.y, p2.y)
-                    ;
-                    _hull = [
-                        new Point(xmin, ymin),
-                        new Point(xmax, ymin),
-                        new Point(xmax, ymax),
-                        new Point(xmin, ymax)
-                    ];
-                }
-                return _hull;
-            },
-            enumerable: false,
-            configurable: false
-        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
@@ -165,7 +142,9 @@ var Bezier1 = makeClass(Bezier, {
         }
         else if (other instanceof Bezier3)
         {
-            return false;
+            p = this._points;
+            i = line_cbezier_intersection(p[0], p[1], null, other._points);
+            return i ? i.map(Point) : false;
         }
         else if ((other instanceof Primitive))
         {
@@ -175,10 +154,6 @@ var Bezier1 = makeClass(Bezier, {
     },
     f: function(t) {
         return bezier1(t, this._points);
-    },
-    getPointAt: function(t) {
-        t = Num(t);
-        return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     distanceToPoint: function(point) {
         return point_line_segment_distance(point, this._points[0], this._points[1]);

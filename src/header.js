@@ -31,7 +31,7 @@ var HAS = Object.prototype.hasOwnProperty,
     NOP = function() {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
-    Geometrize = {VERSION: "@@VERSION@@", Math: {}}
+    Geometrize = {VERSION: "@@VERSION@@", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction

@@ -51,23 +51,6 @@ var Bezier2 = makeClass(Bezier, {
             enumerable: false,
             configurable: false
         });
-        def(self, '_hull', {
-            get: function() {
-                if (null == _hull)
-                {
-                    var bb = self._bbox;
-                    _hull = [
-                        new Point(bb.xmin, bb.ymin),
-                        new Point(bb.xmax, bb.ymin),
-                        new Point(bb.xmax, bb.ymax),
-                        new Point(bb.xmin, bb.ymax)
-                    ];
-                }
-                return _hull;
-            },
-            enumerable: false,
-            configurable: false
-        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
@@ -124,10 +107,6 @@ var Bezier2 = makeClass(Bezier, {
     f: function(t) {
         return bezier2(t, this._points);
     },
-    getPointAt: function(t) {
-        t = Num(t);
-        return 0 > t || 1 < t ? null : Point(this.f(t));
-    },
     bezierPoints: function() {
         var p = this._points;
         return [
@@ -159,12 +138,6 @@ var Bezier2 = makeClass(Bezier, {
         ctx.moveTo(p[0].x, p[0].y);
         ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
         ctx.stroke();
-    },
-    toTex: function() {
-        return '\\text{QBezier: }\\left('+this.points.map(Tex).join(',')+'\\right)';
-    },
-    toString: function() {
-        return 'QBezier('+this.points.map(Str).join(',')+')';
     }
 });
 Geometrize.QBezier = Geometrize.Bezier2 = Bezier2;

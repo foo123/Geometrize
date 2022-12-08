@@ -193,7 +193,17 @@ var Curve = makeClass(Primitive, {
         });
         def(self, '_hull', {
             get: function() {
-                return [];
+                if (null == _hull)
+                {
+                    var bb = self._bbox;
+                    _hull = [
+                        new Point(bb.xmin, bb.ymin),
+                        new Point(bb.xmax, bb.ymin),
+                        new Point(bb.xmax, bb.ymax),
+                        new Point(bb.xmin, bb.ymax)
+                    ];
+                }
+                return _hull;
             },
             enumerable: false,
             configurable: true
@@ -242,7 +252,15 @@ var Curve = makeClass(Primitive, {
     },
     setMatrix: null,
     f: function(t) {
-        return null;
+        // override
+        return {x:0, y:0};
+    },
+    getPointAt: function(t) {
+        // 0 <= t <= 1
+        t = Num(t);
+        if (0 > t || 1 < t) return null;
+        var p = this.f(t);
+        return null == p ? null : Point(p);
     },
     getBoundingBox: function() {
         var bb = this._bbox;
@@ -292,10 +310,10 @@ var Bezier = makeClass(Curve, {
     },
     name: 'Bezier',
     toTex: function() {
-        return '\\text{Bezier}';
+        return '\\text{'+this.name+': }\\left('+this.points.map(Tex).join(',')+'\\right)';
     },
     toString: function() {
-        return 'Bezier()';
+        return ''+this.name+'('+this.points.map(Str).join(',')+')';
     }
 });
 Geometrize.Bezier = Bezier;

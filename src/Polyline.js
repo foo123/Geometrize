@@ -72,7 +72,7 @@ var Polyline = makeClass(Curve, {
             get: function() {
                 if (null == _hull)
                 {
-                    _hull = convex_hull(self._points);
+                    _hull = convex_hull(self._points).map(Point);
                 }
                 return _hull;
             },
@@ -127,11 +127,6 @@ var Polyline = makeClass(Curve, {
         var p = this._points, n = p.length - 1, i = stdMath.floor(t*n);
         return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
     },
-    getPointAt: function(t) {
-        t = Num(t);
-        if (0 > t || 1 < t) return null;
-        return Point(this.f(t));
-    },
     intersects: function(other) {
         var i;
         if (other instanceof Point)
@@ -161,6 +156,11 @@ var Polyline = makeClass(Curve, {
         else if (other instanceof Bezier2)
         {
             i = polyline_qbezier_intersection(this._points, other._points);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Bezier3)
+        {
+            i = polyline_cbezier_intersection(this._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Polyline)

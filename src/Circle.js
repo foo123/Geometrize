@@ -78,23 +78,6 @@ var Circle = makeClass(Curve, {
             enumerable: false,
             configurable: false
         });
-        def(self, '_hull', {
-            get: function() {
-                if (null == _hull)
-                {
-                    var c = self.center, r = _radius.val();
-                    _hull = [
-                        new Point(c.x-r, c.y-r),
-                        new Point(c.x+r, c.y-r),
-                        new Point(c.x+r, c.y+r),
-                        new Point(c.x-r, c.y+r)
-                    ];
-                }
-                return _hull;
-            },
-            enumerable: false,
-            configurable: false
-        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
@@ -130,10 +113,6 @@ var Circle = makeClass(Curve, {
     f: function(t) {
         var c = this.center, r = this.radius;
         return arc(t*TWO_PI, c.x, c.y, r, r, 1, 0);
-    },
-    getPointAt: function(t) {
-        t = Num(t);
-        return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     hasPoint: function(point) {
         return 2 === point_inside_circle(point, this.center, this.radius);

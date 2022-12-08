@@ -293,18 +293,11 @@ var Arc = makeClass(Curve, {
             enumerable: false,
             configurable: false
         });
-        def(self, '_hull', {
+        /*def(self, '_hull', {
             get: function() {
                 if (null == _hull)
                 {
-                    var bb = self._bbox;
-                    _hull = [
-                    new Point([bb.xmin, bb.ymin]),
-                    new Point([bb.xmax, bb.ymin]),
-                    new Point([bb.xmax, bb.ymax]),
-                    new Point([bb.xmin, bb.ymax])
-                    ];
-                    /*var c = self.center, rx = self.rX, ry = self.rY,
+                    var c = self.center, rx = self.rX, ry = self.rY,
                         theta = self.theta, theta2 = theta + self.dtheta,
                         o1 = self.start, o2 = self.end,
                         xmin = toarc(-1, 0, c.x, c.y, rx, ry, _cos, _sin),
@@ -364,13 +357,13 @@ var Arc = makeClass(Curve, {
                         new Point(xmax.x, ymin.y),
                         new Point(xmax.x, ymax.y),
                         new Point(xmin.x, ymax.y)
-                    ];*/
+                    ];
                 }
                 return _hull;
             },
             enumerable: false,
             configurable: false
-        });
+        });*/
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
@@ -415,10 +408,6 @@ var Arc = makeClass(Curve, {
     f: function(t) {
         var c = this.center, cs = this.cs;
         return arc(this.theta + t*this.dtheta, c.x, c.y, this.rX, this.rY, cs[0], cs[1]);
-    },
-    getPointAt: function(t) {
-        t = Num(t);
-        return 0 > t || 1 < t ? null : Point(this.f(t));
     },
     hasPoint: function(point) {
         return point_on_arc(point, this.center, this.rX, this.rY, this.cs, this.theta, this.dtheta);
