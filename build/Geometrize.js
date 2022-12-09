@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.7.0 (2022-12-09 19:24:57)
+*   @version 0.7.0 (2022-12-09 19:33:46)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.7.0 (2022-12-09 19:24:57)
+*   @version 0.7.0 (2022-12-09 19:33:46)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -862,19 +862,6 @@ var Color = {
 };
 // gradients
 var U8A = 'undefined' !== typeof root.Uint8Array ? root.Uint8Array : Array;
-function q(a, b, c)
-{
-    var s = solve_quadratic(a, b, c);
-    if (!s) return -1;
-    if (1 < s.length)
-    {
-        if (0 <= s[0] && s[0] <= 1 && 0 <= s[1] && s[1] <= 1) return stdMath.min(s[0], s[1]);
-        if (0 <= s[0] && s[0] <= 1) return s[0];
-        if (0 <= s[1] && s[1] <= 1) return s[1];
-        return stdMath.min(s[0], s[1]);
-    }
-    return s[0];
-}
 Color.Gradient = {
     Linear: function(x1, y1, x2, y2, colors, stops) {
         return function(w, h) {
@@ -921,7 +908,8 @@ Color.Gradient = {
     },
     Radial: function(x0, y0, r0, x1, y1, r1, colors, stops) {
         return function(w, h) {
-            var i, x, y, t, px0, py0, px1, py1, pr0, pr1, stop1, stop2,
+            var i, x, y, t, px, py, pr,
+                a, b, c, s, stop1, stop2,
                 size = (w*h)<<2, grad = new U8A(size),
                 sl = stops.length, abs = stdMath.abs, sqrt = stdMath.sqrt;
             x0 = x0 || 0;
@@ -930,6 +918,9 @@ Color.Gradient = {
             x1 = x1 || 0;
             y1 = y1 || 0;
             r1 = r1 || 0;
+            a = r0*r0 - 2*r0*r1 + r1*r1 - x0*x0 + 2*x0*x1 - x1*x1 - y0*y0 + 2*y0*y1 - y1*y1;
+            b = -2*r0*r0 + 2*r0*r1 + 2*x0*x0 - 2*x0*x1 + 2*y0*y0 - 2*y0*y1;
+            c = -x0*x0 - y0*y0 + r0*r0;
             for (x=0,y=0,i=0; i<size; i+=4,++x)
             {
                 if (x >= w) {x=0; ++y;}
@@ -939,24 +930,32 @@ Color.Gradient = {
                 dr1 = sqrt(px1*px1 + py1*py1) - r1;
                 px2 = x - cx2; py2 = y - cy2;
                 dr2 = r2 - sqrt(px2*px2 + py2*py2);*/
-                t = q(
-                    r0*r0 - 2*r0*r1 + r1*r1 - x0*x0 + 2*x0*x1 - x1*x1 - y0*y0 + 2*y0*y1 - y1*y1,
-                    -2*r0*r0 + 2*r0*r1 - 2*x*x0 + 2*x*x1 + 2*x0*x0 - 2*x0*x1 - 2*y*y0 + 2*y*y1 + 2*y0*y0 - 2*y0*y1,
-                    -x*x + 2*x*x0 - x0*x0 - y*y + 2*y*y0 - y0*y0 + r0*r0
-                );
-                //rt = r0 + t*(r1 - r0);
-                if (0 >= t || t >= 1)
+                s = solve_quadratic(a, b - 2*x*x0 + 2*x*x1 - 2*y*y0 + 2*y*y1, c - x*x + 2*x*x0 - y*y + 2*y*y0);
+                if (!s)
                 {
-                    px0 = x - x0; py0 = y - y0;
-                    pr0 = sqrt(px0*px0 + py0*py0);
-                    //px1 = x - x1; py1 = y - y1;
-                    //pr1 = sqrt(px1*px1 + py1*py1);
-                    if (pr0 < r0)
+                    t = -1;
+                }
+                else if (1 < s.length)
+                {
+                    if (0 <= s[0] && s[0] <= 1 && 0 <= s[1] && s[1] <= 1) t = stdMath.min(s[0], s[1]);
+                    else if (0 <= s[0] && s[0] <= 1) t = s[0];
+                    else if (0 <= s[1] && s[1] <= 1) t =  s[1];
+                    else t = stdMath.min(s[0], s[1]);
+                }
+                else
+                {
+                    t = s[0];
+                }
+                if (0 > t || t > 1)
+                {
+                    px = x - x0; py = y - y0;
+                    pr = sqrt(px*px + py*py);
+                    if (pr < r0)
                     {
                         t = 0;
                         stop2 = stop1 = 0;
                     }
-                    else //if (pr1 > r1)
+                    else
                     {
                         t = 1;
                         stop2 = stop1 = sl - 1;
