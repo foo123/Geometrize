@@ -48,6 +48,14 @@ var Style = makeClass(null, merge(null, {
         return Object.keys(style).reduce(function(s, p) {
             return s + p + ':' + Str(style[p]) + ';';
         }, '');
+    },
+    toCanvas: function(ctx) {
+        ctx.lineCap = this['stroke-linecap'];
+        ctx.lineJoin = this['stroke-linejoin'];
+        ctx.lineWidth = this['stroke-width'];
+        ctx.fillStyle = this['fill'];
+        ctx.strokeStyle = this['stroke'];
+        return ctx;
     }
 }, Changeable), {
     Properties: [

@@ -168,9 +168,7 @@ var Circle = makeClass(Curve, {
     toCanvas: function(ctx) {
         var c = this.center, r = this.radius;
         ctx.beginPath();
-        ctx.lineWidth = this.style['stroke-width'];
-        ctx.fillStyle = this.style['fill'];
-        ctx.strokeStyle = this.style['stroke'];
+        this.style.toCanvas(ctx);
         ctx.arc(c.x, c.x, r, 0, TWO_PI);
         if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();

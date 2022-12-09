@@ -25,12 +25,14 @@ var HAS = Object.prototype.hasOwnProperty,
     stdMath = Math, abs = stdMath.abs,
     sqrt = stdMath.sqrt, pow = stdMath.pow,
     PI = stdMath.PI, TWO_PI = 2*PI, EPS = 1e-6/*Number.EPSILON*/,
+    HALF_PI = PI/2, PI3_2 = 3*PI/2,
     sqrt2 = sqrt(2), sqrt3 = sqrt(3),
     NUM_POINTS = 20, PIXEL_SIZE = 1e-2,
     EMPTY_ARR = [], EMPTY_OBJ = {},
     NOP = function() {},
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
+    root = isNode ? global : (isBrowser ? window : this),
     Geometrize = {VERSION: "@@VERSION@@", Math: {}, Geometry: {}}
 ;
 

@@ -95,7 +95,7 @@ function hwb2rgb(h, w, b, a)
     var b1 = 1 - b/100;
     return hsv2rgb(h, 100 - w/b1, 100*b1, a);
 }
-function parse_color(s)
+function parseColor(s)
 {
     var m, hasOpacity;
     s = trim(Str(s)).toLowerCase();
@@ -182,7 +182,13 @@ function interpolateRGB(r0, g0, b0, a0, r1, g1, b1, a1, t)
         ];
     }
 }
-
+function interpolatePixel(pixel, index, rgba0, rgba1, t)
+{
+    pixel[index + 0] = clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255);
+    pixel[index + 1] = clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255);
+    pixel[index + 2] = clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255);
+    pixel[index + 3] = 3 < rgba0.length ? clamp(stdMath.round(255*(rgba0[3] + t*(rgba1[3] - rgba0[3]))), 0, 255) : 255;
+}
 var Color = {
     keywords: {
     // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
@@ -336,7 +342,7 @@ var Color = {
     ,'yellow'              : [  255,255,0    ,1]
     ,'yellowgreen'         : [  154,205,50   ,1]
     },
-    parse: parse_color,
+    parse: parseColor,
     interpolateRGB: interpolateRGB,
     toCSS: function(r, g, b, a) {
         if (1 === arguments.length)
@@ -348,6 +354,190 @@ var Color = {
         {
             return 3 < arguments.length ? 'rgba('+r+','+g+','+b+','+a+')' : 'rgb('+r+','+g+','+b+')';
         }
+    }
+};
+// gradients
+var U8A = 'undefined' !== typeof root.Uint8Array ? root.Uint8Array : Array;
+function q(a, b, c)
+{
+    var s = solve_quadratic(a, b, c);
+    if (!s) return -1;
+    if (1 < s.length)
+    {
+        if (0 <= s[0] && s[0] <= 1 && 0 <= s[1] && s[1] <= 1) return stdMath.min(s[0], s[1]);
+        if (0 <= s[0] && s[0] <= 1) return s[0];
+        if (0 <= s[1] && s[1] <= 1) return s[1];
+        return stdMath.min(s[0], s[1]);
+    }
+    return s[0];
+}
+Color.Gradient = {
+    Linear: function(x1, y1, x2, y2, colors, stops) {
+        return function(w, h) {
+            var i, x, y, t, dx, dy, px, py, stop1, stop2,
+                size = (w*h)<<2, grad = new U8A(size),
+                vert, hor, sl = stops.length;
+            x1 = x1 || 0;
+            y1 = y1 || 0;
+            x2 = x2 || 0;
+            y2 = y2 || 0;
+            dx = x2 - x1;
+            dy = y2 - y1;
+            vert = is_strictly_equal(dx, 0);
+            hor = is_strictly_equal(dy, 0);
+            for (x=0,y=0,i=0; i<size; i+=4,++x)
+            {
+                if (x >= w) {x=0; ++y;}
+                px = x - x1; py = y - y1;
+                t = hor && vert ? 0 : (vert ? py/dy : (hor ? px/dx : (px*dy + py*dx)/(2*dx*dy)));
+                if (0 >= t)
+                {
+                    stop1 = stop2 = 0;
+                    t = 0;
+                }
+                else if (1 <= t)
+                {
+                    stop1 = stop2 = sl - 1;
+                    t = 1;
+                }
+                else
+                {
+                    stop2 = binary_search(t, stops, sl);
+                    stop1 = 0 === stop2 ? 0 : (stop2 - 1);
+                }
+                interpolatePixel(
+                    grad, i,
+                    colors[stop1], colors[stop2],
+                    // warp the value if needed, between stop ranges
+                    stops[stop2] > stops[stop1] ? (t - stops[stop1])/(stops[stop2] - stops[stop1]) : t
+                );
+            }
+            return grad;
+        };
+    },
+    Radial: function(x0, y0, r0, x1, y1, r1, colors, stops) {
+        return function(w, h) {
+            var i, x, y, t, px0, py0, px1, py1, pr0, pr1, stop1, stop2,
+                size = (w*h)<<2, grad = new U8A(size),
+                sl = stops.length, abs = stdMath.abs, sqrt = stdMath.sqrt;
+            x0 = x0 || 0;
+            y0 = y0 || 0;
+            r0 = r0 || 0;
+            x1 = x1 || 0;
+            y1 = y1 || 0;
+            r1 = r1 || 0;
+            for (x=0,y=0,i=0; i<size; i+=4,++x)
+            {
+                if (x >= w) {x=0; ++y;}
+                // 0 = (r0+t*(r1-r0))**2 - (x - (x0 + t*(x1-x0)))**2 - (y - (y0 + t*(y1-y0)))**2
+                // t^{2} \left(r_{0}^{2} - 2 r_{0} r_{1} + r_{1}^{2} - x_{0}^{2} + 2 x_{0} x_{1} - x_{1}^{2} - y_{0}^{2} + 2 y_{0} y_{1} - y_{1}^{2}\right) + t \left(- 2 r_{0}^{2} + 2 r_{0} r_{1} - 2 x x_{0} + 2 x x_{1} + 2 x_{0}^{2} - 2 x_{0} x_{1} - 2 y y_{0} + 2 y y_{1} + 2 y_{0}^{2} - 2 y_{0} y_{1}\right) - x^{2} + 2 x x_{0} - x_{0}^{2} - y^{2} + 2 y y_{0} - y_{0}^{2}+r_{0}^{2}
+                /*px1 = x - cx1; py1 = y - cy1;
+                dr1 = sqrt(px1*px1 + py1*py1) - r1;
+                px2 = x - cx2; py2 = y - cy2;
+                dr2 = r2 - sqrt(px2*px2 + py2*py2);*/
+                t = q(
+                    r0*r0 - 2*r0*r1 + r1*r1 - x0*x0 + 2*x0*x1 - x1*x1 - y0*y0 + 2*y0*y1 - y1*y1,
+                    -2*r0*r0 + 2*r0*r1 - 2*x*x0 + 2*x*x1 + 2*x0*x0 - 2*x0*x1 - 2*y*y0 + 2*y*y1 + 2*y0*y0 - 2*y0*y1,
+                    -x*x + 2*x*x0 - x0*x0 - y*y + 2*y*y0 - y0*y0 + r0*r0
+                );
+                //rt = r0 + t*(r1 - r0);
+                if (0 >= t || t >= 1)
+                {
+                    px0 = x - x0; py0 = y - y0;
+                    pr0 = sqrt(px0*px0 + py0*py0);
+                    //px1 = x - x1; py1 = y - y1;
+                    //pr1 = sqrt(px1*px1 + py1*py1);
+                    if (pr0 < r0)
+                    {
+                        t = 0;
+                        stop2 = stop1 = 0;
+                    }
+                    else //if (pr1 > r1)
+                    {
+                        t = 1;
+                        stop2 = stop1 = sl - 1;
+                    }
+                }
+                else
+                {
+                    //t = dr1/(dr2 + dr1);
+                    stop2 = binary_search(t, stops, sl);
+                    stop1 = 0 === stop2 ? 0 : (stop2 - 1);
+                }
+                interpolatePixel(
+                    grad, i,
+                    colors[stop1], colors[stop2],
+                    // warp the value if needed, between stop ranges
+                    stops[stop2] > stops[stop1] ? (t - stops[stop1])/(stops[stop2] - stops[stop1]) : t
+                );
+            }
+            return grad;
+        };
+    },
+    Conic: function(angle, cx, cy, colors, stops) {
+        return function(w, h) {
+            var i, x, y, t, stop1, stop2,
+                size = (w*h)<<2, grad = new U8A(size),
+                sl = stops.length, atan2 = stdMath.atan2;
+            angle = angle || 0;
+            cx = cx || 0;
+            cy = cy || 0;
+            for (x=0,y=0,i=0; i<size; i+=4,++x)
+            {
+                if (x >= w) {x=0; ++y;}
+                t = atan2(y - cy, x - cx) + HALF_PI - angle;
+                if (0 > t) t += TWO_PI;
+                if (t > TWO_PI) t -= TWO_PI;
+                t = clamp(t/TWO_PI, 0, 1);
+                stop2 = binary_search(t, stops, sl);
+                stop1 = 0 === stop2 ? 0 : (stop2 - 1);
+                interpolatePixel(
+                    grad, i,
+                    colors[stop1], colors[stop2],
+                    // warp the value if needed, between stop ranges
+                    stops[stop2] > stops[stop1] ? (t - stops[stop1])/(stops[stop2] - stops[stop1]) : t
+                );
+            }
+            return grad;
+        };
+    },
+    Elliptic: function(cx, cy, rx, ry, angle, colors, stops) {
+        return function(w, h) {
+            var i, x, y, t, px, py, cos, sin, stop1, stop2,
+                size = (w*h)<<2, grad = new U8A(size),
+                sl = stops.length, sqrt = stdMath.sqrt;
+            cx = cx || 0;
+            cy = cy || 0;
+            rx = rx || 0;
+            ry = ry || 0;
+            angle = angle || 0;
+            cos = stdMath.cos(angle);
+            sin = stdMath.sin(angle);
+            for (x=0,y=0,i=0; i<size; i+=4,++x)
+            {
+                if (x >= w) {x=0; ++y;}
+                px = (cos*(x - cx) - sin*(y - cy))/rx;
+                py = (sin*(x - cx) + cos*(y - cy))/ry;
+                t = sqrt(px*px + py*py);
+                if (1 <= t)
+                {
+                    stop2 = stop1 = sl - 1;
+                    t = 1;
+                }
+                else
+                {
+                    stop2 = binary_search(t, stops, sl);
+                    stop1 = 0 === stop2 ? 0 : (stop2 - 1);
+                }
+                interpolatePixel(
+                    grad, i,
+                    colors[stop1], colors[stop2],
+                    // warp the value if needed, between stop ranges
+                    stops[stop2] > stops[stop1] ? (t - stops[stop1])/(stops[stop2] - stops[stop1]) : t
+                );
+            }
+            return grad;
+        };
     }
 };
 Geometrize.Color = Color;

@@ -977,6 +977,20 @@ function clamp(x, xmin, xmax)
 {
     return stdMath.max(stdMath.min(x, xmax), xmin);
 }
+function binary_search(x, a, n)
+{
+    // assume a is sorted ascending
+    var l = 0, r = n - 1, m, am;
+    while (l < r)
+    {
+        if (a[l] >= x) return l;
+        m = (l + r) >>> 1;
+        am = a[m];
+        if (am < x) l = m + 1;
+        else r = m;
+    }
+    return l;
+}
 function sign(x)
 {
     return 0 > x ? -1 : 1;

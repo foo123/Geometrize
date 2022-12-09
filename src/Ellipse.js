@@ -269,9 +269,7 @@ var Ellipse = makeClass(Curve, {
     toCanvas: function(ctx) {
         var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
         ctx.beginPath();
-        ctx.lineWidth = this.style['stroke-width'];
-        ctx.fillStyle = this.style['fill'];
-        ctx.strokeStyle = this.style['stroke'];
+        this.style.toCanvas(ctx);
         ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
         if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();

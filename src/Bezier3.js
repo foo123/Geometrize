@@ -138,8 +138,7 @@ var Bezier3 = makeClass(Bezier, {
     toCanvas: function(ctx) {
         var p = this._points;
         ctx.beginPath();
-        ctx.lineWidth = this.style['stroke-width'];
-        ctx.strokeStyle = this.style['stroke'];
+        this.style.toCanvas(ctx);
         ctx.moveTo(p[0].x, p[0].y);
         ctx.bezierCurveTo(p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
         ctx.stroke();

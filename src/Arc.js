@@ -489,8 +489,7 @@ var Arc = makeClass(Curve, {
         var c = this.center, rx = this.rX, ry = this.rY, fs = !this.sweep,
             a = rad(this.angle), t1 = this.theta, t2 = t1 + this.dtheta;
         ctx.beginPath();
-        ctx.lineWidth = this.style['stroke-width'];
-        ctx.strokeStyle = this.style['stroke'];
+        this.style.toCanvas(ctx);
         ctx.ellipse(c.x, c.y, rx, ry, a, t1, t2, fs);
         ctx.stroke();
         //ctx.closePath();

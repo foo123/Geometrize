@@ -215,9 +215,7 @@ var Polyline = makeClass(Curve, {
     toCanvas: function(ctx) {
         var p = this._points, n = p.length;
         ctx.beginPath();
-        ctx.lineWidth = this.style['stroke-width'];
-        ctx.fillStyle = this.style['fill'];
-        ctx.strokeStyle = this.style['stroke'];
+        this.style.toCanvas(ctx);
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
         if (this.isClosed() && ('none' !== this.style['fill'])) ctx.fill();
