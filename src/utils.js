@@ -950,20 +950,19 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 
     return [{x:cx, y:cy}, theta, rad(dtheta), rx, ry];
 }
-/*function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
+function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
 {
-    var cth0 = stdMath.cos(theta),
-        sth0 = stdMath.sin(theta),
-        cth1 = stdMath.cos(theta+dtheta),
-        sth1 = stdMath.sin(theta+dtheta),
-        x1 = cx + cs[0]*rx*cth0 - cs[1]*ry*sth0,
-        y1 = cy + cs[1]*rx*cth0 + cs[0]*ry*sth0,
-        x2 = cx + cs[0]*rx*cth1 - cs[1]*ry*sth1,
-        y2 = cy + cs[1]*rx*cth1 + cs[0]*ry*sth1,
-        fa = abs(deg(dtheta)) > 180,
-        fs = abs(deg(dtheta)) > 0;
-    return [{x:x1, y:y1}, {x:x2, y:y2}, fa, fs];
-}*/
+    return {
+        p0: arc(theta, cx, cy, rx, ry, cs[0], cs[1]),
+        p1: arc(theta + dtheta, cx, cy, rx, ry, cs[0], cs[1]),
+        fa: abs(deg(dtheta)) > 180, //fa
+        fs: abs(deg(dtheta)) > 0 //fs
+    };
+}
+function align_curve(points)
+{
+    return {Tx:-points[0].x, Ty:-points[0].y, R:-stdMath.atan2(points[points.length-1].y - points[0].y, points[points.length-1].x - points[0].x)};
+}
 function is_strictly_equal(a, b)
 {
     return abs(a - b) < Number.EPSILON;
@@ -976,20 +975,6 @@ function is_almost_equal(a, b, eps)
 function clamp(x, xmin, xmax)
 {
     return stdMath.max(stdMath.min(x, xmax), xmin);
-}
-function binary_search(x, a, n)
-{
-    // assume a is sorted ascending
-    var l = 0, r = n - 1, m, am;
-    while (l < r)
-    {
-        if (a[l] >= x) return l;
-        m = (l + r) >>> 1;
-        am = a[m];
-        if (am < x) l = m + 1;
-        else r = m;
-    }
-    return l;
 }
 function sign(x)
 {

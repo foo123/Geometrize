@@ -201,6 +201,14 @@ var Ellipse = makeClass(Curve, {
         var c = this.center, cs = this.cs;
         return arc(t*TWO_PI, c.x, c.y, this.radiusX, this.radiusY, cs[0], cs[1]);
     },
+    d: function() {
+        return new Ellipse(
+            this.center,
+            this.radiusY,
+            this.radiusX,
+            -this.angle
+        );
+    },
     hasPoint: function(point) {
         return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.cs);
     },

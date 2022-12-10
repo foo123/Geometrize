@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.7.0 (2022-12-09 19:33:46)
+*   @version 0.8.0 (2022-12-10 11:25:43)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.7.0 (2022-12-09 19:33:46)
+*   @version 0.8.0 (2022-12-10 11:25:43)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.7.0", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "0.8.0", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -686,13 +686,6 @@ function interpolateRGB(r0, g0, b0, a0, r1, g1, b1, a1, t)
         ];
     }
 }
-function interpolatePixel(pixel, index, rgba0, rgba1, t)
-{
-    pixel[index + 0] = clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255);
-    pixel[index + 1] = clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255);
-    pixel[index + 2] = clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255);
-    pixel[index + 3] = 3 < rgba0.length ? clamp(stdMath.round(255*(rgba0[3] + t*(rgba1[3] - rgba0[3]))), 0, 255) : 255;
-}
 var Color = {
     keywords: {
     // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
@@ -858,189 +851,6 @@ var Color = {
         {
             return 3 < arguments.length ? 'rgba('+r+','+g+','+b+','+a+')' : 'rgb('+r+','+g+','+b+')';
         }
-    }
-};
-// gradients
-var U8A = 'undefined' !== typeof root.Uint8Array ? root.Uint8Array : Array;
-Color.Gradient = {
-    Linear: function(x1, y1, x2, y2, colors, stops) {
-        return function(w, h) {
-            var i, x, y, t, dx, dy, px, py, stop1, stop2,
-                size = (w*h)<<2, grad = new U8A(size),
-                vert, hor, sl = stops.length;
-            x1 = x1 || 0;
-            y1 = y1 || 0;
-            x2 = x2 || 0;
-            y2 = y2 || 0;
-            dx = x2 - x1;
-            dy = y2 - y1;
-            vert = is_strictly_equal(dx, 0);
-            hor = is_strictly_equal(dy, 0);
-            for (x=0,y=0,i=0; i<size; i+=4,++x)
-            {
-                if (x >= w) {x=0; ++y;}
-                px = x - x1; py = y - y1;
-                t = hor && vert ? 0 : (vert ? py/dy : (hor ? px/dx : (px*dy + py*dx)/(2*dx*dy)));
-                if (0 >= t)
-                {
-                    stop1 = stop2 = 0;
-                    t = 0;
-                }
-                else if (1 <= t)
-                {
-                    stop1 = stop2 = sl - 1;
-                    t = 1;
-                }
-                else
-                {
-                    stop2 = binary_search(t, stops, sl);
-                    stop1 = 0 === stop2 ? 0 : (stop2 - 1);
-                }
-                interpolatePixel(
-                    grad, i,
-                    colors[stop1], colors[stop2],
-                    // warp the value if needed, between stop ranges
-                    stops[stop2] > stops[stop1] ? (t - stops[stop1])/(stops[stop2] - stops[stop1]) : t
-                );
-            }
-            return grad;
-        };
-    },
-    Radial: function(x0, y0, r0, x1, y1, r1, colors, stops) {
-        return function(w, h) {
-            var i, x, y, t, px, py, pr,
-                a, b, c, s, stop1, stop2,
-                size = (w*h)<<2, grad = new U8A(size),
-                sl = stops.length, abs = stdMath.abs, sqrt = stdMath.sqrt;
-            x0 = x0 || 0;
-            y0 = y0 || 0;
-            r0 = r0 || 0;
-            x1 = x1 || 0;
-            y1 = y1 || 0;
-            r1 = r1 || 0;
-            a = r0*r0 - 2*r0*r1 + r1*r1 - x0*x0 + 2*x0*x1 - x1*x1 - y0*y0 + 2*y0*y1 - y1*y1;
-            b = -2*r0*r0 + 2*r0*r1 + 2*x0*x0 - 2*x0*x1 + 2*y0*y0 - 2*y0*y1;
-            c = -x0*x0 - y0*y0 + r0*r0;
-            for (x=0,y=0,i=0; i<size; i+=4,++x)
-            {
-                if (x >= w) {x=0; ++y;}
-                // 0 = (r0+t*(r1-r0))**2 - (x - (x0 + t*(x1-x0)))**2 - (y - (y0 + t*(y1-y0)))**2
-                // t^{2} \left(r_{0}^{2} - 2 r_{0} r_{1} + r_{1}^{2} - x_{0}^{2} + 2 x_{0} x_{1} - x_{1}^{2} - y_{0}^{2} + 2 y_{0} y_{1} - y_{1}^{2}\right) + t \left(- 2 r_{0}^{2} + 2 r_{0} r_{1} - 2 x x_{0} + 2 x x_{1} + 2 x_{0}^{2} - 2 x_{0} x_{1} - 2 y y_{0} + 2 y y_{1} + 2 y_{0}^{2} - 2 y_{0} y_{1}\right) - x^{2} + 2 x x_{0} - x_{0}^{2} - y^{2} + 2 y y_{0} - y_{0}^{2}+r_{0}^{2}
-                /*px1 = x - cx1; py1 = y - cy1;
-                dr1 = sqrt(px1*px1 + py1*py1) - r1;
-                px2 = x - cx2; py2 = y - cy2;
-                dr2 = r2 - sqrt(px2*px2 + py2*py2);*/
-                s = solve_quadratic(a, b - 2*x*x0 + 2*x*x1 - 2*y*y0 + 2*y*y1, c - x*x + 2*x*x0 - y*y + 2*y*y0);
-                if (!s)
-                {
-                    t = -1;
-                }
-                else if (1 < s.length)
-                {
-                    if (0 <= s[0] && s[0] <= 1 && 0 <= s[1] && s[1] <= 1) t = stdMath.min(s[0], s[1]);
-                    else if (0 <= s[0] && s[0] <= 1) t = s[0];
-                    else if (0 <= s[1] && s[1] <= 1) t =  s[1];
-                    else t = stdMath.min(s[0], s[1]);
-                }
-                else
-                {
-                    t = s[0];
-                }
-                if (0 > t || t > 1)
-                {
-                    px = x - x0; py = y - y0;
-                    pr = sqrt(px*px + py*py);
-                    if (pr < r0)
-                    {
-                        t = 0;
-                        stop2 = stop1 = 0;
-                    }
-                    else
-                    {
-                        t = 1;
-                        stop2 = stop1 = sl - 1;
-                    }
-                }
-                else
-                {
-                    //t = dr1/(dr2 + dr1);
-                    stop2 = binary_search(t, stops, sl);
-                    stop1 = 0 === stop2 ? 0 : (stop2 - 1);
-                }
-                interpolatePixel(
-                    grad, i,
-                    colors[stop1], colors[stop2],
-                    // warp the value if needed, between stop ranges
-                    stops[stop2] > stops[stop1] ? (t - stops[stop1])/(stops[stop2] - stops[stop1]) : t
-                );
-            }
-            return grad;
-        };
-    },
-    Conic: function(angle, cx, cy, colors, stops) {
-        return function(w, h) {
-            var i, x, y, t, stop1, stop2,
-                size = (w*h)<<2, grad = new U8A(size),
-                sl = stops.length, atan2 = stdMath.atan2;
-            angle = angle || 0;
-            cx = cx || 0;
-            cy = cy || 0;
-            for (x=0,y=0,i=0; i<size; i+=4,++x)
-            {
-                if (x >= w) {x=0; ++y;}
-                t = atan2(y - cy, x - cx) + HALF_PI - angle;
-                if (0 > t) t += TWO_PI;
-                if (t > TWO_PI) t -= TWO_PI;
-                t = clamp(t/TWO_PI, 0, 1);
-                stop2 = binary_search(t, stops, sl);
-                stop1 = 0 === stop2 ? 0 : (stop2 - 1);
-                interpolatePixel(
-                    grad, i,
-                    colors[stop1], colors[stop2],
-                    // warp the value if needed, between stop ranges
-                    stops[stop2] > stops[stop1] ? (t - stops[stop1])/(stops[stop2] - stops[stop1]) : t
-                );
-            }
-            return grad;
-        };
-    },
-    Elliptic: function(cx, cy, rx, ry, angle, colors, stops) {
-        return function(w, h) {
-            var i, x, y, t, px, py, cos, sin, stop1, stop2,
-                size = (w*h)<<2, grad = new U8A(size),
-                sl = stops.length, sqrt = stdMath.sqrt;
-            cx = cx || 0;
-            cy = cy || 0;
-            rx = rx || 0;
-            ry = ry || 0;
-            angle = angle || 0;
-            cos = stdMath.cos(angle);
-            sin = stdMath.sin(angle);
-            for (x=0,y=0,i=0; i<size; i+=4,++x)
-            {
-                if (x >= w) {x=0; ++y;}
-                px = (cos*(x - cx) - sin*(y - cy))/rx;
-                py = (sin*(x - cx) + cos*(y - cy))/ry;
-                t = sqrt(px*px + py*py);
-                if (1 <= t)
-                {
-                    stop2 = stop1 = sl - 1;
-                    t = 1;
-                }
-                else
-                {
-                    stop2 = binary_search(t, stops, sl);
-                    stop1 = 0 === stop2 ? 0 : (stop2 - 1);
-                }
-                interpolatePixel(
-                    grad, i,
-                    colors[stop1], colors[stop2],
-                    // warp the value if needed, between stop ranges
-                    stops[stop2] > stops[stop1] ? (t - stops[stop1])/(stops[stop2] - stops[stop1]) : t
-                );
-            }
-            return grad;
-        };
     }
 };
 Geometrize.Color = Color;
@@ -1698,6 +1508,10 @@ var Curve = makeClass(Primitive, {
         // override
         return {x:0, y:0};
     },
+    d: function() {
+        // override
+        return this.clone();
+    },
     getPointAt: function(t) {
         // 0 <= t <= 1
         t = Num(t);
@@ -1716,6 +1530,12 @@ var Curve = makeClass(Primitive, {
     },
     getConvexHull: function() {
         return this._hull.map(function(p) {return p.clone();});
+    },
+    derivative: function() {
+        var d = this.d();
+        if (this.hasMatrix()) d.setMatrix(this.matrix.clone());
+        d.setStyle(this.style.toObj());
+        return d;
     },
     polylinePoints: function() {
         return this._lines.slice();
@@ -1754,6 +1574,30 @@ var Bezier = makeClass(Curve, {
         });
     },
     name: 'Bezier',
+    d: function() {
+        var self = this, p = self.points, n = p.length - 1, d;
+        if (self instanceof Bezier1)
+        {
+            // point
+            d = new Bezier1([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}]);
+        }
+        else if (self instanceof Bezier2)
+        {
+            // line
+            d = new Bezier1([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}]);
+        }
+        else if (self instanceof Bezier3)
+        {
+            // quadratic
+            d = new Bezier2([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}, {x:n*(p[3].x - p[2].x), y:n*(p[3].y - p[2].y)}]);
+        }
+        else
+        {
+            // zero
+            d = new Bezier1([{x:0, y:0}, {x:0, y:0}]);
+        }
+        return d;
+    },
     toTex: function() {
         return '\\text{'+this.name+': }\\left('+this.points.map(Tex).join(',')+'\\right)';
     },
@@ -1970,6 +1814,9 @@ var CompositeCurve = makeClass(Curve, {
         if (!this.isConnected()) return false;
         var c = this.curves;
         return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
+    },
+    derivative: function() {
+        return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
     },
     hasPoint: function(point) {
         for (var c=this.curves, n=c.length, i=0; i<n; ++i)
@@ -2467,7 +2314,8 @@ var Arc = makeClass(Curve, {
             _params = null,
             _length = null,
             _bbox = null,
-            _hull = null
+            _hull = null,
+            BB = null
         ;
 
         if (start instanceof Arc) return start;
@@ -2644,181 +2492,143 @@ var Arc = makeClass(Curve, {
             enumerable: true,
             configurable: false
         });
+        BB = function BB(o1, o2, c, rx, ry, theta, dtheta, angle, sweep) {
+            var dtheta = self.dtheta,
+                theta2 = theta + dtheta,
+                otherArc = false,
+                tan = stdMath.tan(rad(angle)),
+                p1, p2, p3, p4, t,
+                xmin, xmax, ymin, ymax,
+                txmin, txmax, tymin, tymax
+            ;
+            if (!sweep)
+            {
+                t = theta;
+                theta = theta2;
+                theta2 = t;
+            }
+            if (theta > theta2)
+            {
+                t = theta;
+                theta = theta2;
+                theta2 = t;
+                otherArc = true;
+            }
+            // find min/max from zeroes of directional derivative along x and y
+            // first get of whole ellipse
+            // along x axis
+            t = stdMath.atan2(-ry*tan, rx);
+            if (t < 0) t += TWO_PI;
+            p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            t += PI;
+            p2 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            // along y axis
+            t = stdMath.atan2(ry, rx*tan);
+            if (t < 0) t += TWO_PI;
+            p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            t += PI;
+            p4 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            if (p2.x < p1.x)
+            {
+                xmin = p2;
+                xmax = p1;
+            }
+            else
+            {
+                xmin = p1;
+                xmax = p2;
+            }
+            if (p3.y < p4.y)
+            {
+                ymin = p3;
+                ymax = p4;
+            }
+            else
+            {
+                ymin = p4;
+                ymax = p3;
+            }
+            // refine bounding box by elliminating points not on the arc
+            txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
+            txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
+            tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
+            tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
+            if (txmin < 0) txmin += TWO_PI;
+            if (txmin > TWO_PI) txmin -= TWO_PI;
+            if (txmax < 0) txmax += TWO_PI;
+            if (txmax > TWO_PI) txmax -= TWO_PI;
+            if (tymin < 0) tymin += TWO_PI;
+            if (tymin > TWO_PI) tymin -= TWO_PI;
+            if (tymax < 0) tymax += TWO_PI;
+            if (tymax > TWO_PI) tymax -= TWO_PI;
+            if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
+            {
+                xmin = o1.x < o2.x ? o1 : o2;
+            }
+            if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
+            {
+                xmax = o1.x > o2.x ? o1 : o2;
+            }
+            if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
+            {
+                ymin = o1.y < o2.y ? o1 : o2;
+            }
+            if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
+            {
+                ymax = o1.y > o2.y ? o1 : o2;
+            }
+            return {
+                ymin: ymin.y,
+                xmin: xmin.x,
+                ymax: ymax.y,
+                xmax: xmax.x
+            };
+        };
         def(self, '_bbox', {
             get: function() {
                 if (null == _bbox)
                 {
-                    var o1 = self.start, o2 = self.end,
-                        c = self.center,
-                        rx = self.rX, ry = self.rY,
-                        theta = self.theta,
-                        dtheta = self.dtheta,
-                        theta2 = theta + dtheta,
-                        otherArc = false,
-                        tan = stdMath.tan(rad(self.angle)),
-                        p1, p2, p3, p4, t,
-                        xmin, xmax, ymin, ymax,
-                        txmin, txmax, tymin, tymax
-                    ;
-                    if (!self.sweep)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                    }
-                    if (theta > theta2)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                        otherArc = true;
-                    }
-                    // find min/max from zeroes of directional derivative along x and y
-                    // first get of whole ellipse
-                    // along x axis
-                    t = stdMath.atan2(-ry*tan, rx);
-                    if (t < 0) t += TWO_PI;
-                    p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
-                    t += PI;
-                    p2 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
-                    // along y axis
-                    t = stdMath.atan2(ry, rx*tan);
-                    if (t < 0) t += TWO_PI;
-                    p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
-                    t += PI;
-                    p4 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
-                    if (p2.x < p1.x)
-                    {
-                        xmin = p2;
-                        xmax = p1;
-                    }
-                    else
-                    {
-                        xmin = p1;
-                        xmax = p2;
-                    }
-                    if (p3.y < p4.y)
-                    {
-                        ymin = p3;
-                        ymax = p4;
-                    }
-                    else
-                    {
-                        ymin = p4;
-                        ymax = p3;
-                    }
-                    // refine bounding box by elliminating points not on the arc
-                    txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
-                    txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
-                    tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
-                    tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
-                    if (txmin < 0) txmin += TWO_PI;
-                    if (txmin > TWO_PI) txmin -= TWO_PI;
-                    if (txmax < 0) txmax += TWO_PI;
-                    if (txmax > TWO_PI) txmax -= TWO_PI;
-                    if (tymin < 0) tymin += TWO_PI;
-                    if (tymin > TWO_PI) tymin -= TWO_PI;
-                    if (tymax < 0) tymax += TWO_PI;
-                    if (tymax > TWO_PI) tymax -= TWO_PI;
-                    if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
-                    {
-                        xmin = o1.x < o2.x ? o1 : o2;
-                    }
-                    if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
-                    {
-                        xmax = o1.x > o2.x ? o1 : o2;
-                    }
-                    if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
-                    {
-                        ymin = o1.y < o2.y ? o1 : o2;
-                    }
-                    if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
-                    {
-                        ymax = o1.y > o2.y ? o1 : o2;
-                    }
-                    _bbox = {
-                        ymin: ymin.y,
-                        xmin: xmin.x,
-                        ymax: ymax.y,
-                        xmax: xmax.x
-                    };
+                    _bbox = BB(self.start, self.end, self.center, self.rX, self.rY, self.theta, self.dtheta, self.angle, self.sweep);
                 }
                 return _bbox;
             },
             enumerable: false,
             configurable: false
         });
-        /*def(self, '_hull', {
+        def(self, '_hull', {
             get: function() {
                 if (null == _hull)
                 {
-                    var c = self.center, rx = self.rX, ry = self.rY,
-                        theta = self.theta, theta2 = theta + self.dtheta,
-                        o1 = self.start, o2 = self.end,
-                        xmin = toarc(-1, 0, c.x, c.y, rx, ry, _cos, _sin),
-                        xmax = toarc(1, 0, c.x, c.y, rx, ry, _cos, _sin),
-                        ymin = toarc(0, -1, c.x, c.y, rx, ry, _cos, _sin),
-                        ymax = toarc(0, 1, c.x, c.y, rx, ry, _cos, _sin),
-                        txmin, txmax, tymin, tymax, t, otherArc = false;
-                    if (!self.sweep)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                        t = o1;
-                        o1 = o2;
-                        o2 = t;
-                    }
-                    if (theta > theta2)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                        t = o1;
-                        o1 = o2;
-                        o2 = t;
-                        otherArc = true;
-                    }
-                    txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
-                    txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
-                    tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
-                    tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
-                    if (txmin < 0) txmin += TWO_PI;
-                    if (txmin > TWO_PI) txmin -= TWO_PI;
-                    if (txmax < 0) txmax += TWO_PI;
-                    if (txmax > TWO_PI) txmax -= TWO_PI;
-                    if (tymin < 0) tymin += TWO_PI;
-                    if (tymin > TWO_PI) tymin -= TWO_PI;
-                    if (tymax < 0) tymax += TWO_PI;
-                    if (tymax > TWO_PI) tymax -= TWO_PI;
-                    if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
-                    {
-                        xmin.x = o1.x < o2.x ? o1.x : o2.x;
-                    }
-                    if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
-                    {
-                        xmax.x = o1.x > o2.x ? o1.x : o2.x;
-                    }
-                    if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
-                    {
-                        ymin.y = o1.y < o2.y ? o1.y : o2.y;
-                    }
-                    if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
-                    {
-                        ymax.y = o1.y > o2.y ? o1.y : o2.y;
-                    }
+                    var Tx = -self.start.x, Ty = -self.start.y, R = -rad(self.angle),
+                        // transform curve to be aligned to x-axis
+                        m = Matrix.rotate(R).mul(Matrix.translate(Tx, Ty)),
+                        // compute transformed bounding box
+                        bb = BB(
+                            {x:0, y:0},
+                            m.transform(self.end, {x:0,y:0}),
+                            {x:self.center.x+Tx, y:self.center.y+Ty},
+                            self.rX,
+                            self.rY,
+                            0,
+                            self.dtheta,
+                            0,
+                            self.sweep
+                        ),
+                        // reverse back to original curve
+                        invm = Matrix.translate(-Tx, -Ty).mul(Matrix.rotate(-R))
+                    ;
                     _hull = [
-                        new Point(xmin.x, ymin.y),
-                        new Point(xmax.x, ymin.y),
-                        new Point(xmax.x, ymax.y),
-                        new Point(xmin.x, ymax.y)
+                        invm.transform(new Point(bb.xmin, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymax)),
+                        invm.transform(new Point(bb.xmin, bb.ymax))
                     ];
                 }
                 return _hull;
             },
             enumerable: false,
             configurable: false
-        });*/
+        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
@@ -2863,6 +2673,16 @@ var Arc = makeClass(Curve, {
     f: function(t) {
         var c = this.center, cs = this.cs;
         return arc(this.theta + t*this.dtheta, c.x, c.y, this.rX, this.rY, cs[0], cs[1]);
+    },
+    d: function() {
+        var p = ellipse2arc(this.center.x, this.center.y, this.rY, this.rX, [this.cs[0], -this.cs[1]], -this.theta, -this.dtheta);
+        return new Arc(
+            p.p0,
+            p.p1,
+            -this.angle,
+            p.fa,
+            p.fs
+        );
     },
     hasPoint: function(point) {
         return point_on_arc(point, this.center, this.rX, this.rY, this.cs, this.theta, this.dtheta);
@@ -2963,7 +2783,8 @@ var Bezier2 = makeClass(Bezier, {
         var self = this,
             _length = null,
             _bbox = null,
-            _hull = null
+            _hull = null,
+            BB = null
         ;
 
         if (points instanceof Bezier2) return points;
@@ -2983,29 +2804,56 @@ var Bezier2 = makeClass(Bezier, {
             enumerable: true,
             configurable: false
         });
+        BB = function BB(p) {
+            // find min/max from zeroes of directional derivative along x and y
+            var ax = p[0].x - 2*p[1].x + p[2].x,
+                px = is_strictly_equal(ax, 0) ? p[1] : bezier2((p[0].x - p[1].x)/ax, p),
+                ay = p[0].y - 2*p[1].y + p[2].y,
+                py = is_strictly_equal(ay, 0) ? p[1] : bezier2((p[0].y - p[1].y)/ay, p),
+                xmin = stdMath.min(px.x, p[0].x, p[2].x),
+                xmax = stdMath.max(px.x, p[0].x, p[2].x),
+                ymin = stdMath.min(py.y, p[0].y, p[2].y),
+                ymax = stdMath.max(py.y, p[0].y, p[2].y)
+            ;
+            return {
+                ymin: ymin,
+                xmin: xmin,
+                ymax: ymax,
+                xmax: xmax
+            };
+        };
         def(self, '_bbox', {
             get: function() {
                 if (null == _bbox)
                 {
-                    // find min/max from zeroes of directional derivative along x and y
-                    var p = self._points,
-                        ax = p[0].x - 2*p[1].x + p[2].x,
-                        px = is_strictly_equal(ax, 0) ? p[1] : self.f((p[0].x - p[1].x)/ax),
-                        ay = p[0].y - 2*p[1].y + p[2].y,
-                        py = is_strictly_equal(ay, 0) ? p[1] : self.f((p[0].y - p[1].y)/ay),
-                        xmin = stdMath.min(px.x, p[0].x, p[2].x),
-                        xmax = stdMath.max(px.x, p[0].x, p[2].x),
-                        ymin = stdMath.min(py.y, p[0].y, p[2].y),
-                        ymax = stdMath.max(py.y, p[0].y, p[2].y)
-                    ;
-                    _bbox = {
-                        ymin: ymin,
-                        xmin: xmin,
-                        ymax: ymax,
-                        xmax: xmax
-                    };
+                    _bbox = BB(self._points);
                 }
                 return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    var p = self._points,
+                        // transform curve to be aligned to x-axis
+                        TR = align_curve(p),
+                        m = Matrix.rotate(TR.R).mul(Matrix.translate(TR.Tx, TR.Ty)),
+                        // compute transformed bounding box
+                        bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
+                        // reverse back to original curve
+                        invm = Matrix.translate(-TR.Tx, -TR.Ty).mul(Matrix.rotate(-TR.R))
+                    ;
+                    _hull = [
+                        invm.transform(new Point(bb.xmin, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymax)),
+                        invm.transform(new Point(bb.xmin, bb.ymax))
+                    ];
+                }
+                return _hull;
             },
             enumerable: false,
             configurable: false
@@ -3105,7 +2953,8 @@ var Bezier3 = makeClass(Bezier, {
         var self = this,
             _length = null,
             _bbox = null,
-            _hull = null
+            _hull = null,
+            BB = null
         ;
 
         if (points instanceof Bezier3) return points;
@@ -3125,29 +2974,56 @@ var Bezier3 = makeClass(Bezier, {
             enumerable: true,
             configurable: false
         });
+        BB = function BB(c) {
+            // find min/max from zeroes of directional derivative along x and y
+            var tx = solve_quadratic(3*(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x), 2*(3*c[0].x - 6*c[1].x + 3*c[2].x), -3*c[0].x + 3*c[1].x),
+                px = false === tx ? [c[1], c[2]] : tx.map(function(t) {return bezier3(t, c);}),
+                ty = solve_quadratic(3*(-c[0].y + 3*c[1].y - 3*c[2].y + c[3].y), 2*(3*c[0].y - 6*c[1].y + 3*c[2].y), -3*c[0].y + 3*c[1].y),
+                py = false === ty ? [c[1], c[2]] : ty.map(function(t) {return bezier3(t, c);}),
+                xmin = stdMath.min.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
+                xmax = stdMath.max.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
+                ymin = stdMath.min.apply(stdMath, py.concat([c[0], c[3]]).map(y)),
+                ymax = stdMath.max.apply(stdMath, py.concat([c[0], c[3]]).map(y))
+            ;
+            return {
+                ymin: ymin,
+                xmin: xmin,
+                ymax: ymax,
+                xmax: xmax
+            };
+        };
         def(self, '_bbox', {
             get: function() {
                 if (null == _bbox)
                 {
-                    // find min/max from zeroes of directional derivative along x and y
-                    var c = self._points,
-                        tx = solve_quadratic(3*(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x), 2*(3*c[0].x - 6*c[1].x + 3*c[2].x), -3*c[0].x + 3*c[1].x),
-                        px = false === tx ? [c[1], c[2]] : tx.map(function(t) {return self.f(t);}),
-                        ty = solve_quadratic(3*(-c[0].y + 3*c[1].y - 3*c[2].y + c[3].y), 2*(3*c[0].y - 6*c[1].y + 3*c[2].y), -3*c[0].y + 3*c[1].y),
-                        py = false === ty ? [c[1], c[2]] : ty.map(function(t) {return self.f(t);}),
-                        xmin = stdMath.min.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
-                        xmax = stdMath.max.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
-                        ymin = stdMath.min.apply(stdMath, py.concat([c[0], c[3]]).map(y)),
-                        ymax = stdMath.max.apply(stdMath, py.concat([c[0], c[3]]).map(y))
-                    ;
-                    _bbox = {
-                        ymin: ymin,
-                        xmin: xmin,
-                        ymax: ymax,
-                        xmax: xmax
-                    };
+                    _bbox = BB(self._points);
                 }
                 return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    var p = self._points,
+                        // transform curve to be aligned to x-axis
+                        TR = align_curve(p),
+                        m = Matrix.rotate(TR.R).mul(Matrix.translate(TR.Tx, TR.Ty)),
+                        // compute transformed bounding box
+                        bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
+                        // reverse back to original curve
+                        invm = Matrix.translate(-TR.Tx, -TR.Ty).mul(Matrix.rotate(-TR.R))
+                    ;
+                    _hull = [
+                        invm.transform(new Point(bb.xmin, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymax)),
+                        invm.transform(new Point(bb.xmin, bb.ymax))
+                    ];
+                }
+                return _hull;
             },
             enumerable: false,
             configurable: false
@@ -3932,6 +3808,14 @@ var Ellipse = makeClass(Curve, {
     f: function(t) {
         var c = this.center, cs = this.cs;
         return arc(t*TWO_PI, c.x, c.y, this.radiusX, this.radiusY, cs[0], cs[1]);
+    },
+    d: function() {
+        return new Ellipse(
+            this.center,
+            this.radiusY,
+            this.radiusX,
+            -this.angle
+        );
     },
     hasPoint: function(point) {
         return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.cs);
@@ -5630,20 +5514,19 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 
     return [{x:cx, y:cy}, theta, rad(dtheta), rx, ry];
 }
-/*function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
+function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
 {
-    var cth0 = stdMath.cos(theta),
-        sth0 = stdMath.sin(theta),
-        cth1 = stdMath.cos(theta+dtheta),
-        sth1 = stdMath.sin(theta+dtheta),
-        x1 = cx + cs[0]*rx*cth0 - cs[1]*ry*sth0,
-        y1 = cy + cs[1]*rx*cth0 + cs[0]*ry*sth0,
-        x2 = cx + cs[0]*rx*cth1 - cs[1]*ry*sth1,
-        y2 = cy + cs[1]*rx*cth1 + cs[0]*ry*sth1,
-        fa = abs(deg(dtheta)) > 180,
-        fs = abs(deg(dtheta)) > 0;
-    return [{x:x1, y:y1}, {x:x2, y:y2}, fa, fs];
-}*/
+    return {
+        p0: arc(theta, cx, cy, rx, ry, cs[0], cs[1]),
+        p1: arc(theta + dtheta, cx, cy, rx, ry, cs[0], cs[1]),
+        fa: abs(deg(dtheta)) > 180, //fa
+        fs: abs(deg(dtheta)) > 0 //fs
+    };
+}
+function align_curve(points)
+{
+    return {Tx:-points[0].x, Ty:-points[0].y, R:-stdMath.atan2(points[points.length-1].y - points[0].y, points[points.length-1].x - points[0].x)};
+}
 function is_strictly_equal(a, b)
 {
     return abs(a - b) < Number.EPSILON;
@@ -5656,20 +5539,6 @@ function is_almost_equal(a, b, eps)
 function clamp(x, xmin, xmax)
 {
     return stdMath.max(stdMath.min(x, xmax), xmin);
-}
-function binary_search(x, a, n)
-{
-    // assume a is sorted ascending
-    var l = 0, r = n - 1, m, am;
-    while (l < r)
-    {
-        if (a[l] >= x) return l;
-        m = (l + r) >>> 1;
-        am = a[m];
-        if (am < x) l = m + 1;
-        else r = m;
-    }
-    return l;
 }
 function sign(x)
 {

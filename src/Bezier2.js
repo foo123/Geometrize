@@ -4,7 +4,8 @@ var Bezier2 = makeClass(Bezier, {
         var self = this,
             _length = null,
             _bbox = null,
-            _hull = null
+            _hull = null,
+            BB = null
         ;
 
         if (points instanceof Bezier2) return points;
@@ -24,29 +25,56 @@ var Bezier2 = makeClass(Bezier, {
             enumerable: true,
             configurable: false
         });
+        BB = function BB(p) {
+            // find min/max from zeroes of directional derivative along x and y
+            var ax = p[0].x - 2*p[1].x + p[2].x,
+                px = is_strictly_equal(ax, 0) ? p[1] : bezier2((p[0].x - p[1].x)/ax, p),
+                ay = p[0].y - 2*p[1].y + p[2].y,
+                py = is_strictly_equal(ay, 0) ? p[1] : bezier2((p[0].y - p[1].y)/ay, p),
+                xmin = stdMath.min(px.x, p[0].x, p[2].x),
+                xmax = stdMath.max(px.x, p[0].x, p[2].x),
+                ymin = stdMath.min(py.y, p[0].y, p[2].y),
+                ymax = stdMath.max(py.y, p[0].y, p[2].y)
+            ;
+            return {
+                ymin: ymin,
+                xmin: xmin,
+                ymax: ymax,
+                xmax: xmax
+            };
+        };
         def(self, '_bbox', {
             get: function() {
                 if (null == _bbox)
                 {
-                    // find min/max from zeroes of directional derivative along x and y
-                    var p = self._points,
-                        ax = p[0].x - 2*p[1].x + p[2].x,
-                        px = is_strictly_equal(ax, 0) ? p[1] : self.f((p[0].x - p[1].x)/ax),
-                        ay = p[0].y - 2*p[1].y + p[2].y,
-                        py = is_strictly_equal(ay, 0) ? p[1] : self.f((p[0].y - p[1].y)/ay),
-                        xmin = stdMath.min(px.x, p[0].x, p[2].x),
-                        xmax = stdMath.max(px.x, p[0].x, p[2].x),
-                        ymin = stdMath.min(py.y, p[0].y, p[2].y),
-                        ymax = stdMath.max(py.y, p[0].y, p[2].y)
-                    ;
-                    _bbox = {
-                        ymin: ymin,
-                        xmin: xmin,
-                        ymax: ymax,
-                        xmax: xmax
-                    };
+                    _bbox = BB(self._points);
                 }
                 return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    var p = self._points,
+                        // transform curve to be aligned to x-axis
+                        TR = align_curve(p),
+                        m = Matrix.rotate(TR.R).mul(Matrix.translate(TR.Tx, TR.Ty)),
+                        // compute transformed bounding box
+                        bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
+                        // reverse back to original curve
+                        invm = Matrix.translate(-TR.Tx, -TR.Ty).mul(Matrix.rotate(-TR.R))
+                    ;
+                    _hull = [
+                        invm.transform(new Point(bb.xmin, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymax)),
+                        invm.transform(new Point(bb.xmin, bb.ymax))
+                    ];
+                }
+                return _hull;
             },
             enumerable: false,
             configurable: false

@@ -260,6 +260,10 @@ var Curve = makeClass(Primitive, {
         // override
         return {x:0, y:0};
     },
+    d: function() {
+        // override
+        return this.clone();
+    },
     getPointAt: function(t) {
         // 0 <= t <= 1
         t = Num(t);
@@ -278,6 +282,12 @@ var Curve = makeClass(Primitive, {
     },
     getConvexHull: function() {
         return this._hull.map(function(p) {return p.clone();});
+    },
+    derivative: function() {
+        var d = this.d();
+        if (this.hasMatrix()) d.setMatrix(this.matrix.clone());
+        d.setStyle(this.style.toObj());
+        return d;
     },
     polylinePoints: function() {
         return this._lines.slice();
@@ -316,6 +326,30 @@ var Bezier = makeClass(Curve, {
         });
     },
     name: 'Bezier',
+    d: function() {
+        var self = this, p = self.points, n = p.length - 1, d;
+        if (self instanceof Bezier1)
+        {
+            // point
+            d = new Bezier1([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}]);
+        }
+        else if (self instanceof Bezier2)
+        {
+            // line
+            d = new Bezier1([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}]);
+        }
+        else if (self instanceof Bezier3)
+        {
+            // quadratic
+            d = new Bezier2([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}, {x:n*(p[3].x - p[2].x), y:n*(p[3].y - p[2].y)}]);
+        }
+        else
+        {
+            // zero
+            d = new Bezier1([{x:0, y:0}, {x:0, y:0}]);
+        }
+        return d;
+    },
     toTex: function() {
         return '\\text{'+this.name+': }\\left('+this.points.map(Tex).join(',')+'\\right)';
     },
@@ -532,6 +566,9 @@ var CompositeCurve = makeClass(Curve, {
         if (!this.isConnected()) return false;
         var c = this.curves;
         return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
+    },
+    derivative: function() {
+        return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
     },
     hasPoint: function(point) {
         for (var c=this.curves, n=c.length, i=0; i<n; ++i)

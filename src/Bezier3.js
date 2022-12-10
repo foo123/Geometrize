@@ -4,7 +4,8 @@ var Bezier3 = makeClass(Bezier, {
         var self = this,
             _length = null,
             _bbox = null,
-            _hull = null
+            _hull = null,
+            BB = null
         ;
 
         if (points instanceof Bezier3) return points;
@@ -24,29 +25,56 @@ var Bezier3 = makeClass(Bezier, {
             enumerable: true,
             configurable: false
         });
+        BB = function BB(c) {
+            // find min/max from zeroes of directional derivative along x and y
+            var tx = solve_quadratic(3*(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x), 2*(3*c[0].x - 6*c[1].x + 3*c[2].x), -3*c[0].x + 3*c[1].x),
+                px = false === tx ? [c[1], c[2]] : tx.map(function(t) {return bezier3(t, c);}),
+                ty = solve_quadratic(3*(-c[0].y + 3*c[1].y - 3*c[2].y + c[3].y), 2*(3*c[0].y - 6*c[1].y + 3*c[2].y), -3*c[0].y + 3*c[1].y),
+                py = false === ty ? [c[1], c[2]] : ty.map(function(t) {return bezier3(t, c);}),
+                xmin = stdMath.min.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
+                xmax = stdMath.max.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
+                ymin = stdMath.min.apply(stdMath, py.concat([c[0], c[3]]).map(y)),
+                ymax = stdMath.max.apply(stdMath, py.concat([c[0], c[3]]).map(y))
+            ;
+            return {
+                ymin: ymin,
+                xmin: xmin,
+                ymax: ymax,
+                xmax: xmax
+            };
+        };
         def(self, '_bbox', {
             get: function() {
                 if (null == _bbox)
                 {
-                    // find min/max from zeroes of directional derivative along x and y
-                    var c = self._points,
-                        tx = solve_quadratic(3*(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x), 2*(3*c[0].x - 6*c[1].x + 3*c[2].x), -3*c[0].x + 3*c[1].x),
-                        px = false === tx ? [c[1], c[2]] : tx.map(function(t) {return self.f(t);}),
-                        ty = solve_quadratic(3*(-c[0].y + 3*c[1].y - 3*c[2].y + c[3].y), 2*(3*c[0].y - 6*c[1].y + 3*c[2].y), -3*c[0].y + 3*c[1].y),
-                        py = false === ty ? [c[1], c[2]] : ty.map(function(t) {return self.f(t);}),
-                        xmin = stdMath.min.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
-                        xmax = stdMath.max.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
-                        ymin = stdMath.min.apply(stdMath, py.concat([c[0], c[3]]).map(y)),
-                        ymax = stdMath.max.apply(stdMath, py.concat([c[0], c[3]]).map(y))
-                    ;
-                    _bbox = {
-                        ymin: ymin,
-                        xmin: xmin,
-                        ymax: ymax,
-                        xmax: xmax
-                    };
+                    _bbox = BB(self._points);
                 }
                 return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    var p = self._points,
+                        // transform curve to be aligned to x-axis
+                        TR = align_curve(p),
+                        m = Matrix.rotate(TR.R).mul(Matrix.translate(TR.Tx, TR.Ty)),
+                        // compute transformed bounding box
+                        bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
+                        // reverse back to original curve
+                        invm = Matrix.translate(-TR.Tx, -TR.Ty).mul(Matrix.rotate(-TR.R))
+                    ;
+                    _hull = [
+                        invm.transform(new Point(bb.xmin, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymax)),
+                        invm.transform(new Point(bb.xmin, bb.ymax))
+                    ];
+                }
+                return _hull;
             },
             enumerable: false,
             configurable: false

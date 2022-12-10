@@ -12,7 +12,8 @@ var Arc = makeClass(Curve, {
             _params = null,
             _length = null,
             _bbox = null,
-            _hull = null
+            _hull = null,
+            BB = null
         ;
 
         if (start instanceof Arc) return start;
@@ -189,181 +190,143 @@ var Arc = makeClass(Curve, {
             enumerable: true,
             configurable: false
         });
+        BB = function BB(o1, o2, c, rx, ry, theta, dtheta, angle, sweep) {
+            var dtheta = self.dtheta,
+                theta2 = theta + dtheta,
+                otherArc = false,
+                tan = stdMath.tan(rad(angle)),
+                p1, p2, p3, p4, t,
+                xmin, xmax, ymin, ymax,
+                txmin, txmax, tymin, tymax
+            ;
+            if (!sweep)
+            {
+                t = theta;
+                theta = theta2;
+                theta2 = t;
+            }
+            if (theta > theta2)
+            {
+                t = theta;
+                theta = theta2;
+                theta2 = t;
+                otherArc = true;
+            }
+            // find min/max from zeroes of directional derivative along x and y
+            // first get of whole ellipse
+            // along x axis
+            t = stdMath.atan2(-ry*tan, rx);
+            if (t < 0) t += TWO_PI;
+            p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            t += PI;
+            p2 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            // along y axis
+            t = stdMath.atan2(ry, rx*tan);
+            if (t < 0) t += TWO_PI;
+            p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            t += PI;
+            p4 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            if (p2.x < p1.x)
+            {
+                xmin = p2;
+                xmax = p1;
+            }
+            else
+            {
+                xmin = p1;
+                xmax = p2;
+            }
+            if (p3.y < p4.y)
+            {
+                ymin = p3;
+                ymax = p4;
+            }
+            else
+            {
+                ymin = p4;
+                ymax = p3;
+            }
+            // refine bounding box by elliminating points not on the arc
+            txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
+            txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
+            tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
+            tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
+            if (txmin < 0) txmin += TWO_PI;
+            if (txmin > TWO_PI) txmin -= TWO_PI;
+            if (txmax < 0) txmax += TWO_PI;
+            if (txmax > TWO_PI) txmax -= TWO_PI;
+            if (tymin < 0) tymin += TWO_PI;
+            if (tymin > TWO_PI) tymin -= TWO_PI;
+            if (tymax < 0) tymax += TWO_PI;
+            if (tymax > TWO_PI) tymax -= TWO_PI;
+            if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
+            {
+                xmin = o1.x < o2.x ? o1 : o2;
+            }
+            if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
+            {
+                xmax = o1.x > o2.x ? o1 : o2;
+            }
+            if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
+            {
+                ymin = o1.y < o2.y ? o1 : o2;
+            }
+            if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
+            {
+                ymax = o1.y > o2.y ? o1 : o2;
+            }
+            return {
+                ymin: ymin.y,
+                xmin: xmin.x,
+                ymax: ymax.y,
+                xmax: xmax.x
+            };
+        };
         def(self, '_bbox', {
             get: function() {
                 if (null == _bbox)
                 {
-                    var o1 = self.start, o2 = self.end,
-                        c = self.center,
-                        rx = self.rX, ry = self.rY,
-                        theta = self.theta,
-                        dtheta = self.dtheta,
-                        theta2 = theta + dtheta,
-                        otherArc = false,
-                        tan = stdMath.tan(rad(self.angle)),
-                        p1, p2, p3, p4, t,
-                        xmin, xmax, ymin, ymax,
-                        txmin, txmax, tymin, tymax
-                    ;
-                    if (!self.sweep)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                    }
-                    if (theta > theta2)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                        otherArc = true;
-                    }
-                    // find min/max from zeroes of directional derivative along x and y
-                    // first get of whole ellipse
-                    // along x axis
-                    t = stdMath.atan2(-ry*tan, rx);
-                    if (t < 0) t += TWO_PI;
-                    p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
-                    t += PI;
-                    p2 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
-                    // along y axis
-                    t = stdMath.atan2(ry, rx*tan);
-                    if (t < 0) t += TWO_PI;
-                    p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
-                    t += PI;
-                    p4 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
-                    if (p2.x < p1.x)
-                    {
-                        xmin = p2;
-                        xmax = p1;
-                    }
-                    else
-                    {
-                        xmin = p1;
-                        xmax = p2;
-                    }
-                    if (p3.y < p4.y)
-                    {
-                        ymin = p3;
-                        ymax = p4;
-                    }
-                    else
-                    {
-                        ymin = p4;
-                        ymax = p3;
-                    }
-                    // refine bounding box by elliminating points not on the arc
-                    txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
-                    txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
-                    tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
-                    tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
-                    if (txmin < 0) txmin += TWO_PI;
-                    if (txmin > TWO_PI) txmin -= TWO_PI;
-                    if (txmax < 0) txmax += TWO_PI;
-                    if (txmax > TWO_PI) txmax -= TWO_PI;
-                    if (tymin < 0) tymin += TWO_PI;
-                    if (tymin > TWO_PI) tymin -= TWO_PI;
-                    if (tymax < 0) tymax += TWO_PI;
-                    if (tymax > TWO_PI) tymax -= TWO_PI;
-                    if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
-                    {
-                        xmin = o1.x < o2.x ? o1 : o2;
-                    }
-                    if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
-                    {
-                        xmax = o1.x > o2.x ? o1 : o2;
-                    }
-                    if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
-                    {
-                        ymin = o1.y < o2.y ? o1 : o2;
-                    }
-                    if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
-                    {
-                        ymax = o1.y > o2.y ? o1 : o2;
-                    }
-                    _bbox = {
-                        ymin: ymin.y,
-                        xmin: xmin.x,
-                        ymax: ymax.y,
-                        xmax: xmax.x
-                    };
+                    _bbox = BB(self.start, self.end, self.center, self.rX, self.rY, self.theta, self.dtheta, self.angle, self.sweep);
                 }
                 return _bbox;
             },
             enumerable: false,
             configurable: false
         });
-        /*def(self, '_hull', {
+        def(self, '_hull', {
             get: function() {
                 if (null == _hull)
                 {
-                    var c = self.center, rx = self.rX, ry = self.rY,
-                        theta = self.theta, theta2 = theta + self.dtheta,
-                        o1 = self.start, o2 = self.end,
-                        xmin = toarc(-1, 0, c.x, c.y, rx, ry, _cos, _sin),
-                        xmax = toarc(1, 0, c.x, c.y, rx, ry, _cos, _sin),
-                        ymin = toarc(0, -1, c.x, c.y, rx, ry, _cos, _sin),
-                        ymax = toarc(0, 1, c.x, c.y, rx, ry, _cos, _sin),
-                        txmin, txmax, tymin, tymax, t, otherArc = false;
-                    if (!self.sweep)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                        t = o1;
-                        o1 = o2;
-                        o2 = t;
-                    }
-                    if (theta > theta2)
-                    {
-                        t = theta;
-                        theta = theta2;
-                        theta2 = t;
-                        t = o1;
-                        o1 = o2;
-                        o2 = t;
-                        otherArc = true;
-                    }
-                    txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
-                    txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
-                    tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
-                    tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
-                    if (txmin < 0) txmin += TWO_PI;
-                    if (txmin > TWO_PI) txmin -= TWO_PI;
-                    if (txmax < 0) txmax += TWO_PI;
-                    if (txmax > TWO_PI) txmax -= TWO_PI;
-                    if (tymin < 0) tymin += TWO_PI;
-                    if (tymin > TWO_PI) tymin -= TWO_PI;
-                    if (tymax < 0) tymax += TWO_PI;
-                    if (tymax > TWO_PI) tymax -= TWO_PI;
-                    if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
-                    {
-                        xmin.x = o1.x < o2.x ? o1.x : o2.x;
-                    }
-                    if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
-                    {
-                        xmax.x = o1.x > o2.x ? o1.x : o2.x;
-                    }
-                    if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
-                    {
-                        ymin.y = o1.y < o2.y ? o1.y : o2.y;
-                    }
-                    if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
-                    {
-                        ymax.y = o1.y > o2.y ? o1.y : o2.y;
-                    }
+                    var Tx = -self.start.x, Ty = -self.start.y, R = -rad(self.angle),
+                        // transform curve to be aligned to x-axis
+                        m = Matrix.rotate(R).mul(Matrix.translate(Tx, Ty)),
+                        // compute transformed bounding box
+                        bb = BB(
+                            {x:0, y:0},
+                            m.transform(self.end, {x:0,y:0}),
+                            {x:self.center.x+Tx, y:self.center.y+Ty},
+                            self.rX,
+                            self.rY,
+                            0,
+                            self.dtheta,
+                            0,
+                            self.sweep
+                        ),
+                        // reverse back to original curve
+                        invm = Matrix.translate(-Tx, -Ty).mul(Matrix.rotate(-R))
+                    ;
                     _hull = [
-                        new Point(xmin.x, ymin.y),
-                        new Point(xmax.x, ymin.y),
-                        new Point(xmax.x, ymax.y),
-                        new Point(xmin.x, ymax.y)
+                        invm.transform(new Point(bb.xmin, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymin)),
+                        invm.transform(new Point(bb.xmax, bb.ymax)),
+                        invm.transform(new Point(bb.xmin, bb.ymax))
                     ];
                 }
                 return _hull;
             },
             enumerable: false,
             configurable: false
-        });*/
+        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
@@ -408,6 +371,16 @@ var Arc = makeClass(Curve, {
     f: function(t) {
         var c = this.center, cs = this.cs;
         return arc(this.theta + t*this.dtheta, c.x, c.y, this.rX, this.rY, cs[0], cs[1]);
+    },
+    d: function() {
+        var p = ellipse2arc(this.center.x, this.center.y, this.rY, this.rX, [this.cs[0], -this.cs[1]], -this.theta, -this.dtheta);
+        return new Arc(
+            p.p0,
+            p.p1,
+            -this.angle,
+            p.fa,
+            p.fs
+        );
     },
     hasPoint: function(point) {
         return point_on_arc(point, this.center, this.rX, this.rY, this.cs, this.theta, this.dtheta);
