@@ -1,5 +1,13 @@
+// 2D geometric Topos ie set of points
+var Topos = makeClass(Primitive, {
+    constructor: function Topos() {
+        this.$super('constructor');
+    }
+});
+Geometrize.Topos = Topos;
+
 // 2D generic Curve base class
-var Curve = makeClass(Primitive, {
+var Curve = makeClass(Topos, {
     constructor: function Curve(points, values) {
         var self = this,
             _matrix = null,
@@ -372,7 +380,7 @@ var CompositeCurve = makeClass(Curve, {
             curve_del;
 
         if (null == curves) curves = [];
-        Primitive.call(self);
+        Topos.call(self);
 
         curve_add = function(c) {
             if (c instanceof Curve) c.onChange(onCurveChange);
@@ -523,7 +531,7 @@ var CompositeCurve = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return Primitive.prototype.isChanged.apply(self, arguments);
+            return Topos.prototype.isChanged.apply(self, arguments);
         };
     },
     name: 'CompositeCurve',
@@ -538,7 +546,7 @@ var CompositeCurve = makeClass(Curve, {
             self.curves = null;
             self.points = null;
         }
-        Primitive.prototype.dispose.call(self);
+        Topos.prototype.dispose.call(self);
     },
     clone: function() {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.clone();}));

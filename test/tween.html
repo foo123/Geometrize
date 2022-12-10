@@ -46,7 +46,7 @@ body {
 "use strict";
 const {Plane, Tween, Polygon, Circle, Ellipse, Arc, QBezier, Point} = Geometrize;
 const r = 50, rx = 50, ry = 20, cx = 100, cy = 100, angle = -30;
-const plane = Plane(document.getElementById('container'), 300, 300);
+const plane = Plane(document.getElementById('container'), 0, 0, 300, 300);
 const point = Point(cx, cy);
 const ellipse = Ellipse([cx, cy], rx, ry, angle);
 const arc = Arc(ellipse.getPointAt(0), ellipse.getPointAt(0.6), rx, ry, angle, 0, 0);

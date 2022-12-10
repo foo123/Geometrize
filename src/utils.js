@@ -1344,6 +1344,12 @@ Geometrize.Geometry.linearBezierCurve = bezier1;
 Geometrize.Geometry.quadraticBezierCurve = bezier2;
 Geometrize.Geometry.cubicBezierCurve = bezier3;
 Geometrize.Geometry.ellipticArcCurve = arc;
-Geometrize.Geometry.computeConvexHull = function(points) {return convex_hull(points).map(Point);};
+Geometrize.Geometry.computeConvexHull = function(points) {
+    return convex_hull(points).map(Point);
+};
+Geometrize.Geometry.alignCurve = function(curve) {
+    var T = align_curve(curve.points);
+    return Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty));
+};
 
 

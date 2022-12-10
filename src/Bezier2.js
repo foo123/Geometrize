@@ -27,14 +27,18 @@ var Bezier2 = makeClass(Bezier, {
         });
         BB = function BB(p) {
             // find min/max from zeroes of directional derivative along x and y
-            var ax = p[0].x - 2*p[1].x + p[2].x,
-                px = is_strictly_equal(ax, 0) ? p[1] : bezier2((p[0].x - p[1].x)/ax, p),
-                ay = p[0].y - 2*p[1].y + p[2].y,
-                py = is_strictly_equal(ay, 0) ? p[1] : bezier2((p[0].y - p[1].y)/ay, p),
-                xmin = stdMath.min(px.x, p[0].x, p[2].x),
-                xmax = stdMath.max(px.x, p[0].x, p[2].x),
-                ymin = stdMath.min(py.y, p[0].y, p[2].y),
-                ymax = stdMath.max(py.y, p[0].y, p[2].y)
+            var tx = solve_linear(p[0].x - 2*p[1].x + p[2].x, p[1].x - p[0].x),
+                px = false === tx ? [p[1]] : tx.map(function(t) {
+                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
+                }),
+                ty = solve_linear(p[0].y - 2*p[1].y + p[2].y, p[1].y - p[0].y),
+                py = false === ty ? [p[1]] : ty.map(function(t) {
+                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
+                }),
+                xmin = stdMath.min.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
+                xmax = stdMath.max.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
+                ymin = stdMath.min.apply(stdMath, py.concat([p[0], p[2]]).map(y)),
+                ymax = stdMath.max.apply(stdMath, py.concat([p[0], p[2]]).map(y))
             ;
             return {
                 ymin: ymin,
@@ -60,12 +64,12 @@ var Bezier2 = makeClass(Bezier, {
                 {
                     var p = self._points,
                         // transform curve to be aligned to x-axis
-                        TR = align_curve(p),
-                        m = Matrix.rotate(TR.R).mul(Matrix.translate(TR.Tx, TR.Ty)),
+                        T = align_curve(p),
+                        m = Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty)),
                         // compute transformed bounding box
                         bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
                         // reverse back to original curve
-                        invm = Matrix.translate(-TR.Tx, -TR.Ty).mul(Matrix.rotate(-TR.R))
+                        invm = m.inv()
                     ;
                     _hull = [
                         invm.transform(new Point(bb.xmin, bb.ymin)),

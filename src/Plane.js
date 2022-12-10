@@ -1,7 +1,7 @@
 // Plane
 // scene container for 2D geometric objects
 var Plane = makeClass(null, {
-    constructor: function Plane(dom, width, height) {
+    constructor: function Plane(dom, x0, y0, x1, y1) {
         var self = this,
             svg = null,
             svgEl = null,
@@ -10,33 +10,59 @@ var Plane = makeClass(null, {
             isChanged = true,
             renderSVG, renderCanvas, raf;
 
-        if (!(self instanceof Plane)) return new Plane(dom, width, height);
+        if (!(self instanceof Plane)) return new Plane(dom, x0, y0, x1, y1);
 
-        width = stdMath.abs(Num(width));
-        height = stdMath.abs(Num(height));
+        x0 = Num(x0);
+        y0 = Num(y0);
+        x1 = Num(x1);
+        y1 = Num(y1);
         objects = [];
         svgEl = {};
 
-        def(self, 'width', {
+        def(self, 'x0', {
             get: function() {
-                return width;
+                return x0;
             },
-            set: function(w) {
-                w = stdMath.abs(Num(w));
-                if (width !== w) isChanged = true;
-                width = w;
+            set: function(v) {
+                v = Num(v);
+                if (x0 !== v) isChanged = true;
+                x0 = v;
             },
             enumerable: true,
             configurable: false
         });
-        def(self, 'height', {
+        def(self, 'x1', {
             get: function() {
-                return height;
+                return x1;
             },
-            set: function(h) {
-                h = stdMath.abs(Num(h));
-                if (height !== h) isChanged = true;
-                height = h;
+            set: function(v) {
+                v = Num(v);
+                if (x1 !== v) isChanged = true;
+                x1 = v;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'y0', {
+            get: function() {
+                return y0;
+            },
+            set: function(v) {
+                v = Num(v);
+                if (y0 !== v) isChanged = true;
+                y0 = v;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'y1', {
+            get: function() {
+                return y1;
+            },
+            set: function(v) {
+                v = Num(v);
+                if (y1 !== v) isChanged = true;
+                y1 = v;
             },
             enumerable: true,
             configurable: false
@@ -94,7 +120,7 @@ var Plane = makeClass(null, {
         self.toSVG = function() {
             return SVG('svg', {
             'xmlns': ['http://www.w3.org/2000/svg', true],
-            'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', true]
+            'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), true]
             }, false, objects.map(function(o){return o instanceof Primitive ? o.toSVG() : '';}).join(''));
         };
         self.toCanvas = function(canvas) {
@@ -111,14 +137,14 @@ var Plane = makeClass(null, {
                 svg = SVG('svg', {
                 'xmlns': ['http://www.w3.org/2000/svg', false],
                 'style': ['position:absolute;width:100%;height:100%', false],
-                'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', isChanged]
+                'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), isChanged]
                 }, null);
                 dom.appendChild(svg);
             }
             else if (isChanged)
             {
                 SVG('svg', {
-                'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', isChanged]
+                'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), isChanged]
                 }, svg);
             }
             objects.forEach(function(o) {
@@ -143,13 +169,15 @@ var Plane = makeClass(null, {
         renderCanvas = function renderCanvas(canvas) {
             if (objects && canvas)
             {
-                canvas.style.width = Str(width)+'px';
-                canvas.style.height = Str(height)+'px';
-                canvas.setAttribute('width', Str(width)+'px');
-                canvas.setAttribute('height', Str(height)+'px');
+                var w = stdMath.abs(x1 - x0), h = stdMath.abs(y1 - y0);
+                canvas.style.width = Str(w)+'px';
+                canvas.style.height = Str(h)+'px';
+                canvas.width = w;
+                canvas.height = h;
                 var ctx = canvas.getContext('2d');
                 ctx.fillStyle = 'transparent';
-                ctx.fillRect(0, 0, width, height);
+                ctx.fillRect(0, 0, w, h);
+                ctx.translate(-x0, -y0);
                 objects.forEach(function(o) {
                     if (o instanceof Primitive)
                     {

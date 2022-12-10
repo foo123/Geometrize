@@ -125,7 +125,7 @@ var Matrix = makeClass(null, {
             det2 = a00*a11 - a01*a10,
             i00 = 0, i01 = 0, i10 = 0, i11 = 0;
 
-        if (is_almost_zero(det2)) return null;
+        if (is_strictly_equal(det2, 0)) return null;
 
         /*
         var det = self.det();

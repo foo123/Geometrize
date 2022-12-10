@@ -12,10 +12,10 @@ body {
 #container {
     position: relative;
     width: 100%;
-    height: 1000px;
+    height: 1200px;
     padding: 0;
     margin: 0 auto;
-    overflow: visible;
+    overflow: scroll;
 }
 .button {
     position: relative;
@@ -47,8 +47,8 @@ body {
 <script>
 (function() {
 "use strict";
-const {Plane, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Point, Matrix} = Geometrize;
-const plane = Plane(document.getElementById('container'), 300, 300);
+const {Plane, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Point, Matrix, Geometry} = Geometrize;
+const plane = Plane(document.getElementById('container'), 0, 0, 300, 300);
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
 const arc = Arc([100,100], [170,90], 30, 10, 30, 0, 1);
@@ -93,19 +93,19 @@ document.getElementById('intersections').addEventListener('click', () => {
 }, false);
 
 document.getElementById('boxes').addEventListener('click', () => {
-    //drawBoundingBox(circle, 'orange');
-    //drawBoundingBox(ellipse, 'red');
+    drawBoundingBox(circle, 'orange');
+    drawBoundingBox(ellipse, 'red');
     drawBoundingBox(arc, 'blue');
-    //drawBoundingBox(qbezier, 'cyan');
-    //drawBoundingBox(cbezier, 'magenta');
+    drawBoundingBox(qbezier, 'cyan');
+    drawBoundingBox(cbezier, 'magenta');
 }, false);
 
 document.getElementById('hulls').addEventListener('click', () => {
-    //drawConvexHull(circle, 'orange');
-    //drawConvexHull(ellipse, 'red');
+    drawConvexHull(circle, 'orange');
+    drawConvexHull(ellipse, 'red');
     drawConvexHull(arc, 'blue');
-    //drawConvexHull(qbezier, 'cyan');
-    //drawConvexHull(cbezier, 'magenta');
+    drawConvexHull(qbezier, 'cyan');
+    drawConvexHull(cbezier, 'magenta');
 }, false);
 
 document.getElementById('image').addEventListener('click', () => {

@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.8.0 (2022-12-10 11:25:43)
+*   @version 0.8.0 (2022-12-10 16:58:50)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.8.0 (2022-12-10 11:25:43)
+*   @version 0.8.0 (2022-12-10 16:58:50)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -302,7 +302,7 @@ var Matrix = makeClass(null, {
             det2 = a00*a11 - a01*a10,
             i00 = 0, i01 = 0, i10 = 0, i11 = 0;
 
-        if (is_almost_zero(det2)) return null;
+        if (is_strictly_equal(det2, 0)) return null;
 
         /*
         var det = self.det();
@@ -1246,8 +1246,16 @@ var Point = makeClass(Primitive, {
     }
 });
 Geometrize.Point = Point;
+// 2D geometric Topos ie set of points
+var Topos = makeClass(Primitive, {
+    constructor: function Topos() {
+        this.$super('constructor');
+    }
+});
+Geometrize.Topos = Topos;
+
 // 2D generic Curve base class
-var Curve = makeClass(Primitive, {
+var Curve = makeClass(Topos, {
     constructor: function Curve(points, values) {
         var self = this,
             _matrix = null,
@@ -1620,7 +1628,7 @@ var CompositeCurve = makeClass(Curve, {
             curve_del;
 
         if (null == curves) curves = [];
-        Primitive.call(self);
+        Topos.call(self);
 
         curve_add = function(c) {
             if (c instanceof Curve) c.onChange(onCurveChange);
@@ -1771,7 +1779,7 @@ var CompositeCurve = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return Primitive.prototype.isChanged.apply(self, arguments);
+            return Topos.prototype.isChanged.apply(self, arguments);
         };
     },
     name: 'CompositeCurve',
@@ -1786,7 +1794,7 @@ var CompositeCurve = makeClass(Curve, {
             self.curves = null;
             self.points = null;
         }
-        Primitive.prototype.dispose.call(self);
+        Topos.prototype.dispose.call(self);
     },
     clone: function() {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.clone();}));
@@ -2492,9 +2500,8 @@ var Arc = makeClass(Curve, {
             enumerable: true,
             configurable: false
         });
-        BB = function BB(o1, o2, c, rx, ry, theta, dtheta, angle, sweep) {
-            var dtheta = self.dtheta,
-                theta2 = theta + dtheta,
+        BB = function BB(o1, o2, cx, cy, rx, ry, theta, dtheta, angle, sweep) {
+            var theta2 = theta + dtheta,
                 otherArc = false,
                 tan = stdMath.tan(rad(angle)),
                 p1, p2, p3, p4, t,
@@ -2519,15 +2526,15 @@ var Arc = makeClass(Curve, {
             // along x axis
             t = stdMath.atan2(-ry*tan, rx);
             if (t < 0) t += TWO_PI;
-            p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            p1 = arc(t, cx, cy, rx, ry, _cos, _sin);
             t += PI;
-            p2 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            p2 = arc(t, cx, cy, rx, ry, _cos, _sin);
             // along y axis
             t = stdMath.atan2(ry, rx*tan);
             if (t < 0) t += TWO_PI;
-            p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            p3 = arc(t, cx, cy, rx, ry, _cos, _sin);
             t += PI;
-            p4 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            p4 = arc(t, cx, cy, rx, ry, _cos, _sin);
             if (p2.x < p1.x)
             {
                 xmin = p2;
@@ -2549,10 +2556,10 @@ var Arc = makeClass(Curve, {
                 ymax = p3;
             }
             // refine bounding box by elliminating points not on the arc
-            txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
-            txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
-            tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
-            tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
+            txmin = vector_angle(1, 0, xmin.x - cx, xmin.y - cy);
+            txmax = vector_angle(1, 0, xmax.x - cx, xmax.y - cy);
+            tymin = vector_angle(1, 0, ymin.x - cx, ymin.y - cy);
+            tymax = vector_angle(1, 0, ymax.x - cx, ymax.y - cy);
             if (txmin < 0) txmin += TWO_PI;
             if (txmin > TWO_PI) txmin -= TWO_PI;
             if (txmax < 0) txmax += TWO_PI;
@@ -2588,43 +2595,9 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
-                    _bbox = BB(self.start, self.end, self.center, self.rX, self.rY, self.theta, self.dtheta, self.angle, self.sweep);
+                    _bbox = BB(self.start, self.end, self.center.x, self.center.y, self.rX, self.rY, self.theta, self.dtheta, self.angle, self.sweep);
                 }
                 return _bbox;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        def(self, '_hull', {
-            get: function() {
-                if (null == _hull)
-                {
-                    var Tx = -self.start.x, Ty = -self.start.y, R = -rad(self.angle),
-                        // transform curve to be aligned to x-axis
-                        m = Matrix.rotate(R).mul(Matrix.translate(Tx, Ty)),
-                        // compute transformed bounding box
-                        bb = BB(
-                            {x:0, y:0},
-                            m.transform(self.end, {x:0,y:0}),
-                            {x:self.center.x+Tx, y:self.center.y+Ty},
-                            self.rX,
-                            self.rY,
-                            0,
-                            self.dtheta,
-                            0,
-                            self.sweep
-                        ),
-                        // reverse back to original curve
-                        invm = Matrix.translate(-Tx, -Ty).mul(Matrix.rotate(-R))
-                    ;
-                    _hull = [
-                        invm.transform(new Point(bb.xmin, bb.ymin)),
-                        invm.transform(new Point(bb.xmax, bb.ymin)),
-                        invm.transform(new Point(bb.xmax, bb.ymax)),
-                        invm.transform(new Point(bb.xmin, bb.ymax))
-                    ];
-                }
-                return _hull;
             },
             enumerable: false,
             configurable: false
@@ -2806,14 +2779,18 @@ var Bezier2 = makeClass(Bezier, {
         });
         BB = function BB(p) {
             // find min/max from zeroes of directional derivative along x and y
-            var ax = p[0].x - 2*p[1].x + p[2].x,
-                px = is_strictly_equal(ax, 0) ? p[1] : bezier2((p[0].x - p[1].x)/ax, p),
-                ay = p[0].y - 2*p[1].y + p[2].y,
-                py = is_strictly_equal(ay, 0) ? p[1] : bezier2((p[0].y - p[1].y)/ay, p),
-                xmin = stdMath.min(px.x, p[0].x, p[2].x),
-                xmax = stdMath.max(px.x, p[0].x, p[2].x),
-                ymin = stdMath.min(py.y, p[0].y, p[2].y),
-                ymax = stdMath.max(py.y, p[0].y, p[2].y)
+            var tx = solve_linear(p[0].x - 2*p[1].x + p[2].x, p[1].x - p[0].x),
+                px = false === tx ? [p[1]] : tx.map(function(t) {
+                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
+                }),
+                ty = solve_linear(p[0].y - 2*p[1].y + p[2].y, p[1].y - p[0].y),
+                py = false === ty ? [p[1]] : ty.map(function(t) {
+                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
+                }),
+                xmin = stdMath.min.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
+                xmax = stdMath.max.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
+                ymin = stdMath.min.apply(stdMath, py.concat([p[0], p[2]]).map(y)),
+                ymax = stdMath.max.apply(stdMath, py.concat([p[0], p[2]]).map(y))
             ;
             return {
                 ymin: ymin,
@@ -2839,12 +2816,12 @@ var Bezier2 = makeClass(Bezier, {
                 {
                     var p = self._points,
                         // transform curve to be aligned to x-axis
-                        TR = align_curve(p),
-                        m = Matrix.rotate(TR.R).mul(Matrix.translate(TR.Tx, TR.Ty)),
+                        T = align_curve(p),
+                        m = Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty)),
                         // compute transformed bounding box
                         bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
                         // reverse back to original curve
-                        invm = Matrix.translate(-TR.Tx, -TR.Ty).mul(Matrix.rotate(-TR.R))
+                        invm = m.inv()
                     ;
                     _hull = [
                         invm.transform(new Point(bb.xmin, bb.ymin)),
@@ -2977,9 +2954,13 @@ var Bezier3 = makeClass(Bezier, {
         BB = function BB(c) {
             // find min/max from zeroes of directional derivative along x and y
             var tx = solve_quadratic(3*(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x), 2*(3*c[0].x - 6*c[1].x + 3*c[2].x), -3*c[0].x + 3*c[1].x),
-                px = false === tx ? [c[1], c[2]] : tx.map(function(t) {return bezier3(t, c);}),
+                px = false === tx ? [c[1], c[2]] : tx.map(function(t, i) {
+                    return 0 <= t && t <= 1 ? bezier3(t, c) : c[i+1];
+                }),
                 ty = solve_quadratic(3*(-c[0].y + 3*c[1].y - 3*c[2].y + c[3].y), 2*(3*c[0].y - 6*c[1].y + 3*c[2].y), -3*c[0].y + 3*c[1].y),
-                py = false === ty ? [c[1], c[2]] : ty.map(function(t) {return bezier3(t, c);}),
+                py = false === ty ? [c[1], c[2]] : ty.map(function(t, i) {
+                    return 0 <= t && t <= 1 ? bezier3(t, c) : c[i+1];
+                }),
                 xmin = stdMath.min.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
                 xmax = stdMath.max.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
                 ymin = stdMath.min.apply(stdMath, py.concat([c[0], c[3]]).map(y)),
@@ -3009,12 +2990,12 @@ var Bezier3 = makeClass(Bezier, {
                 {
                     var p = self._points,
                         // transform curve to be aligned to x-axis
-                        TR = align_curve(p),
-                        m = Matrix.rotate(TR.R).mul(Matrix.translate(TR.Tx, TR.Ty)),
+                        T = align_curve(p),
+                        m = Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty)),
                         // compute transformed bounding box
                         bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
                         // reverse back to original curve
-                        invm = Matrix.translate(-TR.Tx, -TR.Ty).mul(Matrix.rotate(-TR.R))
+                        invm = m.inv()
                     ;
                     _hull = [
                         invm.transform(new Point(bb.xmin, bb.ymin)),
@@ -4393,7 +4374,7 @@ Geometrize.Tween = Tween;
 // Plane
 // scene container for 2D geometric objects
 var Plane = makeClass(null, {
-    constructor: function Plane(dom, width, height) {
+    constructor: function Plane(dom, x0, y0, x1, y1) {
         var self = this,
             svg = null,
             svgEl = null,
@@ -4402,33 +4383,59 @@ var Plane = makeClass(null, {
             isChanged = true,
             renderSVG, renderCanvas, raf;
 
-        if (!(self instanceof Plane)) return new Plane(dom, width, height);
+        if (!(self instanceof Plane)) return new Plane(dom, x0, y0, x1, y1);
 
-        width = stdMath.abs(Num(width));
-        height = stdMath.abs(Num(height));
+        x0 = Num(x0);
+        y0 = Num(y0);
+        x1 = Num(x1);
+        y1 = Num(y1);
         objects = [];
         svgEl = {};
 
-        def(self, 'width', {
+        def(self, 'x0', {
             get: function() {
-                return width;
+                return x0;
             },
-            set: function(w) {
-                w = stdMath.abs(Num(w));
-                if (width !== w) isChanged = true;
-                width = w;
+            set: function(v) {
+                v = Num(v);
+                if (x0 !== v) isChanged = true;
+                x0 = v;
             },
             enumerable: true,
             configurable: false
         });
-        def(self, 'height', {
+        def(self, 'x1', {
             get: function() {
-                return height;
+                return x1;
             },
-            set: function(h) {
-                h = stdMath.abs(Num(h));
-                if (height !== h) isChanged = true;
-                height = h;
+            set: function(v) {
+                v = Num(v);
+                if (x1 !== v) isChanged = true;
+                x1 = v;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'y0', {
+            get: function() {
+                return y0;
+            },
+            set: function(v) {
+                v = Num(v);
+                if (y0 !== v) isChanged = true;
+                y0 = v;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'y1', {
+            get: function() {
+                return y1;
+            },
+            set: function(v) {
+                v = Num(v);
+                if (y1 !== v) isChanged = true;
+                y1 = v;
             },
             enumerable: true,
             configurable: false
@@ -4486,7 +4493,7 @@ var Plane = makeClass(null, {
         self.toSVG = function() {
             return SVG('svg', {
             'xmlns': ['http://www.w3.org/2000/svg', true],
-            'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', true]
+            'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), true]
             }, false, objects.map(function(o){return o instanceof Primitive ? o.toSVG() : '';}).join(''));
         };
         self.toCanvas = function(canvas) {
@@ -4503,14 +4510,14 @@ var Plane = makeClass(null, {
                 svg = SVG('svg', {
                 'xmlns': ['http://www.w3.org/2000/svg', false],
                 'style': ['position:absolute;width:100%;height:100%', false],
-                'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', isChanged]
+                'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), isChanged]
                 }, null);
                 dom.appendChild(svg);
             }
             else if (isChanged)
             {
                 SVG('svg', {
-                'viewBox': ['0 0 '+Str(width)+' '+Str(height)+'', isChanged]
+                'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), isChanged]
                 }, svg);
             }
             objects.forEach(function(o) {
@@ -4535,13 +4542,15 @@ var Plane = makeClass(null, {
         renderCanvas = function renderCanvas(canvas) {
             if (objects && canvas)
             {
-                canvas.style.width = Str(width)+'px';
-                canvas.style.height = Str(height)+'px';
-                canvas.setAttribute('width', Str(width)+'px');
-                canvas.setAttribute('height', Str(height)+'px');
+                var w = stdMath.abs(x1 - x0), h = stdMath.abs(y1 - y0);
+                canvas.style.width = Str(w)+'px';
+                canvas.style.height = Str(h)+'px';
+                canvas.width = w;
+                canvas.height = h;
                 var ctx = canvas.getContext('2d');
                 ctx.fillStyle = 'transparent';
-                ctx.fillRect(0, 0, width, height);
+                ctx.fillRect(0, 0, w, h);
+                ctx.translate(-x0, -y0);
                 objects.forEach(function(o) {
                     if (o instanceof Primitive)
                     {
@@ -5908,7 +5917,13 @@ Geometrize.Geometry.linearBezierCurve = bezier1;
 Geometrize.Geometry.quadraticBezierCurve = bezier2;
 Geometrize.Geometry.cubicBezierCurve = bezier3;
 Geometrize.Geometry.ellipticArcCurve = arc;
-Geometrize.Geometry.computeConvexHull = function(points) {return convex_hull(points).map(Point);};
+Geometrize.Geometry.computeConvexHull = function(points) {
+    return convex_hull(points).map(Point);
+};
+Geometrize.Geometry.alignCurve = function(curve) {
+    var T = align_curve(curve.points);
+    return Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty));
+};
 
 
 // export it

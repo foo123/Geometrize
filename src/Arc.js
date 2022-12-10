@@ -190,9 +190,8 @@ var Arc = makeClass(Curve, {
             enumerable: true,
             configurable: false
         });
-        BB = function BB(o1, o2, c, rx, ry, theta, dtheta, angle, sweep) {
-            var dtheta = self.dtheta,
-                theta2 = theta + dtheta,
+        BB = function BB(o1, o2, cx, cy, rx, ry, theta, dtheta, angle, sweep) {
+            var theta2 = theta + dtheta,
                 otherArc = false,
                 tan = stdMath.tan(rad(angle)),
                 p1, p2, p3, p4, t,
@@ -217,15 +216,15 @@ var Arc = makeClass(Curve, {
             // along x axis
             t = stdMath.atan2(-ry*tan, rx);
             if (t < 0) t += TWO_PI;
-            p1 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            p1 = arc(t, cx, cy, rx, ry, _cos, _sin);
             t += PI;
-            p2 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            p2 = arc(t, cx, cy, rx, ry, _cos, _sin);
             // along y axis
             t = stdMath.atan2(ry, rx*tan);
             if (t < 0) t += TWO_PI;
-            p3 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            p3 = arc(t, cx, cy, rx, ry, _cos, _sin);
             t += PI;
-            p4 = arc(t, c.x, c.y, rx, ry, _cos, _sin);
+            p4 = arc(t, cx, cy, rx, ry, _cos, _sin);
             if (p2.x < p1.x)
             {
                 xmin = p2;
@@ -247,10 +246,10 @@ var Arc = makeClass(Curve, {
                 ymax = p3;
             }
             // refine bounding box by elliminating points not on the arc
-            txmin = vector_angle(1, 0, xmin.x - c.x, xmin.y - c.y);
-            txmax = vector_angle(1, 0, xmax.x - c.x, xmax.y - c.y);
-            tymin = vector_angle(1, 0, ymin.x - c.x, ymin.y - c.y);
-            tymax = vector_angle(1, 0, ymax.x - c.x, ymax.y - c.y);
+            txmin = vector_angle(1, 0, xmin.x - cx, xmin.y - cy);
+            txmax = vector_angle(1, 0, xmax.x - cx, xmax.y - cy);
+            tymin = vector_angle(1, 0, ymin.x - cx, ymin.y - cy);
+            tymax = vector_angle(1, 0, ymax.x - cx, ymax.y - cy);
             if (txmin < 0) txmin += TWO_PI;
             if (txmin > TWO_PI) txmin -= TWO_PI;
             if (txmax < 0) txmax += TWO_PI;
@@ -286,43 +285,9 @@ var Arc = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
-                    _bbox = BB(self.start, self.end, self.center, self.rX, self.rY, self.theta, self.dtheta, self.angle, self.sweep);
+                    _bbox = BB(self.start, self.end, self.center.x, self.center.y, self.rX, self.rY, self.theta, self.dtheta, self.angle, self.sweep);
                 }
                 return _bbox;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        def(self, '_hull', {
-            get: function() {
-                if (null == _hull)
-                {
-                    var Tx = -self.start.x, Ty = -self.start.y, R = -rad(self.angle),
-                        // transform curve to be aligned to x-axis
-                        m = Matrix.rotate(R).mul(Matrix.translate(Tx, Ty)),
-                        // compute transformed bounding box
-                        bb = BB(
-                            {x:0, y:0},
-                            m.transform(self.end, {x:0,y:0}),
-                            {x:self.center.x+Tx, y:self.center.y+Ty},
-                            self.rX,
-                            self.rY,
-                            0,
-                            self.dtheta,
-                            0,
-                            self.sweep
-                        ),
-                        // reverse back to original curve
-                        invm = Matrix.translate(-Tx, -Ty).mul(Matrix.rotate(-R))
-                    ;
-                    _hull = [
-                        invm.transform(new Point(bb.xmin, bb.ymin)),
-                        invm.transform(new Point(bb.xmax, bb.ymin)),
-                        invm.transform(new Point(bb.xmax, bb.ymax)),
-                        invm.transform(new Point(bb.xmin, bb.ymax))
-                    ];
-                }
-                return _hull;
             },
             enumerable: false,
             configurable: false

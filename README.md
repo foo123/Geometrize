@@ -4,7 +4,7 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 0.6.0** (76 kB minified)
+**version: 0.8.0** (78 kB minified)
 
 Examples:
 
