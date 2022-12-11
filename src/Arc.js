@@ -382,6 +382,8 @@ var Arc = makeClass(Curve, {
     },
     bezierPoints: function() {
         var c = this.center,
+            cx = c.x,
+            cy = c.y,
             rx = this.rX,
             ry = this.rY,
             cs = this.cs,
@@ -390,15 +392,16 @@ var Arc = makeClass(Curve, {
             theta = this.theta,
             dtheta = this.dtheta,
             r = 2*abs(dtheta)/PI,
-            i, j, n, beziers
+            i, n, beziers
         ;
         if (is_almost_equal(r, 1)) r = 1;
+        if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
         n = stdMath.max(1, stdMath.ceil(r));
         dtheta /= n;
         beziers = new Array(n);
-        for (j=0,i=0; i<n; ++i,j=1-j,theta+=dtheta)
+        for (i=0; i<n; ++i,theta+=dtheta)
         {
-            beziers[i] = arc2bezier(theta, dtheta, c.x, c.y, rx, ry, cos, sin/*, j*/);
+            beziers[i] = arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin);
         }
         return beziers;
     },
@@ -424,13 +427,15 @@ var Arc = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
+        this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
         var c = this.center, rx = this.rX, ry = this.rY, fs = !this.sweep,
             a = rad(this.angle), t1 = this.theta, t2 = t1 + this.dtheta;
-        ctx.beginPath();
-        this.style.toCanvas(ctx);
         ctx.ellipse(c.x, c.y, rx, ry, a, t1, t2, fs);
-        ctx.stroke();
-        //ctx.closePath();
     },
     toTex: function() {
         return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ? 1 : 0)].join(',')+'\\right)';

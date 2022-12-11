@@ -894,7 +894,7 @@ function arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin, reverse)
     }
     if (null == ry) ry = rx;
     var f = is_almost_equal(2*abs(dtheta), PI)
-        ? sign(dtheta)*0.551915024494/*0.55228*/
+        ? sign(dtheta)*/*0.55228*/0.551915024494
         : stdMath.tan(dtheta/4)*4/3,
         x1 = stdMath.cos(theta),
         y1 = stdMath.sin(theta),
@@ -923,11 +923,14 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
         L = px/prx + py/pry;
 
     // correct out-of-range radii
-    L = sqrt(L);
-    rx *= L;
-    ry *= L;
-    prx = rx*rx;
-    pry = ry*ry;
+    if (L > 1)
+    {
+        L = sqrt(L);
+        rx *= L;
+        ry *= L;
+        prx = rx*rx;
+        pry = ry*ry;
+    }
 
     // Step 2 + 3: compute center
     var M = sqrt(abs((prx*pry - prx*py - pry*px)/(prx*py + pry*px)))*(fa === fs ? -1 : 1),
@@ -940,15 +943,16 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 
     // Step 4: compute θ and dθ
     var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry),
-        dtheta = deg(vector_angle(
+        dtheta = vector_angle(
             (x - _cx)/rx, (y - _cy)/ry,
             (-x - _cx)/rx, (-y - _cy)/ry
-        )) % 360;
+        );
+    dtheta -= stdMath.floor(dtheta / TWO_PI)*TWO_PI;
 
-    if (!fs && dtheta > 0) dtheta -= 360;
-    if (fs && dtheta < 0) dtheta += 360;
+    if (!fs && dtheta > 0) dtheta -= TWO_PI;
+    if (fs && dtheta < 0) dtheta += TWO_PI;
 
-    return [{x:cx, y:cy}, theta, rad(dtheta), rx, ry];
+    return [{x:cx, y:cy}, theta, dtheta, rx, ry];
 }
 function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
 {
@@ -999,11 +1003,11 @@ var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
     dx = abs(dx);
     dy = abs(dy)
     var r = 0;
-    if (0 === dx)
+    if (is_strictly_equal(dx, 0))
     {
         return dy;
     }
-    else if (0 === dy)
+    else if (is_strictly_equal(dy, 0))
     {
         return dx;
     }
@@ -1029,12 +1033,14 @@ function crossp(x1, y1, x2, y2)
 }
 function angle(x1, y1, x2, y2)
 {
-    var n1 = hypot(x1, y1), n2 = hypot(x2, y2);
-    return is_strictly_equal(n1, 0) || is_strictly_equal(n2, 0) ? 0 : stdMath.acos(clamp(dotp(x1, y1, x2, y2)/n1/n2, -1, 1));
+    var n1 = hypot(x1, y1), n2 = hypot(x2, y2), dot = 0;
+    if (is_strictly_equal(n1, 0) || is_strictly_equal(n2, 0)) return 0;
+    dot = dotp(x1/n1, y1/n1, x2/n2, y2/n2);
+    return stdMath.acos(clamp(dot, -1, 1));
 }
 function vector_angle(ux, uy, vx, vy)
 {
-    return sign(ux*vy - uy*vx)*angle(ux, uy, vx, vy);
+    return sign(crossp(ux, uy, vx, vy))*angle(ux, uy, vx, vy);
 }
 
 // ----------------------

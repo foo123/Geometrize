@@ -185,12 +185,15 @@ var Bezier1 = makeClass(Bezier, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p1 = this._points[0], p2 = this._points[1];
-        ctx.beginPath();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p1 = this._points[0], p2 = this._points[1];
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
-        ctx.stroke();
     },
     toTex: function() {
         var p1 = this.start, p2 = this.end;

@@ -175,8 +175,7 @@ var Plane = makeClass(null, {
                 canvas.width = w;
                 canvas.height = h;
                 var ctx = canvas.getContext('2d');
-                ctx.fillStyle = 'transparent';
-                ctx.fillRect(0, 0, w, h);
+                ctx.clearRect(0, 0, w, h);
                 ctx.translate(-x0, -y0);
                 objects.forEach(function(o) {
                     if (o instanceof Primitive)

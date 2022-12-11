@@ -4,7 +4,9 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 0.8.0** (78 kB minified)
+**version: 0.9.0** (82 kB minified)
+
+![geometrize animation](/geo.gif)
 
 Examples:
 

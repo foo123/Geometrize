@@ -558,7 +558,7 @@ var CompositeCurve = makeClass(Curve, {
                 return m0;
             }
         });
-        //if (this.isClosed()) path += ' Z';
+        if (this.isClosed()) path += ' Z';
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -566,12 +566,21 @@ var CompositeCurve = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        ctx.beginPath();
+        var isClosed = this.isClosed();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        if (isClosed)
+        {
+            ctx.closePath();
+            if ('none' !== this.style['fill']) ctx.fill();
+        }
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
         this.curves.forEach(function(c) {
-            c.toCanvas(ctx);
+            c.toCanvasPath(ctx);
         });
-        //if (this.isClosed()) ctx.closePath();
     },
     toTex: function() {
         return '\\text{CompositeCurve: }\\begin{cases}&'+this.curves.map(Tex).join('\\\\&')+'\\end{cases}';

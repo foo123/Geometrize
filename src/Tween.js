@@ -433,19 +433,22 @@ var Tween = makeClass(Primitive, {
             return self.toSVGPath(arguments.length ? svg : false);
         };
         self.toCanvas = function(ctx) {
-            ctx.beginPath();
             ctx.lineWidth = this.style['stroke-width'];
             ctx.strokeStyle = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']])) : (tween.current.style['stroke'] || this.style['stroke']);
             if (tween.current.style['fill'])
             {
                 ctx.fillStyle = tween.current.style.hasFill ? Color.toCSS(tween.current.style['fill'].concat([tween.current.style['fill-opacity']])) : tween.current.style['fill'];
             }
+            ctx.beginPath();
+            self.toCanvasPath(ctx);
+            if (tween.current.style['fill']) ctx.fill();
+            ctx.stroke();
+        };
+        self.toCanvasPath = function(ctx) {
             tween.current.shape.forEach(function(cb) {
                 ctx.moveTo(cb[0].x, cb[0].y);
                 ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);
-            })
-            if (tween.current.style['fill']) ctx.fill();
-            ctx.stroke();
+            });
         };
         self.dispose = function() {
             run = false;

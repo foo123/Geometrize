@@ -275,13 +275,16 @@ var Ellipse = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
-        ctx.beginPath();
         this.style.toCanvas(ctx);
-        ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.closePath();
         if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
-        //ctx.closePath();
+    },
+    toCanvasPath: function(ctx) {
+        var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
+        ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
     },
     toTex: function() {
         var a = Str(this.angle)+'\\text{°}',

@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.8.0 (2022-12-11 13:57:04)
+*   @version 0.9.0 (2022-12-11 17:57:16)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.8.0 (2022-12-11 13:57:04)
+*   @version 0.9.0 (2022-12-11 17:57:16)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.8.0", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "0.9.0", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -909,7 +909,7 @@ var Style = makeClass(null, merge(null, {
         ctx.lineCap = this['stroke-linecap'];
         ctx.lineJoin = this['stroke-linejoin'];
         ctx.lineWidth = this['stroke-width'];
-        ctx.fillStyle = this['fill'];
+        ctx.fillStyle = 'none' === this['fill'] ? 'transparent' : this['fill'];
         ctx.strokeStyle = this['stroke'];
         return ctx;
     }
@@ -1038,6 +1038,8 @@ var Primitive = makeClass(null, merge(null, {
         return arguments.length ? svg : '';
     },
     toCanvas: function(ctx) {
+    },
+    toCanvasPath: function(ctx) {
     },
     toTex: function() {
         return '\\text{Primitive}';
@@ -1220,13 +1222,12 @@ var Point = makeClass(Primitive, {
             'cx': [this.x, this.isChanged()],
             'cy': [this.y, this.isChanged()],
             'r': [this.style['stroke-width'], this.style.isChanged()],
-            //'transform': [this.matrix.toSVG(), this.isChanged()],
             'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
         var c = this, r = this.style['stroke-width'],
-            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 Z';
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -1235,10 +1236,12 @@ var Point = makeClass(Primitive, {
     },
     toCanvas: function(ctx) {
         ctx.beginPath();
-        ctx.fillStyle = this.style['stroke'];
-        ctx.arc(this.x, this.y, this.style['stroke-width'], 0, TWO_PI);
+        this.toCanvasPath(ctx);
+        ctx.closePath();
         ctx.fill();
-        //ctx.closePath();
+    },
+    toCanvasPath: function(ctx) {
+        ctx.arc(this.x, this.y, this.style['stroke-width'], 0, TWO_PI);
     },
     toTex: function() {
         return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';
@@ -1948,7 +1951,7 @@ var CompositeCurve = makeClass(Curve, {
                 return m0;
             }
         });
-        //if (this.isClosed()) path += ' Z';
+        if (this.isClosed()) path += ' Z';
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -1956,12 +1959,21 @@ var CompositeCurve = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        ctx.beginPath();
+        var isClosed = this.isClosed();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        if (isClosed)
+        {
+            ctx.closePath();
+            if ('none' !== this.style['fill']) ctx.fill();
+        }
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
         this.curves.forEach(function(c) {
-            c.toCanvas(ctx);
+            c.toCanvasPath(ctx);
         });
-        //if (this.isClosed()) ctx.closePath();
     },
     toTex: function() {
         return '\\text{CompositeCurve: }\\begin{cases}&'+this.curves.map(Tex).join('\\\\&')+'\\end{cases}';
@@ -2158,12 +2170,15 @@ var Bezier1 = makeClass(Bezier, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p1 = this._points[0], p2 = this._points[1];
-        ctx.beginPath();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p1 = this._points[0], p2 = this._points[1];
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
-        ctx.stroke();
     },
     toTex: function() {
         var p1 = this.start, p2 = this.end;
@@ -2392,13 +2407,20 @@ var Polyline = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p = this._points, n = p.length;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        if (this.isClosed())
+        {
+            ctx.closePath();
+            if ('none' !== this.style['fill']) ctx.fill();
+        }
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._points, n = p.length;
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
-        if (this.isClosed() && ('none' !== this.style['fill'])) ctx.fill();
-        ctx.stroke();
     },
     toTex: function() {
         var lines = this.lines;
@@ -2793,6 +2815,8 @@ var Arc = makeClass(Curve, {
     },
     bezierPoints: function() {
         var c = this.center,
+            cx = c.x,
+            cy = c.y,
             rx = this.rX,
             ry = this.rY,
             cs = this.cs,
@@ -2801,15 +2825,16 @@ var Arc = makeClass(Curve, {
             theta = this.theta,
             dtheta = this.dtheta,
             r = 2*abs(dtheta)/PI,
-            i, j, n, beziers
+            i, n, beziers
         ;
         if (is_almost_equal(r, 1)) r = 1;
+        if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
         n = stdMath.max(1, stdMath.ceil(r));
         dtheta /= n;
         beziers = new Array(n);
-        for (j=0,i=0; i<n; ++i,j=1-j,theta+=dtheta)
+        for (i=0; i<n; ++i,theta+=dtheta)
         {
-            beziers[i] = arc2bezier(theta, dtheta, c.x, c.y, rx, ry, cos, sin/*, j*/);
+            beziers[i] = arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin);
         }
         return beziers;
     },
@@ -2835,13 +2860,15 @@ var Arc = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
+        this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
         var c = this.center, rx = this.rX, ry = this.rY, fs = !this.sweep,
             a = rad(this.angle), t1 = this.theta, t2 = t1 + this.dtheta;
-        ctx.beginPath();
-        this.style.toCanvas(ctx);
         ctx.ellipse(c.x, c.y, rx, ry, a, t1, t2, fs);
-        ctx.stroke();
-        //ctx.closePath();
     },
     toTex: function() {
         return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ? 1 : 0)].join(',')+'\\right)';
@@ -3016,12 +3043,15 @@ var Bezier2 = makeClass(Bezier, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p = this._points;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._points;
         ctx.moveTo(p[0].x, p[0].y);
         ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
-        ctx.stroke();
     }
 });
 Geometrize.QBezier = Geometrize.Bezier2 = Bezier2;
@@ -3195,12 +3225,15 @@ var Bezier3 = makeClass(Bezier, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p = this._points;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._points;
         ctx.moveTo(p[0].x, p[0].y);
         ctx.bezierCurveTo(p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
-        ctx.stroke();
     }
 });
 Geometrize.CBezier = Geometrize.Bezier3 = Bezier3;
@@ -3426,13 +3459,17 @@ var Polygon = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p = this._lines, n = p.length;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
-        ctx.moveTo(p[0].x, p[0].y);
-        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.closePath();
         if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._lines, n = p.length;
+        ctx.moveTo(p[0].x, p[0].y);
+        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
     },
     toTex: function() {
         return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';
@@ -3671,13 +3708,16 @@ var Circle = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var c = this.center, r = this.radius;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
-        ctx.arc(c.x, c.x, r, 0, TWO_PI);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.closePath();
         if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
-        //ctx.closePath();
+    },
+    toCanvasPath: function(ctx) {
+        var c = this.center, r = this.radius;
+        ctx.arc(c.x, c.x, r, 0, TWO_PI);
     },
     toTex: function() {
         var c = this.center, r = Str(this.radius);
@@ -3965,13 +4005,16 @@ var Ellipse = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
-        ctx.beginPath();
         this.style.toCanvas(ctx);
-        ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.closePath();
         if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
-        //ctx.closePath();
+    },
+    toCanvasPath: function(ctx) {
+        var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
+        ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
     },
     toTex: function() {
         var a = Str(this.angle)+'\\text{°}',
@@ -4422,19 +4465,22 @@ var Tween = makeClass(Primitive, {
             return self.toSVGPath(arguments.length ? svg : false);
         };
         self.toCanvas = function(ctx) {
-            ctx.beginPath();
             ctx.lineWidth = this.style['stroke-width'];
             ctx.strokeStyle = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']])) : (tween.current.style['stroke'] || this.style['stroke']);
             if (tween.current.style['fill'])
             {
                 ctx.fillStyle = tween.current.style.hasFill ? Color.toCSS(tween.current.style['fill'].concat([tween.current.style['fill-opacity']])) : tween.current.style['fill'];
             }
+            ctx.beginPath();
+            self.toCanvasPath(ctx);
+            if (tween.current.style['fill']) ctx.fill();
+            ctx.stroke();
+        };
+        self.toCanvasPath = function(ctx) {
             tween.current.shape.forEach(function(cb) {
                 ctx.moveTo(cb[0].x, cb[0].y);
                 ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);
-            })
-            if (tween.current.style['fill']) ctx.fill();
-            ctx.stroke();
+            });
         };
         self.dispose = function() {
             run = false;
@@ -4649,8 +4695,7 @@ var Plane = makeClass(null, {
                 canvas.width = w;
                 canvas.height = h;
                 var ctx = canvas.getContext('2d');
-                ctx.fillStyle = 'transparent';
-                ctx.fillRect(0, 0, w, h);
+                ctx.clearRect(0, 0, w, h);
                 ctx.translate(-x0, -y0);
                 objects.forEach(function(o) {
                     if (o instanceof Primitive)
@@ -5568,7 +5613,7 @@ function arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin, reverse)
     }
     if (null == ry) ry = rx;
     var f = is_almost_equal(2*abs(dtheta), PI)
-        ? sign(dtheta)*0.551915024494/*0.55228*/
+        ? sign(dtheta)*/*0.55228*/0.551915024494
         : stdMath.tan(dtheta/4)*4/3,
         x1 = stdMath.cos(theta),
         y1 = stdMath.sin(theta),
@@ -5597,11 +5642,14 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
         L = px/prx + py/pry;
 
     // correct out-of-range radii
-    L = sqrt(L);
-    rx *= L;
-    ry *= L;
-    prx = rx*rx;
-    pry = ry*ry;
+    if (L > 1)
+    {
+        L = sqrt(L);
+        rx *= L;
+        ry *= L;
+        prx = rx*rx;
+        pry = ry*ry;
+    }
 
     // Step 2 + 3: compute center
     var M = sqrt(abs((prx*pry - prx*py - pry*px)/(prx*py + pry*px)))*(fa === fs ? -1 : 1),
@@ -5614,15 +5662,16 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 
     // Step 4: compute θ and dθ
     var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry),
-        dtheta = deg(vector_angle(
+        dtheta = vector_angle(
             (x - _cx)/rx, (y - _cy)/ry,
             (-x - _cx)/rx, (-y - _cy)/ry
-        )) % 360;
+        );
+    dtheta -= stdMath.floor(dtheta / TWO_PI)*TWO_PI;
 
-    if (!fs && dtheta > 0) dtheta -= 360;
-    if (fs && dtheta < 0) dtheta += 360;
+    if (!fs && dtheta > 0) dtheta -= TWO_PI;
+    if (fs && dtheta < 0) dtheta += TWO_PI;
 
-    return [{x:cx, y:cy}, theta, rad(dtheta), rx, ry];
+    return [{x:cx, y:cy}, theta, dtheta, rx, ry];
 }
 function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
 {
@@ -5673,11 +5722,11 @@ var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
     dx = abs(dx);
     dy = abs(dy)
     var r = 0;
-    if (0 === dx)
+    if (is_strictly_equal(dx, 0))
     {
         return dy;
     }
-    else if (0 === dy)
+    else if (is_strictly_equal(dy, 0))
     {
         return dx;
     }
@@ -5703,12 +5752,14 @@ function crossp(x1, y1, x2, y2)
 }
 function angle(x1, y1, x2, y2)
 {
-    var n1 = hypot(x1, y1), n2 = hypot(x2, y2);
-    return is_strictly_equal(n1, 0) || is_strictly_equal(n2, 0) ? 0 : stdMath.acos(clamp(dotp(x1, y1, x2, y2)/n1/n2, -1, 1));
+    var n1 = hypot(x1, y1), n2 = hypot(x2, y2), dot = 0;
+    if (is_strictly_equal(n1, 0) || is_strictly_equal(n2, 0)) return 0;
+    dot = dotp(x1/n1, y1/n1, x2/n2, y2/n2);
+    return stdMath.acos(clamp(dot, -1, 1));
 }
 function vector_angle(ux, uy, vx, vy)
 {
-    return sign(ux*vy - uy*vx)*angle(ux, uy, vx, vy);
+    return sign(crossp(ux, uy, vx, vy))*angle(ux, uy, vx, vy);
 }
 
 // ----------------------

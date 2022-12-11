@@ -213,13 +213,20 @@ var Polyline = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p = this._points, n = p.length;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        if (this.isClosed())
+        {
+            ctx.closePath();
+            if ('none' !== this.style['fill']) ctx.fill();
+        }
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._points, n = p.length;
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
-        if (this.isClosed() && ('none' !== this.style['fill'])) ctx.fill();
-        ctx.stroke();
     },
     toTex: function() {
         var lines = this.lines;

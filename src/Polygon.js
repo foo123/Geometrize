@@ -220,13 +220,17 @@ var Polygon = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p = this._lines, n = p.length;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
-        ctx.moveTo(p[0].x, p[0].y);
-        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.closePath();
         if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._lines, n = p.length;
+        ctx.moveTo(p[0].x, p[0].y);
+        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
     },
     toTex: function() {
         return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';

@@ -168,12 +168,15 @@ var Bezier3 = makeClass(Bezier, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var p = this._points;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._points;
         ctx.moveTo(p[0].x, p[0].y);
         ctx.bezierCurveTo(p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
-        ctx.stroke();
     }
 });
 Geometrize.CBezier = Geometrize.Bezier3 = Bezier3;

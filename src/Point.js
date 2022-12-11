@@ -171,13 +171,12 @@ var Point = makeClass(Primitive, {
             'cx': [this.x, this.isChanged()],
             'cy': [this.y, this.isChanged()],
             'r': [this.style['stroke-width'], this.style.isChanged()],
-            //'transform': [this.matrix.toSVG(), this.isChanged()],
             'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
         var c = this, r = this.style['stroke-width'],
-            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 Z';
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -186,10 +185,12 @@ var Point = makeClass(Primitive, {
     },
     toCanvas: function(ctx) {
         ctx.beginPath();
-        ctx.fillStyle = this.style['stroke'];
-        ctx.arc(this.x, this.y, this.style['stroke-width'], 0, TWO_PI);
+        this.toCanvasPath(ctx);
+        ctx.closePath();
         ctx.fill();
-        //ctx.closePath();
+    },
+    toCanvasPath: function(ctx) {
+        ctx.arc(this.x, this.y, this.style['stroke-width'], 0, TWO_PI);
     },
     toTex: function() {
         return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';

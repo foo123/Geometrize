@@ -101,6 +101,8 @@ var Primitive = makeClass(null, merge(null, {
     },
     toCanvas: function(ctx) {
     },
+    toCanvasPath: function(ctx) {
+    },
     toTex: function() {
         return '\\text{Primitive}';
     },

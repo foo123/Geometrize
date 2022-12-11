@@ -166,13 +166,16 @@ var Circle = makeClass(Curve, {
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var c = this.center, r = this.radius;
-        ctx.beginPath();
         this.style.toCanvas(ctx);
-        ctx.arc(c.x, c.x, r, 0, TWO_PI);
+        ctx.beginPath();
+        this.toCanvasPath(ctx);
+        ctx.closePath();
         if ('none' !== this.style['fill']) ctx.fill();
         ctx.stroke();
-        //ctx.closePath();
+    },
+    toCanvasPath: function(ctx) {
+        var c = this.center, r = this.radius;
+        ctx.arc(c.x, c.x, r, 0, TWO_PI);
     },
     toTex: function() {
         var c = this.center, r = Str(this.radius);

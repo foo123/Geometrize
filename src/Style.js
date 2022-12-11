@@ -53,7 +53,7 @@ var Style = makeClass(null, merge(null, {
         ctx.lineCap = this['stroke-linecap'];
         ctx.lineJoin = this['stroke-linejoin'];
         ctx.lineWidth = this['stroke-width'];
-        ctx.fillStyle = this['fill'];
+        ctx.fillStyle = 'none' === this['fill'] ? 'transparent' : this['fill'];
         ctx.strokeStyle = this['stroke'];
         return ctx;
     }

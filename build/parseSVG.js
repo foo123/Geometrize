@@ -22,7 +22,8 @@ var TAG = /<(\/)?([a-z0-9_\-:]+?)\b\s*([^<>]*)\/?>/im,
     COMMAND = /[MLHVCSQTAZ]/gi,
     TRANSFORM = /(matrix|scale|rotate|translate|skewX|skewY)\s*\(([^\(\)]*)\)/im,
     NUMBER = /-?(?:(?:\d+\.\d+)|(?:\.\d+)|(?:\d+))/g,
-    HAS = Object.prototype.hasOwnProperty, stdMath = Math
+    HAS = Object.prototype.hasOwnProperty, stdMath = Math,
+    EMPTY_OBJ = {}
 ;
 function trim(s)
 {
@@ -30,10 +31,7 @@ function trim(s)
 }
 function parse_number(s)
 {
-    s = s || '';
-    //if ('-.' === s.slice(0, 2)) s = '-0.' + s.slice(2);
-    //else if ('.' === s.slice(0, 1)) s = '0' + s;
-    return parseFloat(s) || 0;
+    return parseFloat(s || '') || 0;
 }
 function parse_style(atts)
 {
@@ -46,14 +44,18 @@ function parse_style(atts)
     'fill':1,
     'fill-opacity':1,
     'fill-rule':1
-    }, isNum = {'stroke-width':1,'stroke-opacity':1,'fill-opacity':1};
+    }, isNum = {
+    'stroke-width':1,
+    'stroke-opacity':1,
+    'fill-opacity':1
+    };
     var style = trim((atts['style']||'')).split(';').reduce(function(s, e) {
-        var kv = trim(e).split(':'), k = kv[0], v = kv.slice(1).join(':');
+        var kv = trim(e).split(':'), k = trim(kv[0]), v = trim(kv.slice(1).join(':'));
         if (HAS.call(styleProperties, k)) s[k] = 1 === isNum[k] ? parse_number(v) : v;
         return s;
     }, {});
     Object.keys(styleProperties).forEach(function(k) {
-        if (HAS.call(atts, k)) style[k] = 1 === isNum[k] ? parse_number(atts[k]) : atts[k];
+        if (HAS.call(atts, k)) style[k] = 1 === isNum[k] ? parse_number(atts[k]) : trim(atts[k]);
     });
     return style;
 }
@@ -69,9 +71,8 @@ function parse_transform(atts)
 }
 function parse_path(d)
 {
-    d = trim(String(d)).replace('-', ' -');
-    var c = d.match(COMMAND), p = d.split(COMMAND),
-        prev = [0,0], start = prev;
+    d = trim(String(d));
+    var c = d.match(COMMAND), p = d.split(COMMAND), curr = [0,0], start = curr;
     return c ? c.reduce(function(a, c, i) {
         var isRelative = c === c.toLowerCase(),
             pp = (trim(p[i+1] || '').match(NUMBER) || []).map(parse_number),
@@ -79,141 +80,187 @@ function parse_path(d)
         switch (c.toUpperCase())
         {
             case 'M':
-                prev = [
-                (isRelative ? prev[0] : 0) + pp[0],
-                (isRelative ? prev[1] : 0) + pp[1]
+            if (2 <= pp.length)
+            {
+                curr = [
+                (isRelative ? curr[0] : 0) + pp[0],
+                (isRelative ? curr[1] : 0) + pp[1]
                 ];
-                start = prev;
-                break;
+                start = curr;
+            }
+            break;
             case 'H':
-                while (1 <= pp.length)
-                {
-                    p1 = [prev[0], prev[1]];
-                    p2 = [
-                    (isRelative ? prev[0] : 0) + pp.shift(),
-                    prev[1]
-                    ];
-                    prev = p2;
-                    a.push({
-                    type: 'Line',
-                    points: [p1, p2]
-                    });
-                }
-                break;
-            case 'V':
-                while (1 <= pp.length)
-                {
-                    p1 = [prev[0], prev[1]];
-                    p2 = [
-                    prev[0],
-                    (isRelative ? prev[1] : 0) + pp.shift()
-                    ];
-                    prev = p2;
-                    a.push({
-                    type: 'Line',
-                    points: [p1, p2]
-                    });
-                }
-                break;
-            case 'L':
-                while (2 <= pp.length)
-                {
-                    p1 = [prev[0], prev[1]];
-                    p2 = [
-                    (isRelative ? prev[0] : 0) + pp.shift(),
-                    (isRelative ? prev[1] : 0) + pp.shift()
-                    ];
-                    prev = p2;
-                    a.push({
-                    type: 'Line',
-                    points: [p1, p2]
-                    });
-                }
-                break;
-            case 'A':
-                while (7 <= pp.length)
-                {
-                    tmp = {
-                        start: null,
-                        end: null,
-                        radiusX: pp.shift(),
-                        radiusY: pp.shift(),
-                        angle: pp.shift(),
-                        largeArc: pp.shift(),
-                        sweep: pp.shift()
-                    }
-                    p1 = [prev[0], prev[1]];
-                    p2 = [
-                    (isRelative ? prev[0] : 0) + pp.shift(),
-                    (isRelative ? prev[1] : 0) + pp.shift()
-                    ];
-                    prev = p2;
-                    tmp.start = p1;
-                    tmp.end = p2;
-                    a.push({
-                    type: 'Arc',
-                    params: tmp
-                    });
-                }
-                break;
-            case 'Q':
-                while (4 <= pp.length)
-                {
-                    p1 = [prev[0], prev[1]];
-                    p2 = [
-                    (isRelative ? prev[0] : 0) + pp.shift(),
-                    (isRelative ? prev[1] : 0) + pp.shift()
-                    ];
-                    p3 = [
-                    (isRelative ? prev[0] : 0) + pp.shift(),
-                    (isRelative ? prev[1] : 0) + pp.shift()
-                    ];
-                    prev = p3;
-                    a.push({
-                    type: 'Quadratic',
-                    points: [p1, p2, p3]
-                    });
-                }
-                break;
-            case 'C':
-                while (6 <= pp.length)
-                {
-                    p1 = [prev[0], prev[1]];
-                    p2 = [
-                    (isRelative ? prev[0] : 0) + pp.shift(),
-                    (isRelative ? prev[1] : 0) + pp.shift()
-                    ];
-                    p3 = [
-                    (isRelative ? prev[0] : 0) + pp.shift(),
-                    (isRelative ? prev[1] : 0) + pp.shift()
-                    ];
-                    p4 = [
-                    (isRelative ? prev[0] : 0) + pp.shift(),
-                    (isRelative ? prev[1] : 0) + pp.shift()
-                    ];
-                    prev = p4;
-                    a.push({
-                    type: 'Cubic',
-                    points: [p1, p2, p3, p4]
-                    });
-                }
-                break;
-            case 'Z':
-                p1 = [prev[0], prev[1]],
-                p2 = [start[0], start[1]];
-                prev = p2;
-                start = prev;
+            while (1 <= pp.length)
+            {
+                p1 = [curr[0], curr[1]];
+                p2 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                p1[1]
+                ];
+                curr = p2;
                 a.push({
                 type: 'Line',
                 points: [p1, p2],
-                Z: true
+                H: true
                 });
-                break;
-            // ignore those for now
-            case 'S':
+            }
+            break;
+            case 'V':
+            while (1 <= pp.length)
+            {
+                p1 = [curr[0], curr[1]];
+                p2 = [
+                p1[0],
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                curr = p2;
+                a.push({
+                type: 'Line',
+                points: [p1, p2],
+                V: true
+                });
+            }
+            break;
+            case 'L':
+            while (2 <= pp.length)
+            {
+                p1 = [curr[0], curr[1]];
+                p2 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                curr = p2;
+                a.push({
+                type: 'Line',
+                points: [p1, p2]
+                });
+            }
+            break;
+            case 'A':
+            while (7 <= pp.length)
+            {
+                tmp = {
+                    start: null,
+                    end: null,
+                    radiusX: pp.shift(),
+                    radiusY: pp.shift(),
+                    angle: pp.shift(),
+                    largeArc: pp.shift(),
+                    sweep: pp.shift()
+                };
+                p1 = [curr[0], curr[1]];
+                p2 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                curr = p2;
+                tmp.start = p1;
+                tmp.end = p2;
+                a.push({
+                type: 'Arc',
+                params: tmp
+                });
+            }
+            break;
+            case 'Q':
+            while (4 <= pp.length)
+            {
+                p1 = [curr[0], curr[1]];
+                p2 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                p3 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                curr = p3;
+                a.push({
+                type: 'Quadratic',
+                points: [p1, p2, p3]
+                });
+            }
+            break;
             case 'T':
-            default:
-                break;
+            while (2 <= pp.length)
+            {
+                tmp = a.length ? a[a.length-1] : EMPTY_OBJ;
+                p1 = [curr[0], curr[1]];
+                p3 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                p2 = 'Quadratic' === tmp.type ? [
+                2*p1[0] - tmp.points[1][0],
+                2*p1[1] - tmp.points[1][1],
+                ] : [p1[0], p1[1]];
+                curr = p3;
+                a.push({
+                type: 'Quadratic',
+                points: [p1, p2, p3],
+                T: true
+                });
+            }
+            break;
+            case 'C':
+            while (6 <= pp.length)
+            {
+                p1 = [curr[0], curr[1]];
+                p2 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                p3 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                p4 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                curr = p4;
+                a.push({
+                type: 'Cubic',
+                points: [p1, p2, p3, p4]
+                });
+            }
+            break;
+            case 'S':
+            while (4 <= pp.length)
+            {
+                tmp = a.length ? a[a.length-1] : EMPTY_OBJ;
+                p1 = [curr[0], curr[1]];
+                p3 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                p4 = [
+                (isRelative ? p1[0] : 0) + pp.shift(),
+                (isRelative ? p1[1] : 0) + pp.shift()
+                ];
+                p2 = 'Cubic' === tmp.type ? [
+                2*p1[0] - tmp.points[2][0],
+                2*p1[1] - tmp.points[2][1],
+                ] : [p1[0], p1[1]];
+                curr = p4;
+                a.push({
+                type: 'Cubic',
+                points: [p1, p2, p3, p4],
+                S: true
+                });
+            }
+            break;
+            case 'Z':
+            p1 = [curr[0], curr[1]],
+            p2 = [start[0], start[1]];
+            curr = p2;
+            start = curr;
+            a.push({
+            type: 'Line',
+            points: [p1, p2],
+            Z: true
+            });
+            break;
         }
         return a;
     }, []) : [];
@@ -234,11 +281,10 @@ function parse_tag(s, cursor)
     s = s.slice(i);
     if (m=s.match(TAG))
     {
+        cursor.index = i + m.index + m[0].length;
         if ('/' === m[1])
         {
-            cursor.index = i + m.index + m[0].length;
             return {
-                match: m[0],
                 tag: m[2].toLowerCase(),
                 end: true
             };
@@ -248,9 +294,7 @@ function parse_tag(s, cursor)
             var atts = parse_atts(m[3]);
             atts.style = parse_style(atts);
             atts.transform = parse_transform(atts);
-            cursor.index = i + m.index + m[0].length;
             return {
-                match: m[0],
                 tag: m[2].toLowerCase(),
                 atts: atts
             };
@@ -269,12 +313,12 @@ function parse(s, cursor, expectEndTag)
             {
             objects.push({
                 type: 'Line',
-                transform: el.atts.transform,
-                style: el.atts.style,
                 points: [
                 [parse_number(el.atts.x1), parse_number(el.atts.y1)],
                 [parse_number(el.atts.x2), parse_number(el.atts.y2)]
-                ]
+                ],
+                transform: el.atts.transform,
+                style: el.atts.style
             });
             }
             break;
@@ -283,8 +327,6 @@ function parse(s, cursor, expectEndTag)
             {
             objects.push({
                 type: 'Polyline',
-                transform: el.atts.transform,
-                style: el.atts.style,
                 points: ((el.atts.points || '').match(NUMBER) || []).map(parse_number).reduce(function(points, p, i) {
                     if (i % 2)
                     {
@@ -295,7 +337,9 @@ function parse(s, cursor, expectEndTag)
                         points.push([p, 0]);
                     }
                     return points;
-                }, [])
+                }, []),
+                transform: el.atts.transform,
+                style: el.atts.style
             });
             }
             break;
@@ -304,8 +348,6 @@ function parse(s, cursor, expectEndTag)
             {
             objects.push({
                 type: 'Polygon',
-                transform: el.atts.transform,
-                style: el.atts.style,
                 points: ((el.atts.points || '').match(NUMBER) || []).map(parse_number).reduce(function(points, p, i) {
                     if (i % 2)
                     {
@@ -316,7 +358,9 @@ function parse(s, cursor, expectEndTag)
                         points.push([p, 0]);
                     }
                     return points;
-                }, [])
+                }, []),
+                transform: el.atts.transform,
+                style: el.atts.style
             });
             }
             break;
@@ -327,9 +371,9 @@ function parse(s, cursor, expectEndTag)
                 w = parse_number(el.atts.width), h = parse_number(el.atts.height);
             objects.push({
                 type: 'Polygon',
+                points: [[x,y],[x+w,y],[x+w,y+h],[x,y+h]],
                 transform: el.atts.transform,
-                style: el.atts.style,
-                points: [[x,y],[x+w,y],[x+w,y+h],[x,y+h]]
+                style: el.atts.style
             });
             }
             break;
@@ -338,12 +382,12 @@ function parse(s, cursor, expectEndTag)
             {
             objects.push({
                 type: 'Circle',
-                transform: el.atts.transform,
-                style: el.atts.style,
                 params: {
                     center: [parse_number(el.atts.cx),parse_number(el.atts.cy)],
                     radius: parse_number(el.atts.r)
-                }
+                },
+                transform: el.atts.transform,
+                style: el.atts.style
             });
             }
             break;
@@ -352,14 +396,14 @@ function parse(s, cursor, expectEndTag)
             {
             objects.push({
                 type: 'Ellipse',
-                transform: el.atts.transform,
-                style: el.atts.style,
                 params: {
                     center: [parse_number(el.atts.cx),parse_number(el.atts.cy)],
                     radiusX: parse_number(el.atts.rx),
                     radiusY: parse_number(el.atts.ry),
                     angle: 0
-                }
+                },
+                transform: el.atts.transform,
+                style: el.atts.style
             });
             }
             break;
@@ -368,9 +412,9 @@ function parse(s, cursor, expectEndTag)
             {
             objects.push({
                 type: 'Path',
+                nodes: parse_path(el.atts.d || ''),
                 transform: el.atts.transform,
-                style: el.atts.style,
-                nodes: parse_path(el.atts.d || '')
+                style: el.atts.style
             });
             }
             break;
@@ -388,9 +432,9 @@ function parse(s, cursor, expectEndTag)
                 if ('g' === expectEndTag) ++matchEndTag;
                 objects.push({
                     type: 'Group',
+                    nodes: parse(s, cursor, 'g'),
                     transform: el.atts.transform,
-                    style: el.atts.style,
-                    nodes: parse(s, cursor, 'g')
+                    style: el.atts.style
                 });
             }
             break;
@@ -408,7 +452,7 @@ function parse(s, cursor, expectEndTag)
                 if ('svg' === expectEndTag) ++matchEndTag;
                 objects.push({
                     type: 'SVG',
-                    viewBox: el.atts.viewbox ? el.atts.viewbox.match(NUMBER).map(parse_number) : [0,0,0,0],
+                    viewBox: el.atts.viewbox ? (el.atts.viewbox.match(NUMBER) || []).map(parse_number) : [0,0,0,0],
                     nodes: parse(s, cursor, 'svg')
                 });
             }
