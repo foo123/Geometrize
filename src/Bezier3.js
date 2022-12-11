@@ -160,7 +160,7 @@ var Bezier3 = makeClass(Bezier, {
     },
     toSVGPath: function(svg) {
         var p = this._points,
-            path = 'M '+Str(p[0].x)+' '+Str(p[0].y)+' C '+Str(p[1].x)+' '+Str(p[1].y)+','+Str(p[2].x)+' '+Str(p[2].y)+','+Str(p[3].x)+' '+Str(p[3].y);
+            path = ['M',p[0].x,p[0].y,'C',p[1].x,p[1].y,p[2].x,p[2].y,p[3].x,p[3].y].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],

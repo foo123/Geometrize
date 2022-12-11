@@ -112,18 +112,6 @@ document.getElementById('image').addEventListener('click', () => {
     const img = plane.toIMG();
     document.getElementById('img').innerHTML = '<img src="'+img+'" style="position:relative;display:block;width:400px;height:auto;margin:0 auto;border:1px solid black" />';
 }, false);
-
-/*
-let dx = 12, dy = 1;
-setTimeout(function animate() {
-    if (0 > line1.start.x+dx || line1.start.x+dx > plane.width) dx = -dx;
-    if (0 > line1.start.y+dy || line1.start.y+dy > plane.height) dy = -dy;
-    line1.start.x += dx;
-    line1.start.y += dy;
-    line1.end.x += dx;
-    line1.end.y += dy;
-    setTimeout(animate, 500);
-}, 500);*/
 })();
 </script>
 </body></html>

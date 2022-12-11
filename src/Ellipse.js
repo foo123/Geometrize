@@ -265,9 +265,9 @@ var Ellipse = makeClass(Curve, {
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var c = this.center, rX = this.radiusX, rY = this.radiusY, a = this.angle,
+        var rx = this.radiusX, ry = this.radiusY, a = this.angle,
             p1 = this.f(0), p2 = this.f(0.5),
-            path = 'M '+Str(p1.x)+' '+Str(p1.y)+' A '+Str(rX)+' '+Str(rY)+' '+Str(a)+' 0 1 '+Str(p2.x)+' '+Str(p2.y)+' A '+Str(rX)+' '+Str(rY)+' '+Str(a)+' 0 1 '+Str(p1.x)+' '+Str(p1.y)+' z';
+            path = ['M',p1.x,p1.y,'A',rx,ry,a,0,1,p2.x,p2.y,'A',rx,ry,a,0,1,p1.x,p1.y,'Z'].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],

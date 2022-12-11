@@ -1030,7 +1030,7 @@ function crossp(x1, y1, x2, y2)
 function angle(x1, y1, x2, y2)
 {
     var n1 = hypot(x1, y1), n2 = hypot(x2, y2);
-    return 0 === n1 || 0 === n2 ? 0 : stdMath.acos(dotp(x1, y1, x2, y2)/n1/n2);
+    return is_strictly_equal(n1, 0) || is_strictly_equal(n2, 0) ? 0 : stdMath.acos(clamp(dotp(x1, y1, x2, y2)/n1/n2, -1, 1));
 }
 function vector_angle(ux, uy, vx, vy)
 {

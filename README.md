@@ -22,7 +22,7 @@ Examples:
 
 ```javascript
 const {Plane, Ellipse, Circle, Arc, QBezier, CBezier, Line, Point} = Geometrize;
-const plane = Plane(document.getElementById('container'), 300, 300);
+const plane = Plane(document.getElementById('container'), 0, 0, 300, 300);
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
 const arc = Arc([100,100], [170,90], 30, 10, 30, 0, 1);
@@ -57,7 +57,7 @@ intersections.forEach(p => {
 ```javascript
 const {Plane, Tween, Polygon, Circle, Ellipse, Arc} = Geometrize;
 const r = 50, rx = 50, ry = 20, cx = 100, cy = 100, angle = -30;
-const plane = Plane(document.getElementById('container'), 300, 300);
+const plane = Plane(document.getElementById('container'), 0, 0, 300, 300);
 const ellipse = Ellipse([cx, cy], rx, ry, angle);
 const arc = Arc(ellipse.getPointAt(0), ellipse.getPointAt(0.6), rx, ry, angle, 0, 0);
 const circle = Circle([cx,cy], r);

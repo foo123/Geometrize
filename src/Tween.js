@@ -408,7 +408,7 @@ var Tween = makeClass(Primitive, {
         };
         self.toSVGPath = function(svg) {
             var path = tween.current.shape.map(function(cb) {
-                return 'M '+cb[0].x+' '+cb[0].y+' C '+cb[1].x+' '+cb[1].y+','+cb[2].x+' '+cb[2].y+','+cb[3].x+' '+cb[3].y;
+                return ['M',cb[0].x,cb[0].y,'C',cb[1].x,cb[1].y,cb[2].x,cb[2].y,cb[3].x,cb[3].y].join(' ');
             }).join(' ');
             if (arguments.length)
             {

@@ -158,7 +158,7 @@ var Circle = makeClass(Curve, {
     },
     toSVGPath: function(svg) {
         var c = this.center, r = this.radius,
-            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+            path = ['M',c.x - r,c.y,'a',r,r,0,0,0,r+r,0,'a',r,r,0,0,0,-r-r,0,'Z'].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],

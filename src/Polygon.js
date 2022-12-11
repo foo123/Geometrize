@@ -205,14 +205,14 @@ var Polygon = makeClass(Curve, {
     toSVG: function(svg) {
         return SVG('polygon', {
             'id': [this.id, false],
-            'points': [this._points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '), this.isChanged()],
+            'points': [this._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
         var path = 'M '+(this._lines.map(function(p) {
             return Str(p.x)+' '+Str(p.y);
-        }).join(' L '))+' z';
+        }).join(' L '))+' Z';
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],

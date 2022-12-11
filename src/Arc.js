@@ -412,11 +412,11 @@ var Arc = makeClass(Curve, {
     },
     toSVGPath: function(svg) {
         var p1 = this.start, p2 = this.end,
-            rX = Str(this.radiusX), rY = Str(this.radiusY),
-            a = Str(this.angle),
-            l = Str(this.largeArc ? 1 : 0),
-            s = Str(this.sweep ? 1 : 0),
-            path = 'M '+Str(p1.x)+' '+Str(p1.y)+' A '+rX+' '+rY+' '+a+' '+l+' '+s+' '+Str(p2.x)+' '+Str(p2.y);
+            rx = this.radiusX, ry = this.radiusY,
+            a = this.angle,
+            l = this.largeArc ? 1 : 0,
+            s = this.sweep ? 1 : 0,
+            path = ['M',p1.x,p1.y,'A',rx,ry,a,l,s,p2.x,p2.y].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],

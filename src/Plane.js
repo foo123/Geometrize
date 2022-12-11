@@ -136,7 +136,7 @@ var Plane = makeClass(null, {
             {
                 svg = SVG('svg', {
                 'xmlns': ['http://www.w3.org/2000/svg', false],
-                'style': ['position:absolute;width:100%;height:100%', false],
+                'style': ['position:absolute;top:0;left:0;width:100%;height:100%', false],
                 'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), isChanged]
                 }, null);
                 dom.appendChild(svg);

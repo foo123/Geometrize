@@ -65,7 +65,8 @@ var Style = makeClass(null, merge(null, {
     'stroke-linecap',
     'stroke-linejoin',
     'fill',
-    'fill-opacity'
+    'fill-opacity',
+    'fill-rule'
     ],
     Defaults: {
     'stroke-width': 1,
@@ -74,7 +75,8 @@ var Style = makeClass(null, merge(null, {
     'stroke-linecap': 'butt',
     'stroke-linejoin': 'miter',
     'fill': 'none',
-    'fill-opacity': 1
+    'fill-opacity': 1,
+    'fill-rule': 'evenodd'
     }
 });
 Geometrize.Style = Style;

@@ -198,7 +198,7 @@ var Polyline = makeClass(Curve, {
     toSVG: function(svg) {
         return SVG('polyline', {
             'id': [this.id, false],
-            'points': [this._points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '), this.isChanged()],
+            'points': [this._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },

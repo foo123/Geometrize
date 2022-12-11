@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.8.0 (2022-12-10 16:58:50)
+*   @version 0.8.0 (2022-12-11 13:57:04)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.8.0 (2022-12-10 16:58:50)
+*   @version 0.8.0 (2022-12-11 13:57:04)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -921,7 +921,8 @@ var Style = makeClass(null, merge(null, {
     'stroke-linecap',
     'stroke-linejoin',
     'fill',
-    'fill-opacity'
+    'fill-opacity',
+    'fill-rule'
     ],
     Defaults: {
     'stroke-width': 1,
@@ -930,7 +931,8 @@ var Style = makeClass(null, merge(null, {
     'stroke-linecap': 'butt',
     'stroke-linejoin': 'miter',
     'fill': 'none',
-    'fill-opacity': 1
+    'fill-opacity': 1,
+    'fill-rule': 'evenodd'
     }
 });
 Geometrize.Style = Style;
@@ -1248,31 +1250,18 @@ var Point = makeClass(Primitive, {
 Geometrize.Point = Point;
 // 2D geometric Topos ie set of points
 var Topos = makeClass(Primitive, {
-    constructor: function Topos() {
-        this.$super('constructor');
-    }
-});
-Geometrize.Topos = Topos;
-
-// 2D generic Curve base class
-var Curve = makeClass(Topos, {
-    constructor: function Curve(points, values) {
+    constructor: function Topos(points) {
         var self = this,
-            _matrix = null,
             _points = null,
-            _points2 = null,
-            _lines = null,
-            _values = null,
-            _bbox = null,
-            _hull = null,
             onPointChange,
             onArrayChange,
             point_add,
-            point_del,
-            point_eq;
-
+            point_del
+        ;
+        if (points instanceof Topos) return points;
+        if (!(self instanceof Topos)) return new Topos(points);
         if (null == points) points = [];
-        if (null == values) values = {};
+
         self.$super('constructor');
 
         point_add = function(p) {
@@ -1283,9 +1272,6 @@ var Curve = makeClass(Topos, {
         point_del = function(p) {
             p.onChange(onPointChange, false);
             return p;
-        };
-        point_eq = function(p1, p2) {
-            return p1.eq(p2);
         };
         onPointChange = function onPointChange(point) {
             if (is_array(_points) && (-1 !== _points.indexOf(point)))
@@ -1307,10 +1293,117 @@ var Curve = makeClass(Topos, {
         };
         onArrayChange.id = self.id;
 
-        _points = observeArray(points, point_add, point_del, point_eq);
+        _points = observeArray(points, point_add, point_del, p_eq);
         _points.onChange(onArrayChange);
-        _values = values;
 
+        def(self, 'points', {
+            get: function() {
+                return _points;
+            },
+            set: function(points) {
+                if (_points !== points)
+                {
+                    if (is_array(_points))
+                    {
+                        unobserveArray(_points, point_del);
+                    }
+
+                    if (is_array(points))
+                    {
+                        _points = observeArray(points, point_add, point_del, p_eq);
+                        _points.onChange(onArrayChange);
+                        if (!self.isChanged())
+                        {
+                            self.isChanged(true);
+                            self.triggerChange();
+                        }
+                    }
+                    else if (null == points)
+                    {
+                        _points = null;
+                    }
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
+    },
+    name: 'Topos',
+    dispose: function() {
+        var self = this;
+        if (self.points)
+        {
+            unobserveArray(self.points, function(p) {
+                p.onChange(self.id, false);
+                return p;
+            });
+            self.points = null;
+        }
+        self.$super('dispose');
+    },
+    isChanged: function(isChanged) {
+        var self = this;
+        if (false === isChanged)
+        {
+            self.points.forEach(function(point) {point.isChanged(false);});
+        }
+        return self.$super('isChanged', arguments);
+    },
+    clone: function() {
+        return new Topos(this.points.map(function(p) {return p.clone();}));
+    },
+    transform: function(matrix) {
+        return new Topos(this.points.map(function(p) {return matrix.transform(p);}));
+    },
+    hasPoint: function(point) {
+        var p = this.points, n = p.length, j;
+        for (j=0; j<n; ++j)
+        {
+            if (p_eq(p[j], point))
+                return true;
+        }
+        return false;
+    },
+    hasInsidePoint: function(point, strict) {
+        return this.hasPoint(point);
+    },
+    intersects: function(other) {
+        if (other instanceof Primitive)
+        {
+            var p = this.points, n = p.length, j, i = [];
+            for (j=0; j<n; ++j)
+            {
+                if (other.intersects(p[j]))
+                    i.push(p[j]);
+            }
+            return i.length ? i : false;
+        }
+        return false;
+    },
+    toTex: function() {
+        return '\\text{Topos}';
+    },
+    toString: function() {
+        return 'Topos()';
+    }
+});
+Geometrize.Topos = Topos;
+// 2D generic Curve base class
+var Curve = makeClass(Topos, {
+    constructor: function Curve(points, values) {
+        var self = this,
+            _matrix = null,
+            _points = null,
+            _lines = null,
+            _values = null,
+            _bbox = null,
+            _hull = null
+        ;
+
+        self.$super('constructor', [points]);
+        if (null == values) values = {};
+
+        _values = values;
         _matrix = self.hasMatrix() ? Matrix.eye() : null;
         _values.matrix = new Value(0);
         _values.matrix.isChanged(self.hasMatrix());
@@ -1345,18 +1438,20 @@ var Curve = makeClass(Topos, {
         };
         def(self, '_points', {
             get: function() {
-                if (null == _points2)
+                if (null == _points)
                 {
-                    _points2 = !_matrix || _matrix.eq(EYE) ? _points : _points.map(function(p) {
+                    _points = !_matrix || _matrix.eq(EYE) ? self.points.map(function(p) {
+                        return p.clone();
+                    }) : self.points.map(function(p) {
                         return _matrix.transform(p);
                     });
                 }
-                return _points2;
+                return _points;
             },
             set: function(points) {
                 if (null == points)
                 {
-                    _points2 = null;
+                    _points = null;
                 }
             },
             enumerable: false,
@@ -1377,37 +1472,6 @@ var Curve = makeClass(Topos, {
                 }
             },
             enumerable: false,
-            configurable: true
-        });
-        def(self, 'points', {
-            get: function() {
-                return _points;
-            },
-            set: function(points) {
-                if (_points !== points)
-                {
-                    if (is_array(_points))
-                    {
-                        unobserveArray(_points, point_del);
-                    }
-
-                    if (is_array(points))
-                    {
-                        _points = observeArray(points, point_add, point_del, point_eq);
-                        _points.onChange(onArrayChange);
-                        if (!self.isChanged())
-                        {
-                            self.isChanged(true);
-                            self.triggerChange();
-                        }
-                    }
-                    else if (null == points)
-                    {
-                        _points = null;
-                    }
-                }
-            },
-            enumerable: true,
             configurable: true
         });
         def(self, 'values', {
@@ -1473,14 +1537,6 @@ var Curve = makeClass(Topos, {
     name: 'Curve',
     dispose: function() {
         var self = this;
-        if (self.points)
-        {
-            unobserveArray(self.points, function(p) {
-                p.onChange(self.id, false);
-                return p;
-            });
-            self.points = null;
-        }
         self.values = null;
         self.$super('dispose');
     },
@@ -1488,7 +1544,6 @@ var Curve = makeClass(Topos, {
         var self = this;
         if (false === isChanged)
         {
-            self.points.forEach(function(point) {point.isChanged(false);});
             Object.keys(self.values).forEach(function(k) {self.values[k].isChanged(false);});
             self.style.isChanged(false);
         }
@@ -1616,19 +1671,25 @@ var Bezier = makeClass(Curve, {
 Geometrize.Bezier = Bezier;
 
 // 2D Composite Curve class (container of multiple, joined, curves)
+var M0 = /^M\s+(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
+    M = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s+M\s+(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/g
+;
 var CompositeCurve = makeClass(Curve, {
     constructor: function CompositeCurve(curves) {
         var self = this,
             _curves = null,
             _points = null,
             _length = null,
+            _bbox = null,
+            _hull = null,
             onCurveChange,
             onArrayChange,
             curve_add,
             curve_del;
 
+        if (!(self instanceof CompositeCurve)) return new CompositeCurve(curves);
         if (null == curves) curves = [];
-        Topos.call(self);
+        Primitive.call(self);
 
         curve_add = function(c) {
             if (c instanceof Curve) c.onChange(onCurveChange);
@@ -1779,7 +1840,7 @@ var CompositeCurve = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return Topos.prototype.isChanged.apply(self, arguments);
+            return Primitive.prototype.isChanged.apply(self, arguments);
         };
     },
     name: 'CompositeCurve',
@@ -1794,7 +1855,7 @@ var CompositeCurve = makeClass(Curve, {
             self.curves = null;
             self.points = null;
         }
-        Topos.prototype.dispose.call(self);
+        Primitive.prototype.dispose.call(self);
     },
     clone: function() {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.clone();}));
@@ -1861,6 +1922,46 @@ var CompositeCurve = makeClass(Curve, {
             beziers.push.apply(beziers, curve.bezierPoints());
             return beziers;
         }, []);
+    },
+    toSVG: function(svg) {
+        return this.toSVGPath(arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var path = this.curves.map(function(c) {return c.toSVGPath();}).join(' '),
+            x0 = 0, y0 = 0, m = path.match(M0);
+        x0 = parseFloat(m[1]); y0 = parseFloat(m[2]);
+        path = path.replace(M, function(m0, m1, m2 ,m3, m4) {
+            var x1 = parseFloat(m1), y1 = parseFloat(m2),
+                x2 = parseFloat(m3), y2 = parseFloat(m4);
+            if (is_strictly_equal(x1, x2) && is_strictly_equal(y1, y2))
+            {
+                return ' ' + Str(x1) + ' ' + Str(y1);
+            }
+            else if (is_strictly_equal(x1, x0) && is_strictly_equal(y1, y0))
+            {
+                x0 = x2; y0 = y2;
+                return Str(x1) + ' ' + Str(y1) + ' Z M ' + Str(x2) + ' ' + Str(y2);
+            }
+            else
+            {
+                x0 = x2; y0 = y2;
+                return m0;
+            }
+        });
+        //if (this.isClosed()) path += ' Z';
+        return arguments.length ? SVG('path', {
+            'id': [this.id, false],
+            'd': [path, this.isChanged()],
+            'style': [this.style.toSVG(), this.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        ctx.beginPath();
+        this.style.toCanvas(ctx);
+        this.curves.forEach(function(c) {
+            c.toCanvas(ctx);
+        });
+        //if (this.isClosed()) ctx.closePath();
     },
     toTex: function() {
         return '\\text{CompositeCurve: }\\begin{cases}&'+this.curves.map(Tex).join('\\\\&')+'\\end{cases}';
@@ -2049,7 +2150,7 @@ var Bezier1 = makeClass(Bezier, {
     },
     toSVGPath: function(svg) {
         var p = this._points,
-            path = 'M '+Str(p[0].x)+' '+Str(p[0].y)+' L '+Str(p[1].x)+' '+Str(p[1].y);
+            path = ['M',p[0].x,p[0].y,'L',p[1].x,p[1].y].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -2276,7 +2377,7 @@ var Polyline = makeClass(Curve, {
     toSVG: function(svg) {
         return SVG('polyline', {
             'id': [this.id, false],
-            'points': [this._points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '), this.isChanged()],
+            'points': [this._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
@@ -2722,11 +2823,11 @@ var Arc = makeClass(Curve, {
     },
     toSVGPath: function(svg) {
         var p1 = this.start, p2 = this.end,
-            rX = Str(this.radiusX), rY = Str(this.radiusY),
-            a = Str(this.angle),
-            l = Str(this.largeArc ? 1 : 0),
-            s = Str(this.sweep ? 1 : 0),
-            path = 'M '+Str(p1.x)+' '+Str(p1.y)+' A '+rX+' '+rY+' '+a+' '+l+' '+s+' '+Str(p2.x)+' '+Str(p2.y);
+            rx = this.radiusX, ry = this.radiusY,
+            a = this.angle,
+            l = this.largeArc ? 1 : 0,
+            s = this.sweep ? 1 : 0,
+            path = ['M',p1.x,p1.y,'A',rx,ry,a,l,s,p2.x,p2.y].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -2907,7 +3008,7 @@ var Bezier2 = makeClass(Bezier, {
     },
     toSVGPath: function(svg) {
         var p = this._points,
-            path = 'M '+Str(p[0].x)+' '+Str(p[0].y)+' Q '+Str(p[1].x)+' '+Str(p[1].y)+','+Str(p[2].x)+' '+Str(p[2].y);
+            path = ['M',p[0].x,p[0].y,'Q',p[1].x,p[1].y,p[2].x,p[2].y].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -3086,7 +3187,7 @@ var Bezier3 = makeClass(Bezier, {
     },
     toSVGPath: function(svg) {
         var p = this._points,
-            path = 'M '+Str(p[0].x)+' '+Str(p[0].y)+' C '+Str(p[1].x)+' '+Str(p[1].y)+','+Str(p[2].x)+' '+Str(p[2].y)+','+Str(p[3].x)+' '+Str(p[3].y);
+            path = ['M',p[0].x,p[0].y,'C',p[1].x,p[1].y,p[2].x,p[2].y,p[3].x,p[3].y].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -3310,14 +3411,14 @@ var Polygon = makeClass(Curve, {
     toSVG: function(svg) {
         return SVG('polygon', {
             'id': [this.id, false],
-            'points': [this._points.map(function(p) {return Str(p.x)+','+Str(p.y);}).join(' '), this.isChanged()],
+            'points': [this._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), this.isChanged()],
             'style': [this.style.toSVG(), this.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
         var path = 'M '+(this._lines.map(function(p) {
             return Str(p.x)+' '+Str(p.y);
-        }).join(' L '))+' z';
+        }).join(' L '))+' Z';
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -3562,7 +3663,7 @@ var Circle = makeClass(Curve, {
     },
     toSVGPath: function(svg) {
         var c = this.center, r = this.radius,
-            path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 z';
+            path = ['M',c.x - r,c.y,'a',r,r,0,0,0,r+r,0,'a',r,r,0,0,0,-r-r,0,'Z'].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -3854,9 +3955,9 @@ var Ellipse = makeClass(Curve, {
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var c = this.center, rX = this.radiusX, rY = this.radiusY, a = this.angle,
+        var rx = this.radiusX, ry = this.radiusY, a = this.angle,
             p1 = this.f(0), p2 = this.f(0.5),
-            path = 'M '+Str(p1.x)+' '+Str(p1.y)+' A '+Str(rX)+' '+Str(rY)+' '+Str(a)+' 0 1 '+Str(p2.x)+' '+Str(p2.y)+' A '+Str(rX)+' '+Str(rY)+' '+Str(a)+' 0 1 '+Str(p1.x)+' '+Str(p1.y)+' z';
+            path = ['M',p1.x,p1.y,'A',rx,ry,a,0,1,p2.x,p2.y,'A',rx,ry,a,0,1,p1.x,p1.y,'Z'].join(' ');
         return arguments.length ? SVG('path', {
             'id': [this.id, false],
             'd': [path, this.isChanged()],
@@ -4296,7 +4397,7 @@ var Tween = makeClass(Primitive, {
         };
         self.toSVGPath = function(svg) {
             var path = tween.current.shape.map(function(cb) {
-                return 'M '+cb[0].x+' '+cb[0].y+' C '+cb[1].x+' '+cb[1].y+','+cb[2].x+' '+cb[2].y+','+cb[3].x+' '+cb[3].y;
+                return ['M',cb[0].x,cb[0].y,'C',cb[1].x,cb[1].y,cb[2].x,cb[2].y,cb[3].x,cb[3].y].join(' ');
             }).join(' ');
             if (arguments.length)
             {
@@ -4509,7 +4610,7 @@ var Plane = makeClass(null, {
             {
                 svg = SVG('svg', {
                 'xmlns': ['http://www.w3.org/2000/svg', false],
-                'style': ['position:absolute;width:100%;height:100%', false],
+                'style': ['position:absolute;top:0;left:0;width:100%;height:100%', false],
                 'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), isChanged]
                 }, null);
                 dom.appendChild(svg);
@@ -5603,7 +5704,7 @@ function crossp(x1, y1, x2, y2)
 function angle(x1, y1, x2, y2)
 {
     var n1 = hypot(x1, y1), n2 = hypot(x2, y2);
-    return 0 === n1 || 0 === n2 ? 0 : stdMath.acos(dotp(x1, y1, x2, y2)/n1/n2);
+    return is_strictly_equal(n1, 0) || is_strictly_equal(n2, 0) ? 0 : stdMath.acos(clamp(dotp(x1, y1, x2, y2)/n1/n2, -1, 1));
 }
 function vector_angle(ux, uy, vx, vy)
 {
