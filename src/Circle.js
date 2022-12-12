@@ -91,11 +91,13 @@ var Circle = makeClass(Curve, {
     },
     name: 'Circle',
     clone: function() {
-        return new Circle(this.center.clone(), this.radius);
+        var self = this;
+        return new Circle(self.center.clone(), self.radius);
     },
     transform: function(matrix) {
-        var c = this.center,
-            r = this.radius,
+        var self = this,
+            c = self.center,
+            r = self.radius,
             ct = c.transform(matrix),
             pt = new Point(c.x+r, c.y+r).transform(matrix)
         ;
@@ -111,78 +113,82 @@ var Circle = makeClass(Curve, {
         return false;
     },
     f: function(t) {
-        var c = this.center, r = this.radius;
+        var self = this, c = self.center, r = self.radius;
         return arc(t*TWO_PI, c.x, c.y, r, r, 1, 0);
     },
     hasPoint: function(point) {
-        return 2 === point_inside_circle(point, this.center, this.radius);
+        self = this;
+        return 2 === point_inside_circle(point, self.center, self.radius);
     },
     hasInsidePoint: function(point, strict) {
-        var inside = point_inside_circle(point, this.center, this.radius);
+        var self = this, inside = point_inside_circle(point, self.center, self.radius);
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
+        var self = this;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Circle)
         {
-            var i = circle_circle_intersection(this.center, this.radius, other.center, other.radius);
+            var i = circle_circle_intersection(self.center, self.radius, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
     bezierPoints: function() {
-        var c = this.center, r = this.radius;
+        var self = this, c = self.center, r = self.radius;
         return [
-        arc2bezier(0, -PI/2, c.x, c.y, r, r, 1, 0/*, 0*/),
-        arc2bezier(-PI/2, -PI/2, c.x, c.y, r, r, 1, 0/*, 1*/),
-        arc2bezier(-PI, -PI/2, c.x, c.y, r, r, 1, 0/*, 0*/),
-        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, r, r, 1, 0/*, 1*/)
+        arc2bezier(0, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 0*/),
+        arc2bezier(-HALF_PI, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 1*/),
+        arc2bezier(-PI, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 0*/),
+        arc2bezier(-PI3_2, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 1*/)
         ];
     },
     toSVG: function(svg) {
-        var c = this.center, r = this.radius;
+        var self = this, c = self.center, r = self.radius;
         return SVG('circle', {
-            'id': [this.id, false],
-            'cx': [c.x, this.center.isChanged()],
-            'cy': [c.y, this.center.isChanged()],
-            'r': [r, this.values.radius.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'cx': [c.x, self.center.isChanged()],
+            'cy': [c.y, self.center.isChanged()],
+            'r': [r, self.values.radius.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var c = this.center, r = this.radius,
+        var self = this, c = self.center, r = self.radius,
             path = ['M',c.x - r,c.y,'a',r,r,0,0,0,r+r,0,'a',r,r,0,0,0,-r-r,0,'Z'].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        ctx.closePath();
-        if ('none' !== this.style['fill']) ctx.fill();
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var c = this.center, r = this.radius;
+        var self = this, c = self.center, r = self.radius;
+        ctx.beginPath();
         ctx.arc(c.x, c.x, r, 0, TWO_PI);
+        ctx.closePath();
     },
     toTex: function() {
-        var c = this.center, r = Str(this.radius);
+        var self = this, c = self.center, r = Str(self.radius);
         return '\\text{Circle: }\\left|\\begin{pmatrix}\\frac{x'+signed(-c.x)+'}{'+r+'}\\\\\\frac{y'+signed(-c.y)+'}{'+r+'}\\end{pmatrix}\\right|^2 = 1';
     },
     toString: function() {
-        return 'Circle('+[Str(this.center), Str(this.radius)].join(',')+')';
+        var self = this;
+        return 'Circle('+[Str(self.center), Str(self.radius)].join(',')+')';
     }
 });
 Geometrize.Circle = Circle;

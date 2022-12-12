@@ -130,6 +130,26 @@ var Topos = makeClass(Primitive, {
         }
         return false;
     },
+    toSVG: function(svg) {
+        return this.toSVGPath(arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var self = this, path = self.points.map(function(p) {return p.toSVGPath();}).join(' ');
+        return arguments.length ? SVG('path', {
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        this.style.toCanvas(ctx)
+        this.toCanvasPath(ctx);
+    },
+    toCanvasPath: function(ctx) {
+        this.points.forEach(function(p) {
+            p.toCanvasPath(ctx);
+        });
+    },
     toTex: function() {
         return '\\text{Topos}';
     },

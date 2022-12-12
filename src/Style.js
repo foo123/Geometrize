@@ -50,11 +50,12 @@ var Style = makeClass(null, merge(null, {
         }, '');
     },
     toCanvas: function(ctx) {
-        ctx.lineCap = this['stroke-linecap'];
-        ctx.lineJoin = this['stroke-linejoin'];
-        ctx.lineWidth = this['stroke-width'];
-        ctx.fillStyle = 'none' === this['fill'] ? 'transparent' : this['fill'];
-        ctx.strokeStyle = this['stroke'];
+        var self = this;
+        ctx.lineCap = self['stroke-linecap'];
+        ctx.lineJoin = self['stroke-linejoin'];
+        ctx.lineWidth = self['stroke-width'];
+        ctx.fillStyle = 'none' === self['fill'] ? 'transparent' : self['fill'];
+        ctx.strokeStyle = self['stroke'];
         return ctx;
     }
 }, Changeable), {

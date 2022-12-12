@@ -92,30 +92,33 @@ var Point = makeClass(Primitive, {
         return matrix.transform(this);
     },
     getBoundingBox: function() {
+        var self = this;
         return {
-        ymin: this.y,
-        xmin: this.x,
-        ymax: this.y,
-        xmax: this.x
+        ymin: self.y,
+        xmin: self.x,
+        ymax: self.y,
+        xmax: self.x
         };
     },
     eq: function(other) {
+        var self = this;
         if (other instanceof Point)
         {
-            return p_eq(this, other);
+            return p_eq(self, other);
         }
         else if (null != other.x && null != other.y)
         {
-            return p_eq(this, other);
+            return p_eq(self, other);
         }
         else if (is_array(other))
         {
-            return p_eq(this, {x: other[0], y: other[1]});
+            return p_eq(self, {x: other[0], y: other[1]});
         }
         return false;
     },
     add: function(other) {
-        return other instanceof Point ? new Point(this.x+other.x, this.y+other.y) : new Point(this.x+Num(other), this.y+Num(other));
+        var self = this;
+        return other instanceof Point ? new Point(self.x+other.x, self.y+other.y) : new Point(self.x+Num(other), self.y+Num(other));
     },
     mul: function(other) {
         other = Num(other);
@@ -166,37 +169,43 @@ var Point = makeClass(Primitive, {
         ];
     },
     toSVG: function(svg) {
+        var self = this;
         return SVG('circle', {
-            'id': [this.id, false],
-            'cx': [this.x, this.isChanged()],
-            'cy': [this.y, this.isChanged()],
-            'r': [this.style['stroke-width'], this.style.isChanged()],
-            'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
+            'id': [self.id, false],
+            'cx': [self.x, self.isChanged()],
+            'cy': [self.y, self.isChanged()],
+            'r': [self.style['stroke-width'], self.style.isChanged()],
+            'style': ['fill:'+Str(self.style['stroke'])+';', self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var c = this, r = this.style['stroke-width'],
+        var c = this, r = c.style['stroke-width'],
             path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 Z';
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
+            'id': [c.id, false],
+            'd': [path, c.isChanged()],
+            'style': ['fill:'+Str(c.style['stroke'])+';', c.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
+        var self = this;
+        ctx.fillStyle = self.style['stroke']
+        self.toCanvasPath(ctx);
+    },
+    toCanvasPath: function(ctx) {
+        var self = this;
         ctx.beginPath();
-        this.toCanvasPath(ctx);
+        ctx.arc(self.x, self.y, self.style['stroke-width'], 0, TWO_PI);
         ctx.closePath();
         ctx.fill();
     },
-    toCanvasPath: function(ctx) {
-        ctx.arc(this.x, this.y, this.style['stroke-width'], 0, TWO_PI);
-    },
     toTex: function() {
-        return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';
+        var self = this;
+        return '\\begin{pmatrix}'+Str(self.x)+'\\\\'+Str(self.y)+'\\end{pmatrix}';
     },
     toString: function() {
-        return 'Point('+Str(this.x)+','+Str(this.y)+')';
+        var self = this;
+        return 'Point('+Str(self.x)+','+Str(self.y)+')';
     }
 });
 Geometrize.Point = Point;

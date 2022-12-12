@@ -110,7 +110,8 @@ var Polyline = makeClass(Curve, {
         return new Polyline(this.points.map(function(point) {return point.transform(matrix);}));
     },
     isClosed: function() {
-        return 2 < this.points.length ? this.points[0].eq(this.points[this.points.length-1]) : false;
+        var self = this, p = self.points;
+        return 2 < p.length ? p[0].eq(p[p.length-1]) : false;
     },
     isConvex: function() {
         return this._is_convex;
@@ -128,49 +129,49 @@ var Polyline = makeClass(Curve, {
         return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Line)
         {
-            i = polyline_line_intersection(this._points, other._points[0], other._points[1]);
+            i = polyline_line_intersection(self._points, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._points, other.center, other.radius);
+            i = polyline_circle_intersection(self._points, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._points, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            i = polyline_arc_intersection(this._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(self._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
-            i = polyline_qbezier_intersection(this._points, other._points);
+            i = polyline_qbezier_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {
-            i = polyline_cbezier_intersection(this._points, other._points);
+            i = polyline_cbezier_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Polyline)
         {
-            i = polyline_polyline_intersection(this._points, other._points);
+            i = polyline_polyline_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(this);
+            return other.intersects(self = this);
         }
         return false;
     },
@@ -196,37 +197,39 @@ var Polyline = makeClass(Curve, {
         }, []);
     },
     toSVG: function(svg) {
+        var self = this;
         return SVG('polyline', {
-            'id': [this.id, false],
-            'points': [this._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'points': [self._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var path = 'M '+(this._points.map(function(p) {
+        var self = this, path = 'M '+(self._points.map(function(p) {
             return Str(p.x)+' '+Str(p.y);
-        }).join(' L '));
+        }).join(' L ')) + (self.isClosed() ? ' Z' : '');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        if (this.isClosed())
+        var self = this;
+        self.style.toCanvas(ctx);
+        elf.toCanvasPath(ctx);
+        if (self.isClosed() && 'none' !== self.style['fill'])
         {
-            ctx.closePath();
-            if ('none' !== this.style['fill']) ctx.fill();
+            ctx.fill();
         }
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var p = this._points, n = p.length;
+        var self = this, p = self._points, n = p.length;
+        ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        if (self.isClosed()) ctx.closePath();
     },
     toTex: function() {
         var lines = this.lines;

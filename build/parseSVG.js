@@ -265,6 +265,18 @@ function parse_path(d)
         return a;
     }, []) : [];
 }
+function parse_node_atts(n)
+{
+    var atts = {}, i, l;
+    if (n.attributes)
+    {
+        for (i=0,l=n.attributes.length; i<l; ++i)
+        {
+            atts[n.attributes[i].name.toLowerCase()] = n.attributes[i].value;
+        }
+    }
+    return atts;
+}
 function parse_atts(s)
 {
     var m, atts = {};
@@ -277,6 +289,19 @@ function parse_atts(s)
 }
 function parse_tag(s, cursor)
 {
+    if (cursor && cursor.parsed) return;
+    if (s.tagName && s.children)
+    {
+        var atts = parse_node_atts(s);
+        atts.style = parse_style(atts);
+        atts.transform = parse_transform(atts);
+        cursor.parsed = true;
+        return {
+            tag: s.tagName.toLowerCase(),
+            atts: atts,
+            children: s.children
+        };
+    }
     var i = cursor.index || 0, m;
     s = s.slice(i);
     if (m=s.match(TAG))
@@ -432,7 +457,10 @@ function parse(s, cursor, expectEndTag)
                 if ('g' === expectEndTag) ++matchEndTag;
                 objects.push({
                     type: 'Group',
-                    nodes: parse(s, cursor, 'g'),
+                    nodes: el.children ? [].reduce.call(el.children, function(objects, s) {
+                        objects.push.apply(objects, parse(s, {index:0}, 'g'));
+                        return objects;
+                    }, []) : parse(s, cursor, 'g'),
                     transform: el.atts.transform,
                     style: el.atts.style
                 });
@@ -453,7 +481,10 @@ function parse(s, cursor, expectEndTag)
                 objects.push({
                     type: 'SVG',
                     viewBox: el.atts.viewbox ? (el.atts.viewbox.match(NUMBER) || []).map(parse_number) : [0,0,0,0],
-                    nodes: parse(s, cursor, 'svg')
+                    nodes: el.children ? [].reduce.call(el.children, function(objects, s) {
+                        objects.push.apply(objects, parse(s, {index:0}, 'svg'));
+                        return objects;
+                    }, []) : parse(s, cursor, 'svg')
                 });
             }
             break;
@@ -466,7 +497,7 @@ function parse(s, cursor, expectEndTag)
 }
 function parseSVG(svg)
 {
-    return parse(trim(String(svg)), {index:0});
+    return parse(svg.tagName ? svg : trim(String(svg)), {index:0});
 }
 parseSVG.parsePath = parse_path;
 

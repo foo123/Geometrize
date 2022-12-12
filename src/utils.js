@@ -1,25 +1,5 @@
 
 // ---- utilities -----
-function dist(p1, p2)
-{
-    return hypot(p1.x - p2.x, p1.y - p2.y);
-}
-function dist2(p1, p2)
-{
-    var dx = p1.x - p2.x, dy = p1.y - p2.y;
-    return dx*dx + dy*dy;
-}
-function polar_angle(p1, p2)
-{
-    var a = stdMath.atan2(p2.y - p1.y, p2.x - p1.x);
-    return a < 0 ? a + TWO_PI : a;
-}
-function dir(p1, p2, p3)
-{
-    var dx1 = p1.x - p3.x, dx2 = p2.x - p3.x,
-        dy1 = p1.y - p3.y, dy2 = p2.y - p3.y;
-    return dx1*dy2 - dy1*dx2;
-}
 function p_eq(p1, p2)
 {
     return is_almost_equal(p1.x, p2.x) && is_almost_equal(p1.y, p2.y);
@@ -63,20 +43,20 @@ function point_on_line_segment(p, p1, p2)
     }
     return false;
 }
-function point_on_arc(p, center, radiusX, radiusY, cs, theta, dtheta)
+function point_on_arc(p, center, rx, ry, cs, theta, dtheta)
 {
-    var x0 = p.x - center.x,
+    var cos = cs[0], sin = cs[1],
+        x0 = p.x - center.x,
         y0 = p.y - center.y,
-        x = cs[0]*x0 + cs[1]*y0,
-        y = -cs[1]*x0 + cs[0]*y0,
-        t = stdMath.atan2(y/radiusY, x/radiusX);
+        x = cos*x0 + sin*y0,
+        y = -sin*x0 + cos*y0,
+        t = stdMath.atan2(y/ry, x/rx);
     if (t < 0) t += TWO_PI;
     t = (t - theta)/dtheta;
     return (t >= 0) && (t <= 1);
 }
 function point_on_qbezier(p, c)
 {
-    //x = t^{2} \left(x_{1} - 2 x_{2} + x_{3}\right) + t \left(- 2 x_{1} + 2 x_{2}\right) + x_{1}
     var tx, ty;
     tx = solve_quadratic(c[0].x - 2*c[1].x + c[2].x, -2*c[0].x + 2*c[1].x, c[0].x - p.x);
     if (!tx) return false;
@@ -104,7 +84,6 @@ function point_on_qbezier(p, c)
 }
 function point_on_cbezier(p, c)
 {
-    // x = t^{3} \left(- x_{1} + 3 x_{2} - 3 x_{3} + x_{4}\right) + t^{2} \cdot \left(3 x_{1} - 6 x_{2} + 3 x_{3}\right) + t \left(- 3 x_{1} + 3 x_{2}\right) + x_{1}
     var tx, ty;
     tx = solve_cubic(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x, 3*c[0].x - 6*c[1].x + 3*c[2].x, -3*c[0].x + 3*c[1].x, c[0].x - p.x);
     if (!tx) return false;
@@ -322,27 +301,38 @@ function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_qbezier_intersection(p1, p2, abcdef, c)
+function line_qbezier_intersection(p1, p2, coeff, c)
 {
-    if (null == abcdef) abcdef = qbezier2quadratic(c);
-    var p = new Array(2), pi = 0, i, n,
-        s = solve_linear_quadratic_system(
+    //if (null == abcdef) abcdef = qbezier2quadratic(c);
+    if (null == coeff) coeff = qbezier_t_quadratic(c);
+    var p = new Array(2), pi = 0, i, n, pt,
+        /*s = solve_linear_quadratic_system(
         p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
         abcdef[0], abcdef[1], abcdef[2], abcdef[3], abcdef[4], abcdef[5]
+        )*/
+        A = p2.y - p1.y,
+        B = p1.x - p2.x,
+        C = p1.x*(p1.y - p2.y) + p1.y*(p2.x - p1.x),
+        s = solve_quadratic(
+            A*coeff[0].x + B*coeff[0].y,
+            A*coeff[1].x + B*coeff[1].y,
+            A*coeff[2].x + B*coeff[2].y + C
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2) && point_on_qbezier(s[i], c))
-            p[pi++] = s[i];
+        if (0 > s[i] || 1 < s[i]) continue;
+        pt = bezier2(s[i], c);
+        if (point_on_line_segment(pt, p1, p2)/* && point_on_qbezier(pt, c)*/)
+            p[pi++] = pt;
     }
     p.length = pi;
     return p.length ? p : false;
 }
 function line_cbezier_intersection(p1, p2, coeff, c)
 {
-    if (null == coeff) coeff = cbezier2cubic(c);
-    var p = new Array(3), pi = 0, i, n,
+    if (null == coeff) coeff = cbezier_t_cubic(c);
+    var p = new Array(3), pi = 0, i, n, pt,
         A = p2.y - p1.y,
         B = p1.x - p2.x,
         C = p1.x*(p1.y - p2.y) + p1.y*(p2.x - p1.x),
@@ -351,7 +341,7 @@ function line_cbezier_intersection(p1, p2, coeff, c)
             A*coeff[1].x + B*coeff[1].y,
             A*coeff[2].x + B*coeff[2].y,
             A*coeff[3].x + B*coeff[3].y + C
-        ), pt;
+        );
     for (i=0,n=s.length; i<n; ++i)
     {
         if (0 > s[i] || 1 < s[i]) continue;
@@ -444,10 +434,11 @@ function polyline_arc_intersection(polyline_points, center, radiusX, radiusY, cs
 function polyline_qbezier_intersection(polyline_points, control_points)
 {
     var i = [], j, k, p, n = polyline_points.length-1,
-        abcdef = qbezier2quadratic(control_points);
+        //abcdef = qbezier2quadratic(control_points);
+        coeff = qbezier_t_quadratic(control_points);
     for (j=0; j<n; ++j)
     {
-        p = line_qbezier_intersection(polyline_points[j], polyline_points[j+1], abcdef, control_points);
+        p = line_qbezier_intersection(polyline_points[j], polyline_points[j+1], coeff, control_points);
         if (p) i.push.apply(i, p);
     }
     return i.length ? i : false;
@@ -455,7 +446,7 @@ function polyline_qbezier_intersection(polyline_points, control_points)
 function polyline_cbezier_intersection(polyline_points, control_points)
 {
     var i = [], j, k, p, n = polyline_points.length-1,
-        coeff = cbezier2cubic(control_points);
+        coeff = cbezier_t_cubic(control_points);
     for (j=0; j<n; ++j)
     {
         p = line_cbezier_intersection(polyline_points[j], polyline_points[j+1], coeff, control_points);
@@ -522,7 +513,7 @@ function convex_hull(points)
 
     var ps = points
         .map(function(p, i) {
-            return [polar_angle(p0, p), i];
+            return [polar_angle(p0.x, p0.y, p.x, p.y), i];
         })
         .sort(sort_asc0)
         .map(function(a) {
@@ -723,7 +714,24 @@ function qbezier2quadratic(c)
     F = c[0].x*c[0].x*c[2].y*c[2].y - 4*c[0].x*c[1].x*c[1].y*c[2].y - 2*c[0].x*c[2].x*c[0].y*c[2].y + 4*c[0].x*c[2].x*c[1].y*c[1].y + 4*c[1].x*c[1].x*c[0].y*c[2].y - 4*c[1].x*c[2].x*c[0].y*c[1].y + c[2].x*c[2].x*c[0].y*c[0].y;
     return [A, B, C, D, E, F];
 }
-function cbezier2cubic(c)
+function qbezier_t_quadratic(c)
+{
+    return [
+        {
+        x: c[0].x - 2*c[1].x + c[2].x,
+        y: c[0].y - 2*c[1].y + c[2].y
+        },
+        {
+        x: 2*c[1].x - 2*c[0].x,
+        y: 2*c[1].y - 2*c[0].y
+        },
+        {
+        x: c[0].x,
+        y: c[0].y
+        }
+    ];
+}
+function cbezier_t_cubic(c)
 {
     return [
         {
@@ -786,8 +794,7 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
 function interpolate(x0, x1, t)
 {
     // 0 <= t <= 1
-    var t0 = (t||0), t1 = 1 - t0;
-    return t1*x0 + t0*x1;
+    return x0 + t*(x1 - x0);
 }
 function bezier(c)
 {
@@ -825,6 +832,7 @@ function bezier(c)
 function bezier1(t, p)
 {
     // 0 <= t <= 1
+    // t*(x1 - x0) + x0
     var t0 = t, t1 = 1 - t;
     return {
         x: t1*p[0].x + t0*p[1].x,
@@ -835,6 +843,7 @@ function bezier2(t, p)
 {
     // 0 <= t <= 1
     //return bezier1(t, [bezier1(t, [p[0], p[1]]), bezier1(t, [p[1], p[2]])]);
+    // t^2*(x0 - 2*x1 + x2) + t*(2*x1 - 2*x0) + x0
    var t0 = t, t1 = 1 - t, t11 = t1*t1, t10 = 2*t1*t0, t00 = t0*t0;
    return {
        x: t11*p[0].x + t10*p[1].x + t00*p[2].x,
@@ -845,6 +854,7 @@ function bezier3(t, p)
 {
     // 0 <= t <= 1
     //return bezier1(t, [bezier2(t, [p[0], p[1], p[2]]), bezier2(t, [p[1], p[2], p[3]])]);
+    // t^3*(-x0 + 3*x1 - 3*x2 + x3) + t^2*(3*x0 - 6*x1 + 3*x2) + t*(3*x1 - 3*x0) + x0
     var t0 = t, t1 = 1 - t,
         t0t0 = t0*t0, t1t1 = t1*t1,
         t111 = t1*t1t1, t000 = t0t0*t0,
@@ -871,7 +881,7 @@ function arc(t, cx, cy, rx, ry, cos, sin)
 }
 function toarc(x, y, cx, cy, rx, ry, cos, sin)
 {
-    // x, y is point on unit circle arc
+    // x, y is point on unit circle
     if (null == cos)
     {
         cos = 1;
@@ -943,11 +953,8 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 
     // Step 4: compute θ and dθ
     var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry),
-        dtheta = vector_angle(
-            (x - _cx)/rx, (y - _cy)/ry,
-            (-x - _cx)/rx, (-y - _cy)/ry
-        );
-    dtheta -= stdMath.floor(dtheta / TWO_PI)*TWO_PI;
+        dtheta = vector_angle((x - _cx)/rx, (y - _cy)/ry, (-x - _cx)/rx, (-y - _cy)/ry);
+    dtheta -= stdMath.floor(dtheta/TWO_PI)*TWO_PI; // % 360
 
     if (!fs && dtheta > 0) dtheta -= TWO_PI;
     if (fs && dtheta < 0) dtheta += TWO_PI;
@@ -959,42 +966,13 @@ function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
     return {
         p0: arc(theta, cx, cy, rx, ry, cs[0], cs[1]),
         p1: arc(theta + dtheta, cx, cy, rx, ry, cs[0], cs[1]),
-        fa: abs(deg(dtheta)) > 180, //fa
-        fs: abs(deg(dtheta)) > 0 //fs
+        fa: abs(dtheta) > PI,
+        fs: abs(dtheta) > 0
     };
 }
 function align_curve(points)
 {
     return {Tx:-points[0].x, Ty:-points[0].y, R:-stdMath.atan2(points[points.length-1].y - points[0].y, points[points.length-1].x - points[0].x)};
-}
-function is_strictly_equal(a, b)
-{
-    return abs(a - b) < Number.EPSILON;
-}
-function is_almost_equal(a, b, eps)
-{
-    if (null == eps) eps = EPS;
-    return abs(a - b) < eps;
-}
-function clamp(x, xmin, xmax)
-{
-    return stdMath.max(stdMath.min(x, xmax), xmin);
-}
-function sign(x)
-{
-    return 0 > x ? -1 : 1;
-}
-function signed(x, add)
-{
-    return 0 > x ? Str(x) : ((false === add ? '' : '+') + Str(x));
-}
-function deg(rad)
-{
-    return rad * 180 / PI;
-}
-function rad(deg)
-{
-    return deg * PI / 180;
 }
 // stdMath.hypot produces wrong results
 var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
@@ -1023,6 +1001,15 @@ var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
     }
     return dx*sqrt2;
 };
+function dist(p1, p2)
+{
+    return hypot(p1.x - p2.x, p1.y - p2.y);
+}
+function dist2(p1, p2)
+{
+    var dx = p1.x - p2.x, dy = p1.y - p2.y;
+    return dx*dx + dy*dy;
+}
 function dotp(x1, y1, x2, y2)
 {
     return x1*x2 + y1*y2;
@@ -1033,15 +1020,57 @@ function crossp(x1, y1, x2, y2)
 }
 function angle(x1, y1, x2, y2)
 {
-    var n1 = hypot(x1, y1), n2 = hypot(x2, y2), dot = 0;
+    var n1 = hypot(x1, y1), n2 = hypot(x2, y2);
     if (is_strictly_equal(n1, 0) || is_strictly_equal(n2, 0)) return 0;
-    dot = dotp(x1/n1, y1/n1, x2/n2, y2/n2);
-    return stdMath.acos(clamp(dot, -1, 1));
+    return stdMath.acos(clamp(dotp(x1/n1, y1/n1, x2/n2, y2/n2), -1, 1));
 }
 function vector_angle(ux, uy, vx, vy)
 {
     return sign(crossp(ux, uy, vx, vy))*angle(ux, uy, vx, vy);
 }
+function polar_angle(x1, y1, x2, y2)
+{
+    var a = stdMath.atan2(y2 - y1, x2 - x1);
+    return a < 0 ? a + TWO_PI : a;
+}
+function dir(p1, p2, p3)
+{
+    return crossp(p1.x - p3.x, p1.y - p3.y, p2.x - p3.x, p2.y - p3.y);
+}
+function clamp(x, xmin, xmax)
+{
+    return stdMath.min(stdMath.max(x, xmin), xmax);
+}
+function deg(rad)
+{
+    return rad * 180 / PI;
+}
+function rad(deg)
+{
+    return deg * PI / 180;
+}
+function sign(x)
+{
+    return 0 > x ? -1 : 1;
+}
+function is_strictly_equal(a, b)
+{
+    return abs(a - b) < Number.EPSILON;
+}
+function is_almost_equal(a, b, eps)
+{
+    if (null == eps) eps = EPS;
+    return abs(a - b) < eps;
+}
+function x(p)
+{
+    return p.x || 0;
+}
+function y(p)
+{
+    return p.y || 0;
+}
+
 
 // ----------------------
 function merge(keys, a, b)
@@ -1092,6 +1121,17 @@ function SVG(tag, atts, svg, childNodes)
         });
     }
     return svg;
+}
+function shuffle(a)
+{
+    for (var i=a.length-1,j,aj; i>0; --i)
+    {
+        j = stdMath.round(stdMath.random()*i);
+        aj = a[j];
+        a[j] = a[i];
+        a[i] = aj;
+    }
+    return a;
 }
 /*function debounce(func, wait, immediate)
 {
@@ -1279,14 +1319,6 @@ function sort_asc0(a, b)
 {
     return a[0] - b[0];
 }
-function x(p)
-{
-    return p.x;
-}
-function y(p)
-{
-    return p.y;
-}
 var TRIM_RE = /^\s+|\s+$/gm;
 var trim = String.prototype.trim ? function trim(s) {
     return s.trim()
@@ -1303,6 +1335,10 @@ function pad(x, n, c, post)
         s = post ? s + p : p + s;
     }
     return s;
+}
+function signed(x, add)
+{
+    return 0 > x ? Str(x) : ((false === add ? '' : '+') + Str(x));
 }
 var cnt = 0, Str = String;
 function uuid(ns)
@@ -1346,6 +1382,7 @@ Geometrize.Math.solveQuadratic = solve_quadratic;
 Geometrize.Math.solveCubic = solve_cubic;
 Geometrize.Math.solveLinearLinear = solve_linear_linear_system;
 Geometrize.Math.solveLinearQuadratic = solve_linear_quadratic_system;
+Geometrize.Math.shuffle = shuffle;
 Geometrize.Geometry.linearBezierCurve = bezier1;
 Geometrize.Geometry.quadraticBezierCurve = bezier2;
 Geometrize.Geometry.cubicBezierCurve = bezier3;
@@ -1353,9 +1390,3 @@ Geometrize.Geometry.ellipticArcCurve = arc;
 Geometrize.Geometry.computeConvexHull = function(points) {
     return convex_hull(points).map(Point);
 };
-Geometrize.Geometry.alignCurve = function(curve) {
-    var T = align_curve(curve.points);
-    return Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty));
-};
-
-

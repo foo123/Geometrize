@@ -205,9 +205,9 @@ var Curve = makeClass(Topos, {
         return this._hull.map(function(p) {return p.clone();});
     },
     derivative: function() {
-        var d = this.d();
-        if (this.hasMatrix()) d.setMatrix(this.matrix.clone());
-        d.setStyle(this.style.toObj());
+        var self = this, d = self.d();
+        if (self.hasMatrix()) d.setMatrix(self.matrix.clone());
+        d.setStyle(self.style.toObj());
         return d;
     },
     polylinePoints: function() {
@@ -272,17 +272,20 @@ var Bezier = makeClass(Curve, {
         return d;
     },
     toTex: function() {
-        return '\\text{'+this.name+': }\\left('+this.points.map(Tex).join(',')+'\\right)';
+        var self = this;
+        return '\\text{'+self.name+': }\\left('+self.points.map(Tex).join(',')+'\\right)';
     },
     toString: function() {
-        return ''+this.name+'('+this.points.map(Str).join(',')+')';
+        var self = this;
+        return ''+self.name+'('+self.points.map(Str).join(',')+')';
     }
 });
 Geometrize.Bezier = Bezier;
 
 // 2D Composite Curve class (container of multiple, joined, curves)
-var M0 = /^M\s+(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
-    M = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s+M\s+(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/g
+var MZ = /[MZ]/g,
+    XY = /^\s*(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
+    PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
 var CompositeCurve = makeClass(Curve, {
     constructor: function CompositeCurve(curves) {
@@ -490,8 +493,9 @@ var CompositeCurve = makeClass(Curve, {
         return true;
     },
     isClosed: function() {
-        if (!this.isConnected()) return false;
-        var c = this.curves;
+        var self = this;
+        if (!self.isConnected()) return false;
+        var c = self.curves;
         return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
     },
     derivative: function() {
@@ -537,44 +541,58 @@ var CompositeCurve = makeClass(Curve, {
         return this.toSVGPath(arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var path = this.curves.map(function(c) {return c.toSVGPath();}).join(' '),
-            x0 = 0, y0 = 0, m = path.match(M0);
-        x0 = parseFloat(m[1]); y0 = parseFloat(m[2]);
-        path = path.replace(M, function(m0, m1, m2 ,m3, m4) {
-            var x1 = parseFloat(m1), y1 = parseFloat(m2),
-                x2 = parseFloat(m3), y2 = parseFloat(m4);
-            if (is_strictly_equal(x1, x2) && is_strictly_equal(y1, y2))
+        var self = this, path = self.curves.map(function(c) {return c.toSVGPath();}).join(' ');/*,
+            x0 = 0, y0 = 0, mz = path.match(MZ), p = path.split(MZ);
+        path = mz.reduce(function(path, command, i) {
+            var pp, m1, m2, x, y, px, py;
+            switch (command)
             {
-                return ' ' + Str(x1) + ' ' + Str(y1);
+                case 'M':
+                pp = p[i+1] || '';
+                m1 = pp.match(XY);
+                x = parseFloat(m1[1]) || 0;
+                y = parseFloat(m1[2]) || 0;
+                x0 = x;
+                y0 = y;
+                m2 = (p[i] || '').match(PXY);
+                if (m2)
+                {
+                    px = parseFloat(m2[1]) || 0;
+                    py = parseFloat(m2[2]) || 0;
+                    if (is_strictly_equal(x, px) && is_strictly_equal(y, py))
+                    {
+                        pp = pp.slice(m1[0].length);
+                    }
+                    else
+                    {
+                        pp = 'M' + pp;
+                    }
+                }
+                else
+                {
+                    pp = 'M' + pp;
+                }
+                path += pp;
+                break;
+                case 'Z':
+                break;
+                default:
+                break;
             }
-            else if (is_strictly_equal(x1, x0) && is_strictly_equal(y1, y0))
-            {
-                x0 = x2; y0 = y2;
-                return Str(x1) + ' ' + Str(y1) + ' Z M ' + Str(x2) + ' ' + Str(y2);
-            }
-            else
-            {
-                x0 = x2; y0 = y2;
-                return m0;
-            }
-        });
-        if (this.isClosed()) path += ' Z';
+            return path;
+        }, p[0] || '');*/
+        if (self.isClosed()) path += ' Z';
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var isClosed = this.isClosed();
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        if (isClosed)
-        {
-            ctx.closePath();
-            if ('none' !== this.style['fill']) ctx.fill();
-        }
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {

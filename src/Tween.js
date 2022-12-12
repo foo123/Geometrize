@@ -141,7 +141,13 @@ function prepare_tween(tween, fps)
             keyframes: null,
             kf: 0,
             current: null,
-            reverse: false
+            reverse: false,
+            bb: {
+                ymin: Infinity,
+                xmin: Infinity,
+                ymax: -Infinity,
+                xmax: -Infinity
+            }
         },
         shapes = {},
         maxCurves = -Infinity,
@@ -161,10 +167,18 @@ function prepare_tween(tween, fps)
             stroke = is_string(style.stroke) ? (Color.parse(style.stroke) || style.stroke) : null,
             fill = is_string(style.fill) ? (Color.parse(style.fill) || style.fill) : null,
             hasStroke = is_array(stroke),
-            hasFill = is_array(fill)
+            hasFill = is_array(fill), bb
         ;
         if (kf.shape && kf.shape.id && (null == shapes[kf.shape.id])) shapes[kf.shape.id] = shape;
         maxCurves = stdMath.max(maxCurves, shape.length);
+        if (kf.shape && is_function(kf.shape.getBoundingBox))
+        {
+            bb = kf.shape.getBoundingBox();
+            t.bb.ymin = stdMath.min(t.bb.ymin, bb.ymin||0);
+            t.bb.xmin = stdMath.min(t.bb.xmin, bb.xmin||0);
+            t.bb.ymax = stdMath.max(t.bb.ymax, bb.ymax||0);
+            t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
+        }
         return {
             frame: stdMath.round((parseFloat(key, 10) || 0)/100*(t.nframes - 1)),
             shape: shape,
@@ -288,28 +302,28 @@ function is_tween_finished(tween)
 }
 function next_frame(tween)
 {
-    tween.current.frame += tween.reverse ? -1 : 1;
+    tween.current.frame = clamp(tween.current.frame + (tween.reverse ? -1 : 1), -1, tween.nframes);
     if (is_tween_finished(tween)) return false;
     if (tween.reverse)
     {
-        if (tween.current.frame <= tween.keyframes[tween.kf-1].frame)
+        if (tween.kf >= 1 && tween.current.frame <= tween.keyframes[tween.kf-1].frame)
         {
             if (tween.kf-2 >= 0)
                 --tween.kf;
         }
         var a = tween.keyframes[tween.kf],
-            b = tween.keyframes[tween.kf-1],
+            b = tween.keyframes[tween.kf >= 1 ? tween.kf-1 : 0],
             _t = abs(tween.current.frame - a.frame)/(a.frame - b.frame + 1);
     }
     else
     {
-        if (tween.current.frame >= tween.keyframes[tween.kf+1].frame)
+        if (tween.kf+1 < tween.keyframes.length && tween.current.frame >= tween.keyframes[tween.kf+1].frame)
         {
             if (tween.kf+2 < tween.keyframes.length)
                 ++tween.kf;
         }
         var a = tween.keyframes[tween.kf],
-            b = tween.keyframes[tween.kf+1],
+            b = tween.keyframes[tween.kf+1 < tween.keyframes.length ? tween.kf+1 : tween.keyframes.length-1],
             _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1);
     }
     var t = a.easing(_t),
@@ -382,7 +396,7 @@ var Tween = makeClass(Primitive, {
         self.start = function() {
             run = true;
             if (is_first_frame(tween) && onStart) onStart(self);
-            setTimeout(animate, (tween.delay || 0) + dt);
+            setTimeout(animate, ((is_first_frame(tween) ? tween.delay : 0) || 0) + dt);
             return self;
         };
         self.stop = function() {
@@ -405,6 +419,17 @@ var Tween = makeClass(Primitive, {
         self.onEnd = function(cb) {
             onEnd = is_function(cb) ? cb : null;
             return self;
+        };
+        self.numberOfFrames = function() {
+            return tween.nframes;
+        };
+        self.getBoundingBox = function() {
+            return {
+                ymin: tween.bb.ymin,
+                xmin: tween.bb.xmin,
+                ymax: tween.bb.ymax,
+                xmax: tween.bb.xmax
+            };
         };
         self.toSVGPath = function(svg) {
             var path = tween.current.shape.map(function(cb) {
@@ -433,18 +458,18 @@ var Tween = makeClass(Primitive, {
             return self.toSVGPath(arguments.length ? svg : false);
         };
         self.toCanvas = function(ctx) {
-            ctx.lineWidth = this.style['stroke-width'];
-            ctx.strokeStyle = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']])) : (tween.current.style['stroke'] || this.style['stroke']);
+            ctx.lineWidth = self.style['stroke-width'];
+            ctx.strokeStyle = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']])) : (tween.current.style['stroke'] || self.style['stroke']);
             if (tween.current.style['fill'])
             {
                 ctx.fillStyle = tween.current.style.hasFill ? Color.toCSS(tween.current.style['fill'].concat([tween.current.style['fill-opacity']])) : tween.current.style['fill'];
             }
-            ctx.beginPath();
             self.toCanvasPath(ctx);
             if (tween.current.style['fill']) ctx.fill();
             ctx.stroke();
         };
         self.toCanvasPath = function(ctx) {
+            ctx.beginPath();
             tween.current.shape.forEach(function(cb) {
                 ctx.moveTo(cb[0].x, cb[0].y);
                 ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);

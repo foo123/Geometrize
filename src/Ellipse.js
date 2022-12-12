@@ -170,13 +170,15 @@ var Ellipse = makeClass(Curve, {
     },
     name: 'Ellipse',
     clone: function() {
-        return new Ellipse(this.center.clone(), this.radiusX, this.radiusY, this.angle);
+        var self = this;
+        return new Ellipse(self.center.clone(), self.radiusX, self.radiusY, self.angle);
     },
     transform: function(matrix) {
-        var c = this.center,
-            rX = this.radiusX,
-            rY = this.radiusY,
-            a = this.angle,
+        var self = this,
+            c = self.center,
+            rX = self.radiusX,
+            rY = self.radiusY,
+            a = self.angle,
             t = matrix.getTranslation(),
             r = deg(matrix.getRotationAngle()),
             s = matrix.getScale()
@@ -198,101 +200,106 @@ var Ellipse = makeClass(Curve, {
         return false;
     },
     f: function(t) {
-        var c = this.center, cs = this.cs;
-        return arc(t*TWO_PI, c.x, c.y, this.radiusX, this.radiusY, cs[0], cs[1]);
+        var self = this, c = self.center, cs = self.cs;
+        return arc(t*TWO_PI, c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1]);
     },
     d: function() {
+        var self = this;
         return new Ellipse(
-            this.center,
-            this.radiusY,
-            this.radiusX,
-            -this.angle
+            self.center,
+            self.radiusY,
+            self.radiusX,
+            -self.angle
         );
     },
     hasPoint: function(point) {
-        return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.cs);
+        var self = this;
+        return 2 === point_inside_ellipse(point, self.center, self.radiusX, self.radiusY, self.cs);
     },
     hasInsidePoint: function(point, strict) {
-        var inside = point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.cs);
+        var self = this, inside = point_inside_ellipse(point, self.center, self.radiusX, self.radiusY, self.cs);
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._lines, other.center, other.radius);
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
     bezierPoints: function() {
-        var c = this.center, cs = this.cs,
+        var self = this, c = self.center, cs = self.cs,
             cos = cs[0], sin = cs[1],
-            rx = this.radiusX, ry = this.radiusY;
+            rx = self.radiusX, ry = self.radiusY;
         return [
-        arc2bezier(0, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 0*/),
-        arc2bezier(-PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 1*/),
-        arc2bezier(-PI, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 0*/),
-        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 1*/)
+        arc2bezier(0, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 0*/),
+        arc2bezier(-HALF_PI, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 1*/),
+        arc2bezier(-PI, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 0*/),
+        arc2bezier(-PI3_2, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 1*/)
         ];
     },
     toSVG: function(svg) {
-        var c = this.center,
-            rX = this.radiusX,
-            rY = this.radiusY,
-            a = this.angle;
+        var self = this,
+            c = self.center,
+            rX = self.radiusX,
+            rY = self.radiusY,
+            a = self.angle;
         return SVG('ellipse', {
-            'id': [this.id, false],
-            'cx': [c.x, this.center.isChanged()],
-            'cy': [c.y, this.center.isChanged()],
-            'rx': [rX, this.values.radiusX.isChanged()],
-            'ry': [rY, this.values.radiusY.isChanged()],
-            'transform': ['rotate('+Str(a)+' '+Str(c.x)+' '+Str(c.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'cx': [c.x, self.center.isChanged()],
+            'cy': [c.y, self.center.isChanged()],
+            'rx': [rX, self.values.radiusX.isChanged()],
+            'ry': [rY, self.values.radiusY.isChanged()],
+            'transform': ['rotate('+Str(a)+' '+Str(c.x)+' '+Str(c.y)+')', self.center.isChanged() || self.values.angle.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var rx = this.radiusX, ry = this.radiusY, a = this.angle,
-            p1 = this.f(0), p2 = this.f(0.5),
+        var self = this, rx = self.radiusX, ry = self.radiusY, a = self.angle,
+            p1 = self.f(0), p2 = self.f(0.5),
             path = ['M',p1.x,p1.y,'A',rx,ry,a,0,1,p2.x,p2.y,'A',rx,ry,a,0,1,p1.x,p1.y,'Z'].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        ctx.closePath();
-        if ('none' !== this.style['fill']) ctx.fill();
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
+        var self = this, c = self.center, rx = self.radiusX, ry = self.radiusY, a = rad(self.angle);
+        ctx.beginPath();
         ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
+        ctx.closePath();
     },
     toTex: function() {
-        var a = Str(this.angle)+'\\text{°}',
-            c = this.center, rX = Str(this.radiusX), rY = Str(this.radiusY);
+        var self = this, a = Str(self.angle)+'\\text{°}',
+            c = self.center, rX = Str(self.radiusX), rY = Str(self.radiusY);
         return '\\text{Ellipse: }\\left|\\begin{pmatrix}\\cos('+a+')&-\\sin('+a+')\\\\sin('+a+')&\\cos('+a+')\\end{pmatrix}\\begin{pmatrix}\\frac{x'+signed(-c.x)+'}{'+rX+'}\\\\\\frac{y'+signed(-c.y)+'}{'+rY+'}\\end{pmatrix}\\right|^2 = 1';
     },
     toString: function() {
-        return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°'].join(',')+')';
+        var self = this;
+        return 'Ellipse('+[Str(self.center), Str(self.radiusX), Str(self.radiusY), Str(self.angle)+'°'].join(',')+')';
     }
 });
 Geometrize.Ellipse = Ellipse;

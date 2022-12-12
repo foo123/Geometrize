@@ -104,35 +104,35 @@ var Bezier2 = makeClass(Bezier, {
         return point_on_qbezier(point, this._points)
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            i = point_on_qbezier(other, this._points)
+            i = point_on_qbezier(other, self._points)
             return i ? [other] : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._lines, other.center, other.radius);
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
-            i = polyline_qbezier_intersection(this._lines, other._points);
+            i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
         else if ((other instanceof Primitive))
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
@@ -154,22 +154,23 @@ var Bezier2 = makeClass(Bezier, {
         return this.toSVGPath(arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var p = this._points,
+        var self = this, p = self._points,
             path = ['M',p[0].x,p[0].y,'Q',p[1].x,p[1].y,p[2].x,p[2].y].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
         var p = this._points;
+        ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
         ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
     }

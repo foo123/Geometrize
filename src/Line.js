@@ -93,56 +93,58 @@ var Bezier1 = makeClass(Bezier, {
     },
     name: 'Line',
     clone: function() {
-        return new Line(this.start.clone(), this.end.clone());
+        var self = this;
+        return new Line(self.start.clone(), self.end.clone());
     },
     transform: function(matrix) {
-        return new Line(this.start.transform(matrix), this.end.transform(matrix));
+        var self = this;
+        return new Line(self.start.transform(matrix), self.end.transform(matrix));
     },
     hasPoint: function(point) {
         var p = this._points;
         return !!point_on_line_segment(point, p[0], p[1]);
     },
     intersects: function(other) {
-        var i, p;
+        var self = this, i, p;
         if (other instanceof Point)
         {
-            p = this._points;
+            p = self._points;
             i = point_on_line_segment(other, p[0], p[1]);
             return i ? [other] : false;
         }
         else if (other instanceof Line)
         {
-            p = this._points;
+            p = self._points;
             i = line_segments_intersection(p[0], p[1], other._points[0], other._points[1]);
             return i ? [Point(i)] : false;
         }
         else if (other instanceof Circle)
         {
-            p = this._points;
+            p = self._points;
             i = line_circle_intersection(p[0], p[1], other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            p = this._points;
+            p = self._points;
             i = line_ellipse_intersection(p[0], p[1], other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            p = this._points;
+            p = self._points;
             i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
-            p = this._points;
+            p = self._points;
             i = line_qbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {
-            p = this._points;
+            p = self._points;
             i = line_cbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
@@ -161,46 +163,53 @@ var Bezier1 = makeClass(Bezier, {
     bezierPoints: function() {
         var p = this._points;
         return [
-        [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]
+        [
+        bezier1(0, p),
+        bezier1(0.5, p),
+        bezier1(0.5, p),
+        bezier1(1, p)
+        ]
         ];
     },
     toSVG: function(svg) {
-        var p = this._points;
+        var self = this, p = self._points;
         return SVG('line', {
-            'id': [this.id, false],
-            'x1': [p[0].x, this.start.isChanged() || this.values.matrix.isChanged()],
-            'y1': [p[0].y, this.start.isChanged() || this.values.matrix.isChanged()],
-            'x2': [p[1].x, this.end.isChanged() || this.values.matrix.isChanged()],
-            'y2': [p[1].y, this.end.isChanged() || this.values.matrix.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'x1': [p[0].x, self.start.isChanged() || self.values.matrix.isChanged()],
+            'y1': [p[0].y, self.start.isChanged() || self.values.matrix.isChanged()],
+            'x2': [p[1].x, self.end.isChanged() || self.values.matrix.isChanged()],
+            'y2': [p[1].y, self.end.isChanged() || self.values.matrix.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var p = this._points,
+        var self = this, p = self._points,
             path = ['M',p[0].x,p[0].y,'L',p[1].x,p[1].y].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var p1 = this._points[0], p2 = this._points[1];
+        var self = this, p1 = self._points[0], p2 = self._points[1];
+        ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
     },
     toTex: function() {
-        var p1 = this.start, p2 = this.end;
+        var self = this, p1 = self.start, p2 = self.end;
         return '\\text{Line: }'+signed(p2.y - p1.y, false)+' \\cdot x '+signed(p1.x - p2.x)+' \\cdot y '+signed(p2.x*p1.y - p1.x*p2.y)+' = 0\\text{, }'+Str(stdMath.min(p1.x, p2.x))+' \\le x \\le '+Str(stdMath.max(p1.x, p2.x))+'\\text{, }'+Str(stdMath.min(p1.y, p2.y))+' \\le y \\le '+Str(stdMath.max(p1.y, p2.y));
     },
     toString: function() {
-        return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';
+        var self = this;
+        return 'Line('+[Str(self.start), Str(self.end)].join(',')+')';
     }
 });
 var Line = Bezier1;

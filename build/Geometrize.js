@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.0 (2022-12-11 17:57:16)
+*   @version 0.9.0 (2022-12-12 12:45:59)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.0 (2022-12-11 17:57:16)
+*   @version 0.9.0 (2022-12-12 12:45:59)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -906,11 +906,12 @@ var Style = makeClass(null, merge(null, {
         }, '');
     },
     toCanvas: function(ctx) {
-        ctx.lineCap = this['stroke-linecap'];
-        ctx.lineJoin = this['stroke-linejoin'];
-        ctx.lineWidth = this['stroke-width'];
-        ctx.fillStyle = 'none' === this['fill'] ? 'transparent' : this['fill'];
-        ctx.strokeStyle = this['stroke'];
+        var self = this;
+        ctx.lineCap = self['stroke-linecap'];
+        ctx.lineJoin = self['stroke-linejoin'];
+        ctx.lineWidth = self['stroke-width'];
+        ctx.fillStyle = 'none' === self['fill'] ? 'transparent' : self['fill'];
+        ctx.strokeStyle = self['stroke'];
         return ctx;
     }
 }, Changeable), {
@@ -1143,30 +1144,33 @@ var Point = makeClass(Primitive, {
         return matrix.transform(this);
     },
     getBoundingBox: function() {
+        var self = this;
         return {
-        ymin: this.y,
-        xmin: this.x,
-        ymax: this.y,
-        xmax: this.x
+        ymin: self.y,
+        xmin: self.x,
+        ymax: self.y,
+        xmax: self.x
         };
     },
     eq: function(other) {
+        var self = this;
         if (other instanceof Point)
         {
-            return p_eq(this, other);
+            return p_eq(self, other);
         }
         else if (null != other.x && null != other.y)
         {
-            return p_eq(this, other);
+            return p_eq(self, other);
         }
         else if (is_array(other))
         {
-            return p_eq(this, {x: other[0], y: other[1]});
+            return p_eq(self, {x: other[0], y: other[1]});
         }
         return false;
     },
     add: function(other) {
-        return other instanceof Point ? new Point(this.x+other.x, this.y+other.y) : new Point(this.x+Num(other), this.y+Num(other));
+        var self = this;
+        return other instanceof Point ? new Point(self.x+other.x, self.y+other.y) : new Point(self.x+Num(other), self.y+Num(other));
     },
     mul: function(other) {
         other = Num(other);
@@ -1217,37 +1221,43 @@ var Point = makeClass(Primitive, {
         ];
     },
     toSVG: function(svg) {
+        var self = this;
         return SVG('circle', {
-            'id': [this.id, false],
-            'cx': [this.x, this.isChanged()],
-            'cy': [this.y, this.isChanged()],
-            'r': [this.style['stroke-width'], this.style.isChanged()],
-            'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
+            'id': [self.id, false],
+            'cx': [self.x, self.isChanged()],
+            'cy': [self.y, self.isChanged()],
+            'r': [self.style['stroke-width'], self.style.isChanged()],
+            'style': ['fill:'+Str(self.style['stroke'])+';', self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var c = this, r = this.style['stroke-width'],
+        var c = this, r = c.style['stroke-width'],
             path = 'M '+Str(c.x - r)+' '+Str(c.y)+' a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(r + r)+' 0 a '+Str(r)+' '+Str(r)+' 0 0 0 '+Str(-r - r)+' 0 Z';
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': ['fill:'+Str(this.style['stroke'])+';', this.style.isChanged()]
+            'id': [c.id, false],
+            'd': [path, c.isChanged()],
+            'style': ['fill:'+Str(c.style['stroke'])+';', c.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
+        var self = this;
+        ctx.fillStyle = self.style['stroke']
+        self.toCanvasPath(ctx);
+    },
+    toCanvasPath: function(ctx) {
+        var self = this;
         ctx.beginPath();
-        this.toCanvasPath(ctx);
+        ctx.arc(self.x, self.y, self.style['stroke-width'], 0, TWO_PI);
         ctx.closePath();
         ctx.fill();
     },
-    toCanvasPath: function(ctx) {
-        ctx.arc(this.x, this.y, this.style['stroke-width'], 0, TWO_PI);
-    },
     toTex: function() {
-        return '\\begin{pmatrix}'+Str(this.x)+'\\\\'+Str(this.y)+'\\end{pmatrix}';
+        var self = this;
+        return '\\begin{pmatrix}'+Str(self.x)+'\\\\'+Str(self.y)+'\\end{pmatrix}';
     },
     toString: function() {
-        return 'Point('+Str(this.x)+','+Str(this.y)+')';
+        var self = this;
+        return 'Point('+Str(self.x)+','+Str(self.y)+')';
     }
 });
 Geometrize.Point = Point;
@@ -1382,6 +1392,26 @@ var Topos = makeClass(Primitive, {
             return i.length ? i : false;
         }
         return false;
+    },
+    toSVG: function(svg) {
+        return this.toSVGPath(arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var self = this, path = self.points.map(function(p) {return p.toSVGPath();}).join(' ');
+        return arguments.length ? SVG('path', {
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        this.style.toCanvas(ctx)
+        this.toCanvasPath(ctx);
+    },
+    toCanvasPath: function(ctx) {
+        this.points.forEach(function(p) {
+            p.toCanvasPath(ctx);
+        });
     },
     toTex: function() {
         return '\\text{Topos}';
@@ -1598,9 +1628,9 @@ var Curve = makeClass(Topos, {
         return this._hull.map(function(p) {return p.clone();});
     },
     derivative: function() {
-        var d = this.d();
-        if (this.hasMatrix()) d.setMatrix(this.matrix.clone());
-        d.setStyle(this.style.toObj());
+        var self = this, d = self.d();
+        if (self.hasMatrix()) d.setMatrix(self.matrix.clone());
+        d.setStyle(self.style.toObj());
         return d;
     },
     polylinePoints: function() {
@@ -1665,17 +1695,20 @@ var Bezier = makeClass(Curve, {
         return d;
     },
     toTex: function() {
-        return '\\text{'+this.name+': }\\left('+this.points.map(Tex).join(',')+'\\right)';
+        var self = this;
+        return '\\text{'+self.name+': }\\left('+self.points.map(Tex).join(',')+'\\right)';
     },
     toString: function() {
-        return ''+this.name+'('+this.points.map(Str).join(',')+')';
+        var self = this;
+        return ''+self.name+'('+self.points.map(Str).join(',')+')';
     }
 });
 Geometrize.Bezier = Bezier;
 
 // 2D Composite Curve class (container of multiple, joined, curves)
-var M0 = /^M\s+(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
-    M = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s+M\s+(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/g
+var MZ = /[MZ]/g,
+    XY = /^\s*(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
+    PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
 var CompositeCurve = makeClass(Curve, {
     constructor: function CompositeCurve(curves) {
@@ -1883,8 +1916,9 @@ var CompositeCurve = makeClass(Curve, {
         return true;
     },
     isClosed: function() {
-        if (!this.isConnected()) return false;
-        var c = this.curves;
+        var self = this;
+        if (!self.isConnected()) return false;
+        var c = self.curves;
         return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
     },
     derivative: function() {
@@ -1930,44 +1964,58 @@ var CompositeCurve = makeClass(Curve, {
         return this.toSVGPath(arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var path = this.curves.map(function(c) {return c.toSVGPath();}).join(' '),
-            x0 = 0, y0 = 0, m = path.match(M0);
-        x0 = parseFloat(m[1]); y0 = parseFloat(m[2]);
-        path = path.replace(M, function(m0, m1, m2 ,m3, m4) {
-            var x1 = parseFloat(m1), y1 = parseFloat(m2),
-                x2 = parseFloat(m3), y2 = parseFloat(m4);
-            if (is_strictly_equal(x1, x2) && is_strictly_equal(y1, y2))
+        var self = this, path = self.curves.map(function(c) {return c.toSVGPath();}).join(' ');/*,
+            x0 = 0, y0 = 0, mz = path.match(MZ), p = path.split(MZ);
+        path = mz.reduce(function(path, command, i) {
+            var pp, m1, m2, x, y, px, py;
+            switch (command)
             {
-                return ' ' + Str(x1) + ' ' + Str(y1);
+                case 'M':
+                pp = p[i+1] || '';
+                m1 = pp.match(XY);
+                x = parseFloat(m1[1]) || 0;
+                y = parseFloat(m1[2]) || 0;
+                x0 = x;
+                y0 = y;
+                m2 = (p[i] || '').match(PXY);
+                if (m2)
+                {
+                    px = parseFloat(m2[1]) || 0;
+                    py = parseFloat(m2[2]) || 0;
+                    if (is_strictly_equal(x, px) && is_strictly_equal(y, py))
+                    {
+                        pp = pp.slice(m1[0].length);
+                    }
+                    else
+                    {
+                        pp = 'M' + pp;
+                    }
+                }
+                else
+                {
+                    pp = 'M' + pp;
+                }
+                path += pp;
+                break;
+                case 'Z':
+                break;
+                default:
+                break;
             }
-            else if (is_strictly_equal(x1, x0) && is_strictly_equal(y1, y0))
-            {
-                x0 = x2; y0 = y2;
-                return Str(x1) + ' ' + Str(y1) + ' Z M ' + Str(x2) + ' ' + Str(y2);
-            }
-            else
-            {
-                x0 = x2; y0 = y2;
-                return m0;
-            }
-        });
-        if (this.isClosed()) path += ' Z';
+            return path;
+        }, p[0] || '');*/
+        if (self.isClosed()) path += ' Z';
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        var isClosed = this.isClosed();
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        if (isClosed)
-        {
-            ctx.closePath();
-            if ('none' !== this.style['fill']) ctx.fill();
-        }
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
@@ -2078,56 +2126,58 @@ var Bezier1 = makeClass(Bezier, {
     },
     name: 'Line',
     clone: function() {
-        return new Line(this.start.clone(), this.end.clone());
+        var self = this;
+        return new Line(self.start.clone(), self.end.clone());
     },
     transform: function(matrix) {
-        return new Line(this.start.transform(matrix), this.end.transform(matrix));
+        var self = this;
+        return new Line(self.start.transform(matrix), self.end.transform(matrix));
     },
     hasPoint: function(point) {
         var p = this._points;
         return !!point_on_line_segment(point, p[0], p[1]);
     },
     intersects: function(other) {
-        var i, p;
+        var self = this, i, p;
         if (other instanceof Point)
         {
-            p = this._points;
+            p = self._points;
             i = point_on_line_segment(other, p[0], p[1]);
             return i ? [other] : false;
         }
         else if (other instanceof Line)
         {
-            p = this._points;
+            p = self._points;
             i = line_segments_intersection(p[0], p[1], other._points[0], other._points[1]);
             return i ? [Point(i)] : false;
         }
         else if (other instanceof Circle)
         {
-            p = this._points;
+            p = self._points;
             i = line_circle_intersection(p[0], p[1], other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            p = this._points;
+            p = self._points;
             i = line_ellipse_intersection(p[0], p[1], other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            p = this._points;
+            p = self._points;
             i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
-            p = this._points;
+            p = self._points;
             i = line_qbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {
-            p = this._points;
+            p = self._points;
             i = line_cbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
@@ -2146,46 +2196,53 @@ var Bezier1 = makeClass(Bezier, {
     bezierPoints: function() {
         var p = this._points;
         return [
-        [bezier1(0, p), bezier1(0.5, p), bezier1(0.5, p), bezier1(1, p)]
+        [
+        bezier1(0, p),
+        bezier1(0.5, p),
+        bezier1(0.5, p),
+        bezier1(1, p)
+        ]
         ];
     },
     toSVG: function(svg) {
-        var p = this._points;
+        var self = this, p = self._points;
         return SVG('line', {
-            'id': [this.id, false],
-            'x1': [p[0].x, this.start.isChanged() || this.values.matrix.isChanged()],
-            'y1': [p[0].y, this.start.isChanged() || this.values.matrix.isChanged()],
-            'x2': [p[1].x, this.end.isChanged() || this.values.matrix.isChanged()],
-            'y2': [p[1].y, this.end.isChanged() || this.values.matrix.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'x1': [p[0].x, self.start.isChanged() || self.values.matrix.isChanged()],
+            'y1': [p[0].y, self.start.isChanged() || self.values.matrix.isChanged()],
+            'x2': [p[1].x, self.end.isChanged() || self.values.matrix.isChanged()],
+            'y2': [p[1].y, self.end.isChanged() || self.values.matrix.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var p = this._points,
+        var self = this, p = self._points,
             path = ['M',p[0].x,p[0].y,'L',p[1].x,p[1].y].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var p1 = this._points[0], p2 = this._points[1];
+        var self = this, p1 = self._points[0], p2 = self._points[1];
+        ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
     },
     toTex: function() {
-        var p1 = this.start, p2 = this.end;
+        var self = this, p1 = self.start, p2 = self.end;
         return '\\text{Line: }'+signed(p2.y - p1.y, false)+' \\cdot x '+signed(p1.x - p2.x)+' \\cdot y '+signed(p2.x*p1.y - p1.x*p2.y)+' = 0\\text{, }'+Str(stdMath.min(p1.x, p2.x))+' \\le x \\le '+Str(stdMath.max(p1.x, p2.x))+'\\text{, }'+Str(stdMath.min(p1.y, p2.y))+' \\le y \\le '+Str(stdMath.max(p1.y, p2.y));
     },
     toString: function() {
-        return 'Line('+[Str(this.start), Str(this.end)].join(',')+')';
+        var self = this;
+        return 'Line('+[Str(self.start), Str(self.end)].join(',')+')';
     }
 });
 var Line = Bezier1;
@@ -2304,7 +2361,8 @@ var Polyline = makeClass(Curve, {
         return new Polyline(this.points.map(function(point) {return point.transform(matrix);}));
     },
     isClosed: function() {
-        return 2 < this.points.length ? this.points[0].eq(this.points[this.points.length-1]) : false;
+        var self = this, p = self.points;
+        return 2 < p.length ? p[0].eq(p[p.length-1]) : false;
     },
     isConvex: function() {
         return this._is_convex;
@@ -2322,49 +2380,49 @@ var Polyline = makeClass(Curve, {
         return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Line)
         {
-            i = polyline_line_intersection(this._points, other._points[0], other._points[1]);
+            i = polyline_line_intersection(self._points, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._points, other.center, other.radius);
+            i = polyline_circle_intersection(self._points, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._points, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._points, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            i = polyline_arc_intersection(this._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(self._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
-            i = polyline_qbezier_intersection(this._points, other._points);
+            i = polyline_qbezier_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {
-            i = polyline_cbezier_intersection(this._points, other._points);
+            i = polyline_cbezier_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Polyline)
         {
-            i = polyline_polyline_intersection(this._points, other._points);
+            i = polyline_polyline_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(this);
+            return other.intersects(self = this);
         }
         return false;
     },
@@ -2390,37 +2448,39 @@ var Polyline = makeClass(Curve, {
         }, []);
     },
     toSVG: function(svg) {
+        var self = this;
         return SVG('polyline', {
-            'id': [this.id, false],
-            'points': [this._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'points': [self._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var path = 'M '+(this._points.map(function(p) {
+        var self = this, path = 'M '+(self._points.map(function(p) {
             return Str(p.x)+' '+Str(p.y);
-        }).join(' L '));
+        }).join(' L ')) + (self.isClosed() ? ' Z' : '');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        if (this.isClosed())
+        var self = this;
+        self.style.toCanvas(ctx);
+        elf.toCanvasPath(ctx);
+        if (self.isClosed() && 'none' !== self.style['fill'])
         {
-            ctx.closePath();
-            if ('none' !== this.style['fill']) ctx.fill();
+            ctx.fill();
         }
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var p = this._points, n = p.length;
+        var self = this, p = self._points, n = p.length;
+        ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        if (self.isClosed()) ctx.closePath();
     },
     toTex: function() {
         var lines = this.lines;
@@ -2738,23 +2798,25 @@ var Arc = makeClass(Curve, {
     },
     name: 'Arc',
     clone: function() {
-        return new Arc(this.start.clone(), this.end.clone(), this.radiusX, this.radiusY, this.angle, this.largeArc, this.sweep);
+        var self = this;
+        return new Arc(self.start.clone(), self.end.clone(), self.radiusX, self.radiusY, self.angle, self.largeArc, self.sweep);
     },
     transform: function(matrix) {
-        var rX = this.radiusX,
-            rY = this.radiusY,
-            a = this.angle,
+        var self = this,
+            rX = self.radiusX,
+            rY = self.radiusY,
+            a = self.angle,
             r = deg(matrix.getRotationAngle()),
             s = matrix.getScale()
         ;
         return new Arc(
-            this.start.transform(matrix),
-            this.end.transform(matrix),
+            self.start.transform(matrix),
+            self.end.transform(matrix),
             rX * s.x,
             rY * s.y,
             a + r,
-            this.largeArc,
-            this.sweep
+            self.largeArc,
+            self.sweep
         );
     },
     isClosed: function() {
@@ -2767,63 +2829,66 @@ var Arc = makeClass(Curve, {
         return false;
     },
     f: function(t) {
-        var c = this.center, cs = this.cs;
-        return arc(this.theta + t*this.dtheta, c.x, c.y, this.rX, this.rY, cs[0], cs[1]);
+        var self = this, c = self.center, cs = self.cs;
+        return arc(self.theta + t*self.dtheta, c.x, c.y, self.rX, self.rY, cs[0], cs[1]);
     },
     d: function() {
-        var p = ellipse2arc(this.center.x, this.center.y, this.rY, this.rX, [this.cs[0], -this.cs[1]], -this.theta, -this.dtheta);
+        var self = this,
+            p = ellipse2arc(self.center.x, self.center.y, self.rY, self.rX, [self.cs[0], -self.cs[1]], -self.theta, -self.dtheta);
         return new Arc(
             p.p0,
             p.p1,
-            -this.angle,
+            -self.angle,
             p.fa,
             p.fs
         );
     },
     hasPoint: function(point) {
-        return point_on_arc(point, this.center, this.rX, this.rY, this.cs, this.theta, this.dtheta);
+        var self = this;
+        return point_on_arc(point, self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta);
     },
     hasInsidePoint: function(point, strict) {
         return strict ? false : this.hasPoint(point);
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._lines, other.center, other.radius);
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Arc)
         {
-            i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
     bezierPoints: function() {
-        var c = this.center,
+        var self = this,
+            c = self.center,
             cx = c.x,
             cy = c.y,
-            rx = this.rX,
-            ry = this.rY,
-            cs = this.cs,
+            rx = self.rX,
+            ry = self.rY,
+            cs = self.cs,
             cos = cs[0],
             sin = cs[1],
-            theta = this.theta,
-            dtheta = this.dtheta,
+            theta = self.theta,
+            dtheta = self.dtheta,
             r = 2*abs(dtheta)/PI,
             i, n, beziers
         ;
@@ -2839,42 +2904,41 @@ var Arc = makeClass(Curve, {
         return beziers;
     },
     toSVG: function(svg) {
-        var path = this.toSVGPath();
-        return SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
-        }, arguments.length ? svg : false);
+        return this.toSVGPath(arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var p1 = this.start, p2 = this.end,
-            rx = this.radiusX, ry = this.radiusY,
-            a = this.angle,
-            l = this.largeArc ? 1 : 0,
-            s = this.sweep ? 1 : 0,
+        var self = this, p1 = self.start, p2 = self.end,
+            rx = self.radiusX, ry = self.radiusY,
+            a = self.angle,
+            l = self.largeArc ? 1 : 0,
+            s = self.sweep ? 1 : 0,
             path = ['M',p1.x,p1.y,'A',rx,ry,a,l,s,p2.x,p2.y].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var c = this.center, rx = this.rX, ry = this.rY, fs = !this.sweep,
-            a = rad(this.angle), t1 = this.theta, t2 = t1 + this.dtheta;
-        ctx.ellipse(c.x, c.y, rx, ry, a, t1, t2, fs);
+        var self = this, c = self.center, rx = self.rX, ry = self.rY, fs = !self.sweep,
+            a = rad(self.angle), t1 = self.theta, dt = self.dtheta;
+        ctx.beginPath();
+        ctx.ellipse(c.x, c.y, rx, ry, a, t1, t1 + dt, fs);
+        if (abs(dt) >= TWO_PI) ctx.closePath();
     },
     toTex: function() {
-        return '\\text{Arc: }\\left('+[Tex(this.start), Tex(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'\\text{°}', Str(this.largeArc ? 1 : 0), Str(this.sweep ? 1 : 0)].join(',')+'\\right)';
+        var self = this;
+        return '\\text{Arc: }\\left('+[Tex(self.start), Tex(self.end), Str(self.radiusX), Str(self.radiusY), Str(self.angle)+'\\text{°}', Str(self.largeArc ? 1 : 0), Str(self.sweep ? 1 : 0)].join(',')+'\\right)';
     },
     toString: function() {
-        return 'Arc('+[Str(this.start), Str(this.end), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°', Str(this.largeArc), Str(this.sweep)].join(',')+')';
+        var self = this;
+        return 'Arc('+[Str(self.start), Str(self.end), Str(self.radiusX), Str(self.radiusY), Str(self.angle)+'°', Str(self.largeArc), Str(self.sweep)].join(',')+')';
     }
 });
 Geometrize.Arc = Arc;
@@ -2984,35 +3048,35 @@ var Bezier2 = makeClass(Bezier, {
         return point_on_qbezier(point, this._points)
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            i = point_on_qbezier(other, this._points)
+            i = point_on_qbezier(other, self._points)
             return i ? [other] : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._lines, other.center, other.radius);
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
-            i = polyline_qbezier_intersection(this._lines, other._points);
+            i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
         else if ((other instanceof Primitive))
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
@@ -3034,22 +3098,23 @@ var Bezier2 = makeClass(Bezier, {
         return this.toSVGPath(arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var p = this._points,
+        var self = this, p = self._points,
             path = ['M',p[0].x,p[0].y,'Q',p[1].x,p[1].y,p[2].x,p[2].y].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
         var p = this._points;
+        ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
         ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
     }
@@ -3161,40 +3226,40 @@ var Bezier3 = makeClass(Bezier, {
         return point_on_cbezier(point, this._points)
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            i = point_on_cbezier(other, this._points)
+            i = point_on_cbezier(other, self._points)
             return i ? [other] : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._lines, other.center, other.radius);
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
-            i = polyline_qbezier_intersection(this._lines, other._points);
+            i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {
-            i = polyline_cbezier_intersection(this._lines, other._points);
+            i = polyline_cbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
         else if ((other instanceof Primitive))
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
@@ -3216,22 +3281,23 @@ var Bezier3 = makeClass(Bezier, {
         return this.toSVGPath(arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var p = this._points,
+        var self = this, p = self._points,
             path = ['M',p[0].x,p[0].y,'C',p[1].x,p[1].y,p[2].x,p[2].y,p[3].x,p[3].y].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
         var p = this._points;
+        ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
         ctx.bezierCurveTo(p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
     }
@@ -3384,49 +3450,49 @@ var Polygon = makeClass(Curve, {
         return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Line)
         {
-            i = polyline_line_intersection(this._lines, other._points[0], other._points[1]);
+            i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._lines, other.center, other.radius);
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Arc)
         {
-            i = polyline_arc_intersection(this._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier2)
         {
-            i = polyline_qbezier_intersection(this._lines, other._points);
+            i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Bezier3)
         {
-            i = polyline_cbezier_intersection(this._lines, other._points);
+            i = polyline_cbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
         else if ((other instanceof Polyline) || (other instanceof Polygon))
         {
-            i = polyline_polyline_intersection(this._lines, other._lines);
+            i = polyline_polyline_intersection(self._lines, other._lines);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
@@ -3442,34 +3508,36 @@ var Polygon = makeClass(Curve, {
         }, []);
     },
     toSVG: function(svg) {
+        var self = this;
         return SVG('polygon', {
-            'id': [this.id, false],
-            'points': [this._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'points': [self._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var path = 'M '+(this._lines.map(function(p) {
+        var self = this, path = 'M '+(self._lines.map(function(p) {
             return Str(p.x)+' '+Str(p.y);
         }).join(' L '))+' Z';
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        ctx.closePath();
-        if ('none' !== this.style['fill']) ctx.fill();
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
         var p = this._lines, n = p.length;
+        ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
         for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        ctx.closePath();
     },
     toTex: function() {
         return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';
@@ -3633,11 +3701,13 @@ var Circle = makeClass(Curve, {
     },
     name: 'Circle',
     clone: function() {
-        return new Circle(this.center.clone(), this.radius);
+        var self = this;
+        return new Circle(self.center.clone(), self.radius);
     },
     transform: function(matrix) {
-        var c = this.center,
-            r = this.radius,
+        var self = this,
+            c = self.center,
+            r = self.radius,
             ct = c.transform(matrix),
             pt = new Point(c.x+r, c.y+r).transform(matrix)
         ;
@@ -3653,78 +3723,82 @@ var Circle = makeClass(Curve, {
         return false;
     },
     f: function(t) {
-        var c = this.center, r = this.radius;
+        var self = this, c = self.center, r = self.radius;
         return arc(t*TWO_PI, c.x, c.y, r, r, 1, 0);
     },
     hasPoint: function(point) {
-        return 2 === point_inside_circle(point, this.center, this.radius);
+        self = this;
+        return 2 === point_inside_circle(point, self.center, self.radius);
     },
     hasInsidePoint: function(point, strict) {
-        var inside = point_inside_circle(point, this.center, this.radius);
+        var self = this, inside = point_inside_circle(point, self.center, self.radius);
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
+        var self = this;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Circle)
         {
-            var i = circle_circle_intersection(this.center, this.radius, other.center, other.radius);
+            var i = circle_circle_intersection(self.center, self.radius, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
     bezierPoints: function() {
-        var c = this.center, r = this.radius;
+        var self = this, c = self.center, r = self.radius;
         return [
-        arc2bezier(0, -PI/2, c.x, c.y, r, r, 1, 0/*, 0*/),
-        arc2bezier(-PI/2, -PI/2, c.x, c.y, r, r, 1, 0/*, 1*/),
-        arc2bezier(-PI, -PI/2, c.x, c.y, r, r, 1, 0/*, 0*/),
-        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, r, r, 1, 0/*, 1*/)
+        arc2bezier(0, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 0*/),
+        arc2bezier(-HALF_PI, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 1*/),
+        arc2bezier(-PI, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 0*/),
+        arc2bezier(-PI3_2, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 1*/)
         ];
     },
     toSVG: function(svg) {
-        var c = this.center, r = this.radius;
+        var self = this, c = self.center, r = self.radius;
         return SVG('circle', {
-            'id': [this.id, false],
-            'cx': [c.x, this.center.isChanged()],
-            'cy': [c.y, this.center.isChanged()],
-            'r': [r, this.values.radius.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'cx': [c.x, self.center.isChanged()],
+            'cy': [c.y, self.center.isChanged()],
+            'r': [r, self.values.radius.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var c = this.center, r = this.radius,
+        var self = this, c = self.center, r = self.radius,
             path = ['M',c.x - r,c.y,'a',r,r,0,0,0,r+r,0,'a',r,r,0,0,0,-r-r,0,'Z'].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        ctx.closePath();
-        if ('none' !== this.style['fill']) ctx.fill();
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var c = this.center, r = this.radius;
+        var self = this, c = self.center, r = self.radius;
+        ctx.beginPath();
         ctx.arc(c.x, c.x, r, 0, TWO_PI);
+        ctx.closePath();
     },
     toTex: function() {
-        var c = this.center, r = Str(this.radius);
+        var self = this, c = self.center, r = Str(self.radius);
         return '\\text{Circle: }\\left|\\begin{pmatrix}\\frac{x'+signed(-c.x)+'}{'+r+'}\\\\\\frac{y'+signed(-c.y)+'}{'+r+'}\\end{pmatrix}\\right|^2 = 1';
     },
     toString: function() {
-        return 'Circle('+[Str(this.center), Str(this.radius)].join(',')+')';
+        var self = this;
+        return 'Circle('+[Str(self.center), Str(self.radius)].join(',')+')';
     }
 });
 Geometrize.Circle = Circle;
@@ -3900,13 +3974,15 @@ var Ellipse = makeClass(Curve, {
     },
     name: 'Ellipse',
     clone: function() {
-        return new Ellipse(this.center.clone(), this.radiusX, this.radiusY, this.angle);
+        var self = this;
+        return new Ellipse(self.center.clone(), self.radiusX, self.radiusY, self.angle);
     },
     transform: function(matrix) {
-        var c = this.center,
-            rX = this.radiusX,
-            rY = this.radiusY,
-            a = this.angle,
+        var self = this,
+            c = self.center,
+            rX = self.radiusX,
+            rY = self.radiusY,
+            a = self.angle,
             t = matrix.getTranslation(),
             r = deg(matrix.getRotationAngle()),
             s = matrix.getScale()
@@ -3928,101 +4004,106 @@ var Ellipse = makeClass(Curve, {
         return false;
     },
     f: function(t) {
-        var c = this.center, cs = this.cs;
-        return arc(t*TWO_PI, c.x, c.y, this.radiusX, this.radiusY, cs[0], cs[1]);
+        var self = this, c = self.center, cs = self.cs;
+        return arc(t*TWO_PI, c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1]);
     },
     d: function() {
+        var self = this;
         return new Ellipse(
-            this.center,
-            this.radiusY,
-            this.radiusX,
-            -this.angle
+            self.center,
+            self.radiusY,
+            self.radiusX,
+            -self.angle
         );
     },
     hasPoint: function(point) {
-        return 2 === point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.cs);
+        var self = this;
+        return 2 === point_inside_ellipse(point, self.center, self.radiusX, self.radiusY, self.cs);
     },
     hasInsidePoint: function(point, strict) {
-        var inside = point_inside_ellipse(point, this.center, this.radiusX, this.radiusY, this.cs);
+        var self = this, inside = point_inside_ellipse(point, self.center, self.radiusX, self.radiusY, self.cs);
         return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
-        var i;
+        var self = this, i;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Circle)
         {
-            i = polyline_circle_intersection(this._lines, other.center, other.radius);
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Ellipse)
         {
-            i = polyline_ellipse_intersection(this._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(this);
+            return other.intersects(self);
         }
         return false;
     },
     bezierPoints: function() {
-        var c = this.center, cs = this.cs,
+        var self = this, c = self.center, cs = self.cs,
             cos = cs[0], sin = cs[1],
-            rx = this.radiusX, ry = this.radiusY;
+            rx = self.radiusX, ry = self.radiusY;
         return [
-        arc2bezier(0, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 0*/),
-        arc2bezier(-PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 1*/),
-        arc2bezier(-PI, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 0*/),
-        arc2bezier(-3*PI/2, -PI/2, c.x, c.y, rx, ry, cos, sin/*, 1*/)
+        arc2bezier(0, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 0*/),
+        arc2bezier(-HALF_PI, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 1*/),
+        arc2bezier(-PI, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 0*/),
+        arc2bezier(-PI3_2, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 1*/)
         ];
     },
     toSVG: function(svg) {
-        var c = this.center,
-            rX = this.radiusX,
-            rY = this.radiusY,
-            a = this.angle;
+        var self = this,
+            c = self.center,
+            rX = self.radiusX,
+            rY = self.radiusY,
+            a = self.angle;
         return SVG('ellipse', {
-            'id': [this.id, false],
-            'cx': [c.x, this.center.isChanged()],
-            'cy': [c.y, this.center.isChanged()],
-            'rx': [rX, this.values.radiusX.isChanged()],
-            'ry': [rY, this.values.radiusY.isChanged()],
-            'transform': ['rotate('+Str(a)+' '+Str(c.x)+' '+Str(c.y)+')', this.center.isChanged() || this.values.angle.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'cx': [c.x, self.center.isChanged()],
+            'cy': [c.y, self.center.isChanged()],
+            'rx': [rX, self.values.radiusX.isChanged()],
+            'ry': [rY, self.values.radiusY.isChanged()],
+            'transform': ['rotate('+Str(a)+' '+Str(c.x)+' '+Str(c.y)+')', self.center.isChanged() || self.values.angle.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var rx = this.radiusX, ry = this.radiusY, a = this.angle,
-            p1 = this.f(0), p2 = this.f(0.5),
+        var self = this, rx = self.radiusX, ry = self.radiusY, a = self.angle,
+            p1 = self.f(0), p2 = self.f(0.5),
             path = ['M',p1.x,p1.y,'A',rx,ry,a,0,1,p2.x,p2.y,'A',rx,ry,a,0,1,p1.x,p1.y,'Z'].join(' ');
         return arguments.length ? SVG('path', {
-            'id': [this.id, false],
-            'd': [path, this.isChanged()],
-            'style': [this.style.toSVG(), this.style.isChanged()]
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
         }, svg) : path;
     },
     toCanvas: function(ctx) {
-        this.style.toCanvas(ctx);
-        ctx.beginPath();
-        this.toCanvasPath(ctx);
-        ctx.closePath();
-        if ('none' !== this.style['fill']) ctx.fill();
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var c = this.center, rx = this.radiusX, ry = this.radiusY, a = rad(this.angle);
+        var self = this, c = self.center, rx = self.radiusX, ry = self.radiusY, a = rad(self.angle);
+        ctx.beginPath();
         ctx.ellipse(c.x, c.x, rx, ry, a, 0, TWO_PI);
+        ctx.closePath();
     },
     toTex: function() {
-        var a = Str(this.angle)+'\\text{°}',
-            c = this.center, rX = Str(this.radiusX), rY = Str(this.radiusY);
+        var self = this, a = Str(self.angle)+'\\text{°}',
+            c = self.center, rX = Str(self.radiusX), rY = Str(self.radiusY);
         return '\\text{Ellipse: }\\left|\\begin{pmatrix}\\cos('+a+')&-\\sin('+a+')\\\\sin('+a+')&\\cos('+a+')\\end{pmatrix}\\begin{pmatrix}\\frac{x'+signed(-c.x)+'}{'+rX+'}\\\\\\frac{y'+signed(-c.y)+'}{'+rY+'}\\end{pmatrix}\\right|^2 = 1';
     },
     toString: function() {
-        return 'Ellipse('+[Str(this.center), Str(this.radiusX), Str(this.radiusY), Str(this.angle)+'°'].join(',')+')';
+        var self = this;
+        return 'Ellipse('+[Str(self.center), Str(self.radiusX), Str(self.radiusY), Str(self.angle)+'°'].join(',')+')';
     }
 });
 Geometrize.Ellipse = Ellipse;
@@ -4173,7 +4254,13 @@ function prepare_tween(tween, fps)
             keyframes: null,
             kf: 0,
             current: null,
-            reverse: false
+            reverse: false,
+            bb: {
+                ymin: Infinity,
+                xmin: Infinity,
+                ymax: -Infinity,
+                xmax: -Infinity
+            }
         },
         shapes = {},
         maxCurves = -Infinity,
@@ -4193,10 +4280,18 @@ function prepare_tween(tween, fps)
             stroke = is_string(style.stroke) ? (Color.parse(style.stroke) || style.stroke) : null,
             fill = is_string(style.fill) ? (Color.parse(style.fill) || style.fill) : null,
             hasStroke = is_array(stroke),
-            hasFill = is_array(fill)
+            hasFill = is_array(fill), bb
         ;
         if (kf.shape && kf.shape.id && (null == shapes[kf.shape.id])) shapes[kf.shape.id] = shape;
         maxCurves = stdMath.max(maxCurves, shape.length);
+        if (kf.shape && is_function(kf.shape.getBoundingBox))
+        {
+            bb = kf.shape.getBoundingBox();
+            t.bb.ymin = stdMath.min(t.bb.ymin, bb.ymin||0);
+            t.bb.xmin = stdMath.min(t.bb.xmin, bb.xmin||0);
+            t.bb.ymax = stdMath.max(t.bb.ymax, bb.ymax||0);
+            t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
+        }
         return {
             frame: stdMath.round((parseFloat(key, 10) || 0)/100*(t.nframes - 1)),
             shape: shape,
@@ -4320,28 +4415,28 @@ function is_tween_finished(tween)
 }
 function next_frame(tween)
 {
-    tween.current.frame += tween.reverse ? -1 : 1;
+    tween.current.frame = clamp(tween.current.frame + (tween.reverse ? -1 : 1), -1, tween.nframes);
     if (is_tween_finished(tween)) return false;
     if (tween.reverse)
     {
-        if (tween.current.frame <= tween.keyframes[tween.kf-1].frame)
+        if (tween.kf >= 1 && tween.current.frame <= tween.keyframes[tween.kf-1].frame)
         {
             if (tween.kf-2 >= 0)
                 --tween.kf;
         }
         var a = tween.keyframes[tween.kf],
-            b = tween.keyframes[tween.kf-1],
+            b = tween.keyframes[tween.kf >= 1 ? tween.kf-1 : 0],
             _t = abs(tween.current.frame - a.frame)/(a.frame - b.frame + 1);
     }
     else
     {
-        if (tween.current.frame >= tween.keyframes[tween.kf+1].frame)
+        if (tween.kf+1 < tween.keyframes.length && tween.current.frame >= tween.keyframes[tween.kf+1].frame)
         {
             if (tween.kf+2 < tween.keyframes.length)
                 ++tween.kf;
         }
         var a = tween.keyframes[tween.kf],
-            b = tween.keyframes[tween.kf+1],
+            b = tween.keyframes[tween.kf+1 < tween.keyframes.length ? tween.kf+1 : tween.keyframes.length-1],
             _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1);
     }
     var t = a.easing(_t),
@@ -4414,7 +4509,7 @@ var Tween = makeClass(Primitive, {
         self.start = function() {
             run = true;
             if (is_first_frame(tween) && onStart) onStart(self);
-            setTimeout(animate, (tween.delay || 0) + dt);
+            setTimeout(animate, ((is_first_frame(tween) ? tween.delay : 0) || 0) + dt);
             return self;
         };
         self.stop = function() {
@@ -4437,6 +4532,17 @@ var Tween = makeClass(Primitive, {
         self.onEnd = function(cb) {
             onEnd = is_function(cb) ? cb : null;
             return self;
+        };
+        self.numberOfFrames = function() {
+            return tween.nframes;
+        };
+        self.getBoundingBox = function() {
+            return {
+                ymin: tween.bb.ymin,
+                xmin: tween.bb.xmin,
+                ymax: tween.bb.ymax,
+                xmax: tween.bb.xmax
+            };
         };
         self.toSVGPath = function(svg) {
             var path = tween.current.shape.map(function(cb) {
@@ -4465,18 +4571,18 @@ var Tween = makeClass(Primitive, {
             return self.toSVGPath(arguments.length ? svg : false);
         };
         self.toCanvas = function(ctx) {
-            ctx.lineWidth = this.style['stroke-width'];
-            ctx.strokeStyle = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']])) : (tween.current.style['stroke'] || this.style['stroke']);
+            ctx.lineWidth = self.style['stroke-width'];
+            ctx.strokeStyle = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']])) : (tween.current.style['stroke'] || self.style['stroke']);
             if (tween.current.style['fill'])
             {
                 ctx.fillStyle = tween.current.style.hasFill ? Color.toCSS(tween.current.style['fill'].concat([tween.current.style['fill-opacity']])) : tween.current.style['fill'];
             }
-            ctx.beginPath();
             self.toCanvasPath(ctx);
             if (tween.current.style['fill']) ctx.fill();
             ctx.stroke();
         };
         self.toCanvasPath = function(ctx) {
+            ctx.beginPath();
             tween.current.shape.forEach(function(cb) {
                 ctx.moveTo(cb[0].x, cb[0].y);
                 ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);
@@ -4719,26 +4825,6 @@ var Plane = makeClass(null, {
 Geometrize.Plane = Plane;
 
 // ---- utilities -----
-function dist(p1, p2)
-{
-    return hypot(p1.x - p2.x, p1.y - p2.y);
-}
-function dist2(p1, p2)
-{
-    var dx = p1.x - p2.x, dy = p1.y - p2.y;
-    return dx*dx + dy*dy;
-}
-function polar_angle(p1, p2)
-{
-    var a = stdMath.atan2(p2.y - p1.y, p2.x - p1.x);
-    return a < 0 ? a + TWO_PI : a;
-}
-function dir(p1, p2, p3)
-{
-    var dx1 = p1.x - p3.x, dx2 = p2.x - p3.x,
-        dy1 = p1.y - p3.y, dy2 = p2.y - p3.y;
-    return dx1*dy2 - dy1*dx2;
-}
 function p_eq(p1, p2)
 {
     return is_almost_equal(p1.x, p2.x) && is_almost_equal(p1.y, p2.y);
@@ -4782,20 +4868,20 @@ function point_on_line_segment(p, p1, p2)
     }
     return false;
 }
-function point_on_arc(p, center, radiusX, radiusY, cs, theta, dtheta)
+function point_on_arc(p, center, rx, ry, cs, theta, dtheta)
 {
-    var x0 = p.x - center.x,
+    var cos = cs[0], sin = cs[1],
+        x0 = p.x - center.x,
         y0 = p.y - center.y,
-        x = cs[0]*x0 + cs[1]*y0,
-        y = -cs[1]*x0 + cs[0]*y0,
-        t = stdMath.atan2(y/radiusY, x/radiusX);
+        x = cos*x0 + sin*y0,
+        y = -sin*x0 + cos*y0,
+        t = stdMath.atan2(y/ry, x/rx);
     if (t < 0) t += TWO_PI;
     t = (t - theta)/dtheta;
     return (t >= 0) && (t <= 1);
 }
 function point_on_qbezier(p, c)
 {
-    //x = t^{2} \left(x_{1} - 2 x_{2} + x_{3}\right) + t \left(- 2 x_{1} + 2 x_{2}\right) + x_{1}
     var tx, ty;
     tx = solve_quadratic(c[0].x - 2*c[1].x + c[2].x, -2*c[0].x + 2*c[1].x, c[0].x - p.x);
     if (!tx) return false;
@@ -4823,7 +4909,6 @@ function point_on_qbezier(p, c)
 }
 function point_on_cbezier(p, c)
 {
-    // x = t^{3} \left(- x_{1} + 3 x_{2} - 3 x_{3} + x_{4}\right) + t^{2} \cdot \left(3 x_{1} - 6 x_{2} + 3 x_{3}\right) + t \left(- 3 x_{1} + 3 x_{2}\right) + x_{1}
     var tx, ty;
     tx = solve_cubic(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x, 3*c[0].x - 6*c[1].x + 3*c[2].x, -3*c[0].x + 3*c[1].x, c[0].x - p.x);
     if (!tx) return false;
@@ -5041,27 +5126,38 @@ function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_qbezier_intersection(p1, p2, abcdef, c)
+function line_qbezier_intersection(p1, p2, coeff, c)
 {
-    if (null == abcdef) abcdef = qbezier2quadratic(c);
-    var p = new Array(2), pi = 0, i, n,
-        s = solve_linear_quadratic_system(
+    //if (null == abcdef) abcdef = qbezier2quadratic(c);
+    if (null == coeff) coeff = qbezier_t_quadratic(c);
+    var p = new Array(2), pi = 0, i, n, pt,
+        /*s = solve_linear_quadratic_system(
         p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
         abcdef[0], abcdef[1], abcdef[2], abcdef[3], abcdef[4], abcdef[5]
+        )*/
+        A = p2.y - p1.y,
+        B = p1.x - p2.x,
+        C = p1.x*(p1.y - p2.y) + p1.y*(p2.x - p1.x),
+        s = solve_quadratic(
+            A*coeff[0].x + B*coeff[0].y,
+            A*coeff[1].x + B*coeff[1].y,
+            A*coeff[2].x + B*coeff[2].y + C
         );
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2) && point_on_qbezier(s[i], c))
-            p[pi++] = s[i];
+        if (0 > s[i] || 1 < s[i]) continue;
+        pt = bezier2(s[i], c);
+        if (point_on_line_segment(pt, p1, p2)/* && point_on_qbezier(pt, c)*/)
+            p[pi++] = pt;
     }
     p.length = pi;
     return p.length ? p : false;
 }
 function line_cbezier_intersection(p1, p2, coeff, c)
 {
-    if (null == coeff) coeff = cbezier2cubic(c);
-    var p = new Array(3), pi = 0, i, n,
+    if (null == coeff) coeff = cbezier_t_cubic(c);
+    var p = new Array(3), pi = 0, i, n, pt,
         A = p2.y - p1.y,
         B = p1.x - p2.x,
         C = p1.x*(p1.y - p2.y) + p1.y*(p2.x - p1.x),
@@ -5070,7 +5166,7 @@ function line_cbezier_intersection(p1, p2, coeff, c)
             A*coeff[1].x + B*coeff[1].y,
             A*coeff[2].x + B*coeff[2].y,
             A*coeff[3].x + B*coeff[3].y + C
-        ), pt;
+        );
     for (i=0,n=s.length; i<n; ++i)
     {
         if (0 > s[i] || 1 < s[i]) continue;
@@ -5163,10 +5259,11 @@ function polyline_arc_intersection(polyline_points, center, radiusX, radiusY, cs
 function polyline_qbezier_intersection(polyline_points, control_points)
 {
     var i = [], j, k, p, n = polyline_points.length-1,
-        abcdef = qbezier2quadratic(control_points);
+        //abcdef = qbezier2quadratic(control_points);
+        coeff = qbezier_t_quadratic(control_points);
     for (j=0; j<n; ++j)
     {
-        p = line_qbezier_intersection(polyline_points[j], polyline_points[j+1], abcdef, control_points);
+        p = line_qbezier_intersection(polyline_points[j], polyline_points[j+1], coeff, control_points);
         if (p) i.push.apply(i, p);
     }
     return i.length ? i : false;
@@ -5174,7 +5271,7 @@ function polyline_qbezier_intersection(polyline_points, control_points)
 function polyline_cbezier_intersection(polyline_points, control_points)
 {
     var i = [], j, k, p, n = polyline_points.length-1,
-        coeff = cbezier2cubic(control_points);
+        coeff = cbezier_t_cubic(control_points);
     for (j=0; j<n; ++j)
     {
         p = line_cbezier_intersection(polyline_points[j], polyline_points[j+1], coeff, control_points);
@@ -5241,7 +5338,7 @@ function convex_hull(points)
 
     var ps = points
         .map(function(p, i) {
-            return [polar_angle(p0, p), i];
+            return [polar_angle(p0.x, p0.y, p.x, p.y), i];
         })
         .sort(sort_asc0)
         .map(function(a) {
@@ -5442,7 +5539,24 @@ function qbezier2quadratic(c)
     F = c[0].x*c[0].x*c[2].y*c[2].y - 4*c[0].x*c[1].x*c[1].y*c[2].y - 2*c[0].x*c[2].x*c[0].y*c[2].y + 4*c[0].x*c[2].x*c[1].y*c[1].y + 4*c[1].x*c[1].x*c[0].y*c[2].y - 4*c[1].x*c[2].x*c[0].y*c[1].y + c[2].x*c[2].x*c[0].y*c[0].y;
     return [A, B, C, D, E, F];
 }
-function cbezier2cubic(c)
+function qbezier_t_quadratic(c)
+{
+    return [
+        {
+        x: c[0].x - 2*c[1].x + c[2].x,
+        y: c[0].y - 2*c[1].y + c[2].y
+        },
+        {
+        x: 2*c[1].x - 2*c[0].x,
+        y: 2*c[1].y - 2*c[0].y
+        },
+        {
+        x: c[0].x,
+        y: c[0].y
+        }
+    ];
+}
+function cbezier_t_cubic(c)
 {
     return [
         {
@@ -5505,8 +5619,7 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
 function interpolate(x0, x1, t)
 {
     // 0 <= t <= 1
-    var t0 = (t||0), t1 = 1 - t0;
-    return t1*x0 + t0*x1;
+    return x0 + t*(x1 - x0);
 }
 function bezier(c)
 {
@@ -5544,6 +5657,7 @@ function bezier(c)
 function bezier1(t, p)
 {
     // 0 <= t <= 1
+    // t*(x1 - x0) + x0
     var t0 = t, t1 = 1 - t;
     return {
         x: t1*p[0].x + t0*p[1].x,
@@ -5554,6 +5668,7 @@ function bezier2(t, p)
 {
     // 0 <= t <= 1
     //return bezier1(t, [bezier1(t, [p[0], p[1]]), bezier1(t, [p[1], p[2]])]);
+    // t^2*(x0 - 2*x1 + x2) + t*(2*x1 - 2*x0) + x0
    var t0 = t, t1 = 1 - t, t11 = t1*t1, t10 = 2*t1*t0, t00 = t0*t0;
    return {
        x: t11*p[0].x + t10*p[1].x + t00*p[2].x,
@@ -5564,6 +5679,7 @@ function bezier3(t, p)
 {
     // 0 <= t <= 1
     //return bezier1(t, [bezier2(t, [p[0], p[1], p[2]]), bezier2(t, [p[1], p[2], p[3]])]);
+    // t^3*(-x0 + 3*x1 - 3*x2 + x3) + t^2*(3*x0 - 6*x1 + 3*x2) + t*(3*x1 - 3*x0) + x0
     var t0 = t, t1 = 1 - t,
         t0t0 = t0*t0, t1t1 = t1*t1,
         t111 = t1*t1t1, t000 = t0t0*t0,
@@ -5590,7 +5706,7 @@ function arc(t, cx, cy, rx, ry, cos, sin)
 }
 function toarc(x, y, cx, cy, rx, ry, cos, sin)
 {
-    // x, y is point on unit circle arc
+    // x, y is point on unit circle
     if (null == cos)
     {
         cos = 1;
@@ -5662,11 +5778,8 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 
     // Step 4: compute θ and dθ
     var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry),
-        dtheta = vector_angle(
-            (x - _cx)/rx, (y - _cy)/ry,
-            (-x - _cx)/rx, (-y - _cy)/ry
-        );
-    dtheta -= stdMath.floor(dtheta / TWO_PI)*TWO_PI;
+        dtheta = vector_angle((x - _cx)/rx, (y - _cy)/ry, (-x - _cx)/rx, (-y - _cy)/ry);
+    dtheta -= stdMath.floor(dtheta/TWO_PI)*TWO_PI; // % 360
 
     if (!fs && dtheta > 0) dtheta -= TWO_PI;
     if (fs && dtheta < 0) dtheta += TWO_PI;
@@ -5678,42 +5791,13 @@ function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
     return {
         p0: arc(theta, cx, cy, rx, ry, cs[0], cs[1]),
         p1: arc(theta + dtheta, cx, cy, rx, ry, cs[0], cs[1]),
-        fa: abs(deg(dtheta)) > 180, //fa
-        fs: abs(deg(dtheta)) > 0 //fs
+        fa: abs(dtheta) > PI,
+        fs: abs(dtheta) > 0
     };
 }
 function align_curve(points)
 {
     return {Tx:-points[0].x, Ty:-points[0].y, R:-stdMath.atan2(points[points.length-1].y - points[0].y, points[points.length-1].x - points[0].x)};
-}
-function is_strictly_equal(a, b)
-{
-    return abs(a - b) < Number.EPSILON;
-}
-function is_almost_equal(a, b, eps)
-{
-    if (null == eps) eps = EPS;
-    return abs(a - b) < eps;
-}
-function clamp(x, xmin, xmax)
-{
-    return stdMath.max(stdMath.min(x, xmax), xmin);
-}
-function sign(x)
-{
-    return 0 > x ? -1 : 1;
-}
-function signed(x, add)
-{
-    return 0 > x ? Str(x) : ((false === add ? '' : '+') + Str(x));
-}
-function deg(rad)
-{
-    return rad * 180 / PI;
-}
-function rad(deg)
-{
-    return deg * PI / 180;
 }
 // stdMath.hypot produces wrong results
 var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
@@ -5742,6 +5826,15 @@ var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
     }
     return dx*sqrt2;
 };
+function dist(p1, p2)
+{
+    return hypot(p1.x - p2.x, p1.y - p2.y);
+}
+function dist2(p1, p2)
+{
+    var dx = p1.x - p2.x, dy = p1.y - p2.y;
+    return dx*dx + dy*dy;
+}
 function dotp(x1, y1, x2, y2)
 {
     return x1*x2 + y1*y2;
@@ -5752,15 +5845,57 @@ function crossp(x1, y1, x2, y2)
 }
 function angle(x1, y1, x2, y2)
 {
-    var n1 = hypot(x1, y1), n2 = hypot(x2, y2), dot = 0;
+    var n1 = hypot(x1, y1), n2 = hypot(x2, y2);
     if (is_strictly_equal(n1, 0) || is_strictly_equal(n2, 0)) return 0;
-    dot = dotp(x1/n1, y1/n1, x2/n2, y2/n2);
-    return stdMath.acos(clamp(dot, -1, 1));
+    return stdMath.acos(clamp(dotp(x1/n1, y1/n1, x2/n2, y2/n2), -1, 1));
 }
 function vector_angle(ux, uy, vx, vy)
 {
     return sign(crossp(ux, uy, vx, vy))*angle(ux, uy, vx, vy);
 }
+function polar_angle(x1, y1, x2, y2)
+{
+    var a = stdMath.atan2(y2 - y1, x2 - x1);
+    return a < 0 ? a + TWO_PI : a;
+}
+function dir(p1, p2, p3)
+{
+    return crossp(p1.x - p3.x, p1.y - p3.y, p2.x - p3.x, p2.y - p3.y);
+}
+function clamp(x, xmin, xmax)
+{
+    return stdMath.min(stdMath.max(x, xmin), xmax);
+}
+function deg(rad)
+{
+    return rad * 180 / PI;
+}
+function rad(deg)
+{
+    return deg * PI / 180;
+}
+function sign(x)
+{
+    return 0 > x ? -1 : 1;
+}
+function is_strictly_equal(a, b)
+{
+    return abs(a - b) < Number.EPSILON;
+}
+function is_almost_equal(a, b, eps)
+{
+    if (null == eps) eps = EPS;
+    return abs(a - b) < eps;
+}
+function x(p)
+{
+    return p.x || 0;
+}
+function y(p)
+{
+    return p.y || 0;
+}
+
 
 // ----------------------
 function merge(keys, a, b)
@@ -5811,6 +5946,17 @@ function SVG(tag, atts, svg, childNodes)
         });
     }
     return svg;
+}
+function shuffle(a)
+{
+    for (var i=a.length-1,j,aj; i>0; --i)
+    {
+        j = stdMath.round(stdMath.random()*i);
+        aj = a[j];
+        a[j] = a[i];
+        a[i] = aj;
+    }
+    return a;
 }
 /*function debounce(func, wait, immediate)
 {
@@ -5998,14 +6144,6 @@ function sort_asc0(a, b)
 {
     return a[0] - b[0];
 }
-function x(p)
-{
-    return p.x;
-}
-function y(p)
-{
-    return p.y;
-}
 var TRIM_RE = /^\s+|\s+$/gm;
 var trim = String.prototype.trim ? function trim(s) {
     return s.trim()
@@ -6022,6 +6160,10 @@ function pad(x, n, c, post)
         s = post ? s + p : p + s;
     }
     return s;
+}
+function signed(x, add)
+{
+    return 0 > x ? Str(x) : ((false === add ? '' : '+') + Str(x));
 }
 var cnt = 0, Str = String;
 function uuid(ns)
@@ -6065,6 +6207,7 @@ Geometrize.Math.solveQuadratic = solve_quadratic;
 Geometrize.Math.solveCubic = solve_cubic;
 Geometrize.Math.solveLinearLinear = solve_linear_linear_system;
 Geometrize.Math.solveLinearQuadratic = solve_linear_quadratic_system;
+Geometrize.Math.shuffle = shuffle;
 Geometrize.Geometry.linearBezierCurve = bezier1;
 Geometrize.Geometry.quadraticBezierCurve = bezier2;
 Geometrize.Geometry.cubicBezierCurve = bezier3;
@@ -6072,12 +6215,6 @@ Geometrize.Geometry.ellipticArcCurve = arc;
 Geometrize.Geometry.computeConvexHull = function(points) {
     return convex_hull(points).map(Point);
 };
-Geometrize.Geometry.alignCurve = function(curve) {
-    var T = align_curve(curve.points);
-    return Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty));
-};
-
-
 // export it
 return Geometrize;
 });
