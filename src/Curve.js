@@ -542,8 +542,8 @@ var CompositeCurve = makeClass(Curve, {
                     p2 = c[j]._points[c[j]._points.length-1];
                     p3 = c[k]._points[0];
                     p4 = c[k]._points[c[k]._points.length-1];
-                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
-                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    if ((j === 0) && (k === n-1) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+1) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
                     i.push.apply(i, ii);
                 }
             }

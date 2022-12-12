@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.0 (2022-12-12 19:36:15)
+*   @version 0.9.0 (2022-12-12 23:14:40)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.0 (2022-12-12 19:36:15)
+*   @version 0.9.0 (2022-12-12 23:14:40)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -1968,8 +1968,8 @@ var CompositeCurve = makeClass(Curve, {
                     p2 = c[j]._points[c[j]._points.length-1];
                     p3 = c[k]._points[0];
                     p4 = c[k]._points[c[k]._points.length-1];
-                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
-                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    if ((j === 0) && (k === n-1) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+1) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
                     i.push.apply(i, ii);
                 }
             }
@@ -2496,8 +2496,8 @@ var Polyline = makeClass(Curve, {
                 ii = line_segments_intersection(p1, p2, p3, p4);
                 if (ii)
                 {
-                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
-                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    if ((j === 0) && (k === n-1) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+1) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
                     i.push.apply(i, ii);
                 }
             }
@@ -3588,8 +3588,8 @@ var Polygon = makeClass(Curve, {
                 ii = line_segments_intersection(p1, p2, p3, p4);
                 if (ii)
                 {
-                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
-                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    if ((j === 0) && (k === n-1) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+1) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
                     i.push.apply(i, ii);
                 }
             }
