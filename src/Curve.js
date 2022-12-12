@@ -283,7 +283,7 @@ var Bezier = makeClass(Curve, {
 Geometrize.Bezier = Bezier;
 
 // 2D Composite Curve class (container of multiple, joined, curves)
-var MZ = /[MZ]/g,
+var MZ = /[M]/g,
     XY = /^\s*(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
     PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
@@ -477,26 +477,26 @@ var CompositeCurve = makeClass(Curve, {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.transform(matrix);}));
     },
     isConnected: function() {
-        var c = this.curves, p1, p2, n = c.length-1, i;
+        var c = this.curves, c1, c2, p1, p2, n = c.length-1, i;
         if (0 > n) return false;
         if (!c[0].isConnected()) return false;
         for (i=0; i<n; ++i)
         {
-            if (!c[i+1].isConnected()) return false;
-            p1 = c[i].points;
-            p2 = c[i+1].points;
-            if (!p1[p1.length-1].eq(p2[0]))
-            {
-                return false;
-            }
+            c1 = c[i]; c2 = c[i+1];
+            if (!c2.isConnected() || c2.isClosed()) return false;
+            p1 = c1._points; p2 = c2._points;
+            if (!p1[p1.length-1].eq(p2[0])) return false;
         }
         return true;
     },
-    isClosed: function() {
+    isClosed: function(isConnected) {
         var self = this;
-        if (!self.isConnected()) return false;
-        var c = self.curves;
-        return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
+        isConnected = true === isConnected || false === isConnected ? isConnected : self.isConnected();
+        if (!isConnected) return false;
+        var c = self.curves, n = c.length;
+        if (!n) return false;
+        if ((1 === n) && c[0].isClosed()) return true;
+        return c[0]._points[0].eq(c[n-1]._points[c[n-1]._points.length-1]);
     },
     derivative: function() {
         return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
@@ -510,13 +510,14 @@ var CompositeCurve = makeClass(Curve, {
         return false;
     },
     intersects: function(other) {
+        var self = this;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Primitive)
         {
-            for (var ii,i=[],c=this.curves,n=c.length,j=0; j<n; ++j)
+            for (var ii,i=[],c=self.curves,n=c.length,j=0; j<n; ++j)
             {
                 ii = c[j].intersects(other);
                 if (ii) i.push.apply(i, ii);
@@ -524,6 +525,30 @@ var CompositeCurve = makeClass(Curve, {
             return i ? i.map(Point) : false;
         }
         return false;
+    },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], c = self.curves, n = c.length,
+            j, k, p1, p2, p3, p4;
+        for (j=0; j<n; ++j)
+        {
+            ii = c[j].intersectsSelf();
+            if (ii) i.push.apply(i, ii);
+            for (k=j+1; k<n; ++k)
+            {
+                ii = c[j].intersects(c[k]);
+                if (ii)
+                {
+                    p1 = c[j]._points[0];
+                    p2 = c[j]._points[c[j]._points.length-1];
+                    p3 = c[k]._points[0];
+                    p4 = c[k]._points[c[k]._points.length-1];
+                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    i.push.apply(i, ii);
+                }
+            }
+        }
+        return i ? i.map(Point) : false;
     },
     polylinePoints: function() {
         return this.curves.reduce(function(lines, curve) {
@@ -541,47 +566,51 @@ var CompositeCurve = makeClass(Curve, {
         return this.toSVGPath(arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var self = this, path = self.curves.map(function(c) {return c.toSVGPath();}).join(' ');/*,
-            x0 = 0, y0 = 0, mz = path.match(MZ), p = path.split(MZ);
-        path = mz.reduce(function(path, command, i) {
-            var pp, m1, m2, x, y, px, py;
-            switch (command)
-            {
-                case 'M':
-                pp = p[i+1] || '';
-                m1 = pp.match(XY);
-                x = parseFloat(m1[1]) || 0;
-                y = parseFloat(m1[2]) || 0;
-                x0 = x;
-                y0 = y;
-                m2 = (p[i] || '').match(PXY);
-                if (m2)
+        var self = this,
+            curves = self.curves,
+            isConnected = self.isConnected(),
+            isClosed = self.isClosed(isConnected),
+            mz, p,
+            path = curves.map(function(c) {return c.toSVGPath();}).join(' ');
+        if (isConnected)
+        {
+            mz = path.match(MZ);
+            p = path.split(MZ);
+            path = mz.reduce(function(path, command, i) {
+                var pp, xy, pxy;
+                switch (command)
                 {
-                    px = parseFloat(m2[1]) || 0;
-                    py = parseFloat(m2[2]) || 0;
-                    if (is_strictly_equal(x, px) && is_strictly_equal(y, py))
+                    case 'M':
+                    pp = p[i+1] || '';
+                    // x,y of next point
+                    xy = pp.match(XY);
+                    // x,y of previous point
+                    pxy = (p[i] || '').match(PXY);
+                    if (xy && pxy)
                     {
-                        pp = pp.slice(m1[0].length);
+                        if (
+                            is_almost_equal(Num(xy[1]), Num(pxy[1])) &&
+                            is_almost_equal(Num(xy[2]), Num(pxy[2]))
+                        )
+                        {
+                            path = trim(path);
+                            pp = pp.slice(xy[0].length);
+                        }
+                        else
+                        {
+                            pp = 'M' + pp;
+                        }
                     }
                     else
                     {
                         pp = 'M' + pp;
                     }
+                    path += pp;
+                    break;
                 }
-                else
-                {
-                    pp = 'M' + pp;
-                }
-                path += pp;
-                break;
-                case 'Z':
-                break;
-                default:
-                break;
-            }
-            return path;
-        }, p[0] || '');*/
-        if (self.isClosed()) path += ' Z';
+                return path;
+            }, p[0] || '') + (isClosed && (1 < curves.length) ? ' Z' : '');
+        }
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
             'd': [path, self.isChanged()],
@@ -596,9 +625,33 @@ var CompositeCurve = makeClass(Curve, {
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        this.curves.forEach(function(c) {
-            c.toCanvasPath(ctx);
-        });
+        var self = this,
+            curves = self.curves,
+            n = curves.length, i,
+            isConnected, isClosed,
+            m, b, c;
+        if (!n) return;
+        isConnected = self.isConnected();
+        isClosed = self.isClosed(isConnected);
+        ctx.beginPath();
+        if (isConnected)
+        {
+            ctx.moveTo(curves[0]._points[0].x, curves[0]._points[0].y);
+            m = ctx.moveTo;
+            b = ctx.beginPath;
+            c = ctx.closePath;
+            ctx.moveTo = NOP;
+            ctx.beginPath = NOP;
+            ctx.closePath = NOP;
+        }
+        for (i=0; i<n; ++i) curves[i].toCanvasPath(ctx);
+        if (isConnected)
+        {
+            ctx.moveTo = m;
+            ctx.beginPath = b;
+            ctx.closePath = c;
+            if (isClosed) ctx.closePath();
+        }
     },
     toTex: function() {
         return '\\text{CompositeCurve: }\\begin{cases}&'+this.curves.map(Tex).join('\\\\&')+'\\end{cases}';

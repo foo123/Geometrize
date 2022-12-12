@@ -1347,7 +1347,7 @@ function uuid(ns)
 }
 function Num(x)
 {
-    return (+x) || 0;
+    return parseFloat(x) || 0;
 }
 function Tex(o)
 {

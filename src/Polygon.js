@@ -191,6 +191,28 @@ var Polygon = makeClass(Curve, {
         }
         return false;
     },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], p = self._lines, n = p.length,
+            j, k, p1, p2, p3, p4;
+        for (j=0; j<n; ++j)
+        {
+            if (j+1 >= n) continue;
+            for (k=j+2; k<n; ++k)
+            {
+                if (k+1 >= n) continue;
+                p1 = p[j]; p2 = p[j+1];
+                p3 = p[k]; p4 = p[k+1];
+                ii = line_segments_intersection(p1, p2, p3, p4);
+                if (ii)
+                {
+                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    i.push.apply(i, ii);
+                }
+            }
+        }
+        return i ? i.map(Point) : false;
+    },
     bezierPoints: function() {
         var p = this._lines, n = p.length;
         return p.reduce(function(b, _, i) {
@@ -228,10 +250,10 @@ var Polygon = makeClass(Curve, {
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var p = this._lines, n = p.length;
+        var p = this._lines, n = p.length, i;
         ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
-        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
         ctx.closePath();
     },
     toTex: function() {

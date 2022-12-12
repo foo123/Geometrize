@@ -162,7 +162,7 @@ var Circle = makeClass(Curve, {
     },
     toSVGPath: function(svg) {
         var self = this, c = self.center, r = self.radius,
-            path = ['M',c.x - r,c.y,'a',r,r,0,0,0,r+r,0,'a',r,r,0,0,0,-r-r,0,'Z'].join(' ');
+            path = ['M',c.x - r,c.y,'A',r,r,0,0,0,c.x + r,c.y,'A',r,r,0,0,0,c.x - r,c.y,'Z'].join(' ');
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
             'd': [path, self.isChanged()],

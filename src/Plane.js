@@ -98,6 +98,8 @@ var Plane = makeClass(null, {
                 intersections = [];
                 for (var k,i,j=0,n=objects.length; j<n; ++j)
                 {
+                    i = objects[j].intersectsSelf();
+                    if (i) intersections.push.apply(intersections, i);
                     for (k=j+1; k<n; ++k)
                     {
                         i = objects[j].intersects(objects[k]);

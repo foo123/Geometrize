@@ -23,8 +23,8 @@ var Arc = makeClass(Curve, {
         _angle = new Value(angle);
         _cos = stdMath.cos(rad(_angle.val()));
         _sin = stdMath.sin(rad(_angle.val()));
-        _largeArc = new Value(!!largeArc);
-        _sweep = new Value(!!sweep);
+        _largeArc = new Value(!!largeArc ? 1 : 0);
+        _sweep = new Value(!!sweep ? 1 : 0);
 
         self.$super('constructor', [[start, end], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle, largeArc:_largeArc, sweep:_sweep}]);
 
@@ -100,7 +100,7 @@ var Arc = makeClass(Curve, {
                 return _largeArc.val();
             },
             set: function(largeArc) {
-                _largeArc.val(!!largeArc);
+                _largeArc.val(!!largeArc ? 1 : 0);
                 if (_largeArc.isChanged() && !self.isChanged())
                 {
                     self.isChanged(true);
@@ -115,7 +115,7 @@ var Arc = makeClass(Curve, {
                 return _sweep.val();
             },
             set: function(sweep) {
-                _sweep.val(!!sweep);
+                _sweep.val(!!sweep ? 1 : 0);
                 if (_sweep.isChanged() && !self.isChanged())
                 {
                     self.isChanged(true);
@@ -437,7 +437,7 @@ var Arc = makeClass(Curve, {
             a = rad(self.angle), t1 = self.theta, dt = self.dtheta;
         ctx.beginPath();
         ctx.ellipse(c.x, c.y, rx, ry, a, t1, t1 + dt, fs);
-        if (abs(dt) >= TWO_PI) ctx.closePath();
+        if (abs(dt) + EPS >= TWO_PI) ctx.closePath();
     },
     toTex: function() {
         var self = this;

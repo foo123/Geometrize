@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.0 (2022-12-12 12:45:59)
+*   @version 0.9.0 (2022-12-12 19:36:15)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.0 (2022-12-12 12:45:59)
+*   @version 0.9.0 (2022-12-12 19:36:15)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -1032,6 +1032,9 @@ var Primitive = makeClass(null, merge(null, {
     intersects: function(other) {
         return false;
     },
+    intersectsSelf: function() {
+        return false;
+    },
     toSVG: function(svg) {
         return arguments.length ? svg : '';
     },
@@ -1706,7 +1709,7 @@ var Bezier = makeClass(Curve, {
 Geometrize.Bezier = Bezier;
 
 // 2D Composite Curve class (container of multiple, joined, curves)
-var MZ = /[MZ]/g,
+var MZ = /[M]/g,
     XY = /^\s*(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
     PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
@@ -1900,26 +1903,26 @@ var CompositeCurve = makeClass(Curve, {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.transform(matrix);}));
     },
     isConnected: function() {
-        var c = this.curves, p1, p2, n = c.length-1, i;
+        var c = this.curves, c1, c2, p1, p2, n = c.length-1, i;
         if (0 > n) return false;
         if (!c[0].isConnected()) return false;
         for (i=0; i<n; ++i)
         {
-            if (!c[i+1].isConnected()) return false;
-            p1 = c[i].points;
-            p2 = c[i+1].points;
-            if (!p1[p1.length-1].eq(p2[0]))
-            {
-                return false;
-            }
+            c1 = c[i]; c2 = c[i+1];
+            if (!c2.isConnected() || c2.isClosed()) return false;
+            p1 = c1._points; p2 = c2._points;
+            if (!p1[p1.length-1].eq(p2[0])) return false;
         }
         return true;
     },
-    isClosed: function() {
+    isClosed: function(isConnected) {
         var self = this;
-        if (!self.isConnected()) return false;
-        var c = self.curves;
-        return c[0].points[0].eq(c[c.length-1].points[c[c.length-1].points.length-1]);
+        isConnected = true === isConnected || false === isConnected ? isConnected : self.isConnected();
+        if (!isConnected) return false;
+        var c = self.curves, n = c.length;
+        if (!n) return false;
+        if ((1 === n) && c[0].isClosed()) return true;
+        return c[0]._points[0].eq(c[n-1]._points[c[n-1]._points.length-1]);
     },
     derivative: function() {
         return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
@@ -1933,13 +1936,14 @@ var CompositeCurve = makeClass(Curve, {
         return false;
     },
     intersects: function(other) {
+        var self = this;
         if (other instanceof Point)
         {
-            return this.hasPoint(other) ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Primitive)
         {
-            for (var ii,i=[],c=this.curves,n=c.length,j=0; j<n; ++j)
+            for (var ii,i=[],c=self.curves,n=c.length,j=0; j<n; ++j)
             {
                 ii = c[j].intersects(other);
                 if (ii) i.push.apply(i, ii);
@@ -1947,6 +1951,30 @@ var CompositeCurve = makeClass(Curve, {
             return i ? i.map(Point) : false;
         }
         return false;
+    },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], c = self.curves, n = c.length,
+            j, k, p1, p2, p3, p4;
+        for (j=0; j<n; ++j)
+        {
+            ii = c[j].intersectsSelf();
+            if (ii) i.push.apply(i, ii);
+            for (k=j+1; k<n; ++k)
+            {
+                ii = c[j].intersects(c[k]);
+                if (ii)
+                {
+                    p1 = c[j]._points[0];
+                    p2 = c[j]._points[c[j]._points.length-1];
+                    p3 = c[k]._points[0];
+                    p4 = c[k]._points[c[k]._points.length-1];
+                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    i.push.apply(i, ii);
+                }
+            }
+        }
+        return i ? i.map(Point) : false;
     },
     polylinePoints: function() {
         return this.curves.reduce(function(lines, curve) {
@@ -1964,47 +1992,51 @@ var CompositeCurve = makeClass(Curve, {
         return this.toSVGPath(arguments.length ? svg : false);
     },
     toSVGPath: function(svg) {
-        var self = this, path = self.curves.map(function(c) {return c.toSVGPath();}).join(' ');/*,
-            x0 = 0, y0 = 0, mz = path.match(MZ), p = path.split(MZ);
-        path = mz.reduce(function(path, command, i) {
-            var pp, m1, m2, x, y, px, py;
-            switch (command)
-            {
-                case 'M':
-                pp = p[i+1] || '';
-                m1 = pp.match(XY);
-                x = parseFloat(m1[1]) || 0;
-                y = parseFloat(m1[2]) || 0;
-                x0 = x;
-                y0 = y;
-                m2 = (p[i] || '').match(PXY);
-                if (m2)
+        var self = this,
+            curves = self.curves,
+            isConnected = self.isConnected(),
+            isClosed = self.isClosed(isConnected),
+            mz, p,
+            path = curves.map(function(c) {return c.toSVGPath();}).join(' ');
+        if (isConnected)
+        {
+            mz = path.match(MZ);
+            p = path.split(MZ);
+            path = mz.reduce(function(path, command, i) {
+                var pp, xy, pxy;
+                switch (command)
                 {
-                    px = parseFloat(m2[1]) || 0;
-                    py = parseFloat(m2[2]) || 0;
-                    if (is_strictly_equal(x, px) && is_strictly_equal(y, py))
+                    case 'M':
+                    pp = p[i+1] || '';
+                    // x,y of next point
+                    xy = pp.match(XY);
+                    // x,y of previous point
+                    pxy = (p[i] || '').match(PXY);
+                    if (xy && pxy)
                     {
-                        pp = pp.slice(m1[0].length);
+                        if (
+                            is_almost_equal(Num(xy[1]), Num(pxy[1])) &&
+                            is_almost_equal(Num(xy[2]), Num(pxy[2]))
+                        )
+                        {
+                            path = trim(path);
+                            pp = pp.slice(xy[0].length);
+                        }
+                        else
+                        {
+                            pp = 'M' + pp;
+                        }
                     }
                     else
                     {
                         pp = 'M' + pp;
                     }
+                    path += pp;
+                    break;
                 }
-                else
-                {
-                    pp = 'M' + pp;
-                }
-                path += pp;
-                break;
-                case 'Z':
-                break;
-                default:
-                break;
-            }
-            return path;
-        }, p[0] || '');*/
-        if (self.isClosed()) path += ' Z';
+                return path;
+            }, p[0] || '') + (isClosed && (1 < curves.length) ? ' Z' : '');
+        }
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
             'd': [path, self.isChanged()],
@@ -2019,9 +2051,33 @@ var CompositeCurve = makeClass(Curve, {
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        this.curves.forEach(function(c) {
-            c.toCanvasPath(ctx);
-        });
+        var self = this,
+            curves = self.curves,
+            n = curves.length, i,
+            isConnected, isClosed,
+            m, b, c;
+        if (!n) return;
+        isConnected = self.isConnected();
+        isClosed = self.isClosed(isConnected);
+        ctx.beginPath();
+        if (isConnected)
+        {
+            ctx.moveTo(curves[0]._points[0].x, curves[0]._points[0].y);
+            m = ctx.moveTo;
+            b = ctx.beginPath;
+            c = ctx.closePath;
+            ctx.moveTo = NOP;
+            ctx.beginPath = NOP;
+            ctx.closePath = NOP;
+        }
+        for (i=0; i<n; ++i) curves[i].toCanvasPath(ctx);
+        if (isConnected)
+        {
+            ctx.moveTo = m;
+            ctx.beginPath = b;
+            ctx.closePath = c;
+            if (isClosed) ctx.closePath();
+        }
     },
     toTex: function() {
         return '\\text{CompositeCurve: }\\begin{cases}&'+this.curves.map(Tex).join('\\\\&')+'\\end{cases}';
@@ -2426,6 +2482,28 @@ var Polyline = makeClass(Curve, {
         }
         return false;
     },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], p = self._points, n = p.length,
+            j, k, p1, p2, p3, p4;
+        for (j=0; j<n; ++j)
+        {
+            if (j+1 >= n) continue;
+            for (k=j+2; k<n; ++k)
+            {
+                if (k+1 >= n) continue;
+                p1 = p[j]; p2 = p[j+1];
+                p3 = p[k]; p4 = p[k+1];
+                ii = line_segments_intersection(p1, p2, p3, p4);
+                if (ii)
+                {
+                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    i.push.apply(i, ii);
+                }
+            }
+        }
+        return i ? i.map(Point) : false;
+    },
     distanceToPoint: function(point) {
         var points = this.points;
         return !points.length ? NaN : (1 === points.length ? hypot(point.x - points[0].x, point.y - points[0].y) : points.reduce(function(dist, _, i) {
@@ -2476,10 +2554,10 @@ var Polyline = makeClass(Curve, {
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var self = this, p = self._points, n = p.length;
+        var self = this, p = self._points, n = p.length, i;
         ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
-        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
         if (self.isClosed()) ctx.closePath();
     },
     toTex: function() {
@@ -2516,8 +2594,8 @@ var Arc = makeClass(Curve, {
         _angle = new Value(angle);
         _cos = stdMath.cos(rad(_angle.val()));
         _sin = stdMath.sin(rad(_angle.val()));
-        _largeArc = new Value(!!largeArc);
-        _sweep = new Value(!!sweep);
+        _largeArc = new Value(!!largeArc ? 1 : 0);
+        _sweep = new Value(!!sweep ? 1 : 0);
 
         self.$super('constructor', [[start, end], {radiusX:_radiusX, radiusY:_radiusY, angle:_angle, largeArc:_largeArc, sweep:_sweep}]);
 
@@ -2593,7 +2671,7 @@ var Arc = makeClass(Curve, {
                 return _largeArc.val();
             },
             set: function(largeArc) {
-                _largeArc.val(!!largeArc);
+                _largeArc.val(!!largeArc ? 1 : 0);
                 if (_largeArc.isChanged() && !self.isChanged())
                 {
                     self.isChanged(true);
@@ -2608,7 +2686,7 @@ var Arc = makeClass(Curve, {
                 return _sweep.val();
             },
             set: function(sweep) {
-                _sweep.val(!!sweep);
+                _sweep.val(!!sweep ? 1 : 0);
                 if (_sweep.isChanged() && !self.isChanged())
                 {
                     self.isChanged(true);
@@ -2930,7 +3008,7 @@ var Arc = makeClass(Curve, {
             a = rad(self.angle), t1 = self.theta, dt = self.dtheta;
         ctx.beginPath();
         ctx.ellipse(c.x, c.y, rx, ry, a, t1, t1 + dt, fs);
-        if (abs(dt) >= TWO_PI) ctx.closePath();
+        if (abs(dt) + EPS >= TWO_PI) ctx.closePath();
     },
     toTex: function() {
         var self = this;
@@ -3496,6 +3574,28 @@ var Polygon = makeClass(Curve, {
         }
         return false;
     },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], p = self._lines, n = p.length,
+            j, k, p1, p2, p3, p4;
+        for (j=0; j<n; ++j)
+        {
+            if (j+1 >= n) continue;
+            for (k=j+2; k<n; ++k)
+            {
+                if (k+1 >= n) continue;
+                p1 = p[j]; p2 = p[j+1];
+                p3 = p[k]; p4 = p[k+1];
+                ii = line_segments_intersection(p1, p2, p3, p4);
+                if (ii)
+                {
+                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    i.push.apply(i, ii);
+                }
+            }
+        }
+        return i ? i.map(Point) : false;
+    },
     bezierPoints: function() {
         var p = this._lines, n = p.length;
         return p.reduce(function(b, _, i) {
@@ -3533,10 +3633,10 @@ var Polygon = makeClass(Curve, {
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var p = this._lines, n = p.length;
+        var p = this._lines, n = p.length, i;
         ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
-        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
         ctx.closePath();
     },
     toTex: function() {
@@ -3772,7 +3872,7 @@ var Circle = makeClass(Curve, {
     },
     toSVGPath: function(svg) {
         var self = this, c = self.center, r = self.radius,
-            path = ['M',c.x - r,c.y,'a',r,r,0,0,0,r+r,0,'a',r,r,0,0,0,-r-r,0,'Z'].join(' ');
+            path = ['M',c.x - r,c.y,'A',r,r,0,0,0,c.x + r,c.y,'A',r,r,0,0,0,c.x - r,c.y,'Z'].join(' ');
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
             'd': [path, self.isChanged()],
@@ -4293,7 +4393,7 @@ function prepare_tween(tween, fps)
             t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
         }
         return {
-            frame: stdMath.round((parseFloat(key, 10) || 0)/100*(t.nframes - 1)),
+            frame: stdMath.round(Num(key)/100*(t.nframes - 1)),
             shape: shape,
             transform: {
                 scale: {
@@ -4724,6 +4824,8 @@ var Plane = makeClass(null, {
                 intersections = [];
                 for (var k,i,j=0,n=objects.length; j<n; ++j)
                 {
+                    i = objects[j].intersectsSelf();
+                    if (i) intersections.push.apply(intersections, i);
                     for (k=j+1; k<n; ++k)
                     {
                         i = objects[j].intersects(objects[k]);
@@ -6172,7 +6274,7 @@ function uuid(ns)
 }
 function Num(x)
 {
-    return (+x) || 0;
+    return parseFloat(x) || 0;
 }
 function Tex(o)
 {

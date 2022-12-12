@@ -52,7 +52,7 @@ h4 {
 const G = Geometrize;
 const plane = G.Plane(document.getElementById('container'), 0, 0, 32, 32);
 // parses both string and HTML node
-parseSVG(document.getElementById('svg')/*.innerHTML*/.children[0]).map(function map(obj) {
+parseSVG(document.getElementById('svg').innerHTML/*.children[0]*/).map(function map(obj) {
 switch (obj.type)
 {
     case 'SVG':

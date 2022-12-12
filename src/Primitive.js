@@ -93,6 +93,9 @@ var Primitive = makeClass(null, merge(null, {
     intersects: function(other) {
         return false;
     },
+    intersectsSelf: function() {
+        return false;
+    },
     toSVG: function(svg) {
         return arguments.length ? svg : '';
     },

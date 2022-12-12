@@ -180,7 +180,7 @@ function prepare_tween(tween, fps)
             t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
         }
         return {
-            frame: stdMath.round((parseFloat(key, 10) || 0)/100*(t.nframes - 1)),
+            frame: stdMath.round(Num(key)/100*(t.nframes - 1)),
             shape: shape,
             transform: {
                 scale: {

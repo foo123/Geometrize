@@ -175,6 +175,28 @@ var Polyline = makeClass(Curve, {
         }
         return false;
     },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], p = self._points, n = p.length,
+            j, k, p1, p2, p3, p4;
+        for (j=0; j<n; ++j)
+        {
+            if (j+1 >= n) continue;
+            for (k=j+2; k<n; ++k)
+            {
+                if (k+1 >= n) continue;
+                p1 = p[j]; p2 = p[j+1];
+                p3 = p[k]; p4 = p[k+1];
+                ii = line_segments_intersection(p1, p2, p3, p4);
+                if (ii)
+                {
+                    if (p_eq(p1, p3) || p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    if (p_eq(p2, p3) || p_eq(p2, p4)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    i.push.apply(i, ii);
+                }
+            }
+        }
+        return i ? i.map(Point) : false;
+    },
     distanceToPoint: function(point) {
         var points = this.points;
         return !points.length ? NaN : (1 === points.length ? hypot(point.x - points[0].x, point.y - points[0].y) : points.reduce(function(dist, _, i) {
@@ -225,10 +247,10 @@ var Polyline = makeClass(Curve, {
         ctx.stroke();
     },
     toCanvasPath: function(ctx) {
-        var self = this, p = self._points, n = p.length;
+        var self = this, p = self._points, n = p.length, i;
         ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
-        for (var i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
         if (self.isClosed()) ctx.closePath();
     },
     toTex: function() {
