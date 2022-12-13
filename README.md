@@ -116,7 +116,7 @@ switch (obj.type)
 
 **Shape Tweens**
 
-[![geometrize tween between multiple shapes](/shapetween.gif)]((https://foo123.github.io/examples/shapetween/))
+[![geometrize tween between multiple shapes](/shapetween.gif)](https://foo123.github.io/examples/shapetween/)
 
 [See it](https://foo123.github.io/examples/shapetween/)
 
