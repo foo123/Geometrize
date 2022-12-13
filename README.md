@@ -4,7 +4,7 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 0.9.0** (82 kB minified)
+**version: 0.9.5** (83 kB minified)
 
 ![geometrize animation](/geo.gif)
 
@@ -20,7 +20,9 @@ Examples:
 
 **Intersections**
 
-![geometrize intersections](/intersections.png)
+[![geometrize intersections](/intersections.png)](https://foo123.github.io/examples/geometrize/)
+
+[See it](https://foo123.github.io/examples/geometrize/)
 
 ```javascript
 const {Plane, Ellipse, Circle, Arc, QBezier, CBezier, Line, Point} = Geometrize;
@@ -114,7 +116,9 @@ switch (obj.type)
 
 **Shape Tweens**
 
-![geometrize tween between multiple shapes](/shapetween.gif)
+[![geometrize tween between multiple shapes](/shapetween.gif)]((https://foo123.github.io/examples/shapetween/))
+
+[See it](https://foo123.github.io/examples/shapetween/)
 
 ```javascript
 const {Plane, Tween, Polygon, Circle, Ellipse, Arc} = Geometrize;
@@ -124,14 +128,10 @@ const ellipse = Ellipse([cx, cy], rx, ry, angle);
 const arc = Arc(ellipse.getPointAt(0), ellipse.getPointAt(0.6), rx, ry, angle, 0, 0);
 const circle = Circle([cx,cy], r);
 const square = Polygon([
-    [cx+r,cy],
+    [cx+r,cy+r],
     [cx+r,cy-r],
-    [cx,cy-r],
     [cx-r,cy-r],
-    [cx-r,cy],
-    [cx-r,cy+r],
-    [cx,cy+r],
-    [cx+r,cy+r]
+    [cx-r,cy+r]
 ]);
 const tween = Tween({
     keyframes: {

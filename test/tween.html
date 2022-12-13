@@ -53,46 +53,28 @@ const arc = Arc(ellipse.getPointAt(0), ellipse.getPointAt(0.6), rx, ry, angle, 0
 const qbezier = QBezier([[cx+2*rx, cy+ry], [cx+rx, cy-5*ry], [cx-2*rx, cy]]);
 const circle = Circle([cx,cy], r);
 const square = Polygon([
-    [cx+r,cy],
+    [cx+r,cy+r],
     [cx+r,cy-r],
-    [cx,cy-r],
     [cx-r,cy-r],
-    [cx-r,cy],
-    [cx-r,cy+r],
-    [cx,cy+r],
-    [cx+r,cy+r]
+    [cx-r,cy+r]
 ]);
 const tween = Tween({
     keyframes: {
-        "0%": {
-            shape: point,
-            style: {
-                stroke: 'red'
-            },
-            easing: 'ease-out'
-        },
-        "15%": {
-            shape: qbezier,
-            style: {
-                stroke: 'orange'
-            },
-            easing: 'ease-out'
-        },
-        "30%": {
+        /*"0%": {
             shape: arc,
             style: {
                 stroke: 'cyan'
             },
             easing: 'ease-out'
         },
-        "45%": {
+        "25%": {
             shape: ellipse,
             style: {
                 stroke: 'orange'
             },
             easing: 'ease-out'
         },
-        "60%": {
+        "50%": {
             shape: circle,
             style: {
                 stroke: 'cyan'
@@ -129,9 +111,78 @@ const tween = Tween({
             style: {
                 stroke: 'blue'
             }
+        }*/
+        "0%": {
+            shape: point,
+            style: {
+                stroke: 'red'
+            },
+            easing: 'ease-out'
+        },
+        "15%": {
+            shape: qbezier,
+            style: {
+                stroke: 'orange'
+            },
+            easing: 'ease-out'
+        },
+        "30%": {
+            shape: arc,
+            style: {
+                stroke: 'cyan'
+            },
+            easing: 'ease-out'
+        },
+        "45%": {
+            shape: ellipse,
+            style: {
+                stroke: 'orange'
+            },
+            easing: 'ease-out'
+        },
+        "60%": {
+            shape: circle,
+            style: {
+                stroke: 'cyan'/*,
+                fill: 'blue'*/
+            },
+            easing: 'ease-out'
+        },
+        "75%": {
+            shape: square,
+            transform: {
+                rotate: {
+                    origin: {
+                        x: square.getCenter().x,
+                        y: square.getCenter().y
+                    },
+                    angle: 0
+                }
+            },
+            style: {
+                stroke: 'orange'/*,
+                fill: 'green'*/
+            },
+            easing: 'ease-out-back'
+        },
+        "100%": {
+            shape: square,
+            transform: {
+                rotate: {
+                    origin: {
+                        x: square.getCenter().x,
+                        y: square.getCenter().y
+                    },
+                    angle: -45
+                }
+            },
+            style: {
+                stroke: 'blue'/*,
+                fill: 'green'*/
+            }
         }
     },
-    duration: 7000,
+    duration: /*4000*/7000,
     delay: 400
 });
 plane.add(tween);
