@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.5 (2022-12-13 15:01:12)
+*   @version 0.9.5 (2022-12-13 18:11:08)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.5 (2022-12-13 15:01:12)
+*   @version 0.9.5 (2022-12-13 18:11:08)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -4349,7 +4349,7 @@ function prepare_tween(tween, fps)
     var t = {
             duration: null == tween.duration ? 1000 : (tween.duration || 0),
             delay: tween.delay || 0,
-            fps: fps,
+            fps: clamp(null != tween.fps ? Num(tween.fps) : fps, 1, fps),
             nframes: 0,
             keyframes: null,
             kf: 0,
@@ -4482,10 +4482,9 @@ function prepare_tween(tween, fps)
     t.keyframes.forEach(function(_, i) {
         if (i+1 < t.keyframes.length)
         {
-            // forward direction
             match_shapes(t.keyframes[i], t.keyframes[i+1], 0, 1);
-            maxCurves = stdMath.max(maxCurves, t.keyframes[i].shape[0].length);
         }
+        maxCurves = stdMath.max(maxCurves, t.keyframes[i].shape[0].length);
     });
     t.keyframes.forEach(function(kf, i) {
         add_curves(kf.shape[0], maxCurves);
@@ -4647,7 +4646,7 @@ function next_frame(tween)
 var Tween = makeClass(Primitive, {
     constructor: function Tween(tween) {
         var self = this, run = false,
-            fps = 60, dt = 0,
+            fps = 60, dt = 0, timer = null,
             onStart = null, onEnd = null, animate;
 
         if (tween instanceof Tween) return tween;
@@ -4656,12 +4655,14 @@ var Tween = makeClass(Primitive, {
         Primitive.call(self);
         self.start = function() {
             run = true;
+            if (timer) {clearTimeout(timer); timer = null;}
             if (is_first_frame(tween) && onStart) onStart(self);
-            setTimeout(animate, (is_first_frame(tween) ? (tween.delay || 0) : 0) + dt);
+            timer = setTimeout(animate, (is_first_frame(tween) ? (tween.delay || 0) : 0) + dt);
             return self;
         };
         self.stop = function() {
             run = false;
+            if (timer) {clearTimeout(timer); timer = null;}
             return self;
         };
         self.rewind = function() {
@@ -4683,6 +4684,9 @@ var Tween = makeClass(Primitive, {
         };
         self.numberOfFrames = function() {
             return tween.nframes;
+        };
+        self.framesPerSecond = function() {
+            return tween.fps;
         };
         self.getBoundingBox = function() {
             return {
@@ -4766,14 +4770,56 @@ var Tween = makeClass(Primitive, {
             ctx.stroke();
         };
         self.toCanvasPath = function(ctx) {
-            ctx.beginPath();
-            tween.current.shape.forEach(function(cb) {
-                ctx.moveTo(cb[0].x, cb[0].y);
-                ctx.bezierCurveTo(cb[1].x, cb[1].y, cb[2].x, cb[2].y, cb[3].x, cb[3].y);
+            var firstx = 0, firsty = 0,
+                lastx = 0, lasty = 0,
+                isConnected = true;
+            tween.current.shape.forEach(function(b, i) {
+                var connects = true;
+                if (0 === i)
+                {
+                    connects = true;
+                    firstx = b[0].x;
+                    firsty = b[0].y;
+                    ctx.beginPath();
+                    ctx.moveTo(b[0].x, b[0].y);
+                    ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
+                }
+                else
+                {
+                    connects = is_almost_equal(b[0].x, lastx) && is_almost_equal(b[0].y, lasty);
+                    if (connects)
+                    {
+                        ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
+                    }
+                    else
+                    {
+                        if (isConnected && is_almost_equal(firstx, lastx) && is_almost_equal(firsty, lasty))
+                        {
+                            // close this and start new path
+                            ctx.closePath();
+                            ctx.beginPath();
+                            isConnected = true;
+                        }
+                        else
+                        {
+                            isConnected = false;
+                        }
+                        firstx = b[0].x;
+                        firsty = b[0].y;
+                        ctx.moveTo(b[0].x, b[0].y);
+                        ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
+                    }
+                }
+                lastx = b[3].x;
+                lasty = b[3].y;
             });
+            if (isConnected && is_almost_equal(firstx, lastx) && is_almost_equal(firsty, lasty))
+                ctx.closePath();
         };
         self.dispose = function() {
             run = false;
+            if (timer) clearTimeout(timer);
+            timer = null;
             onStart = null;
             onEnd = null;
             tween = null;
@@ -4781,8 +4827,9 @@ var Tween = makeClass(Primitive, {
         };
 
         fps = 60;
-        dt = stdMath.floor(1000/fps);
         tween = prepare_tween(tween, fps);
+        fps = tween.fps;
+        dt = stdMath.floor(1000/fps);
         animate = function animate() {
             if (!run || !tween) return;
             if (next_frame(tween))
@@ -4794,7 +4841,7 @@ var Tween = makeClass(Primitive, {
                 }
                 else
                 {
-                    setTimeout(animate, dt);
+                    timer = setTimeout(animate, dt);
                 }
             }
         };
