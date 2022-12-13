@@ -180,17 +180,17 @@ var Polyline = makeClass(Curve, {
             j, k, p1, p2, p3, p4;
         for (j=0; j<n; ++j)
         {
-            if (j+1 >= n) continue;
+            if (j+1 >= n) break;
             for (k=j+2; k<n; ++k)
             {
-                if (k+1 >= n) continue;
+                if (k+1 >= n) break;
                 p1 = p[j]; p2 = p[j+1];
                 p3 = p[k]; p4 = p[k+1];
                 ii = line_segments_intersection(p1, p2, p3, p4);
                 if (ii)
                 {
-                    if ((j === 0) && (k === n-1) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
-                    else if ((k === j+1) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    if ((j === 0) && (k === n-2) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+2) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
                     i.push.apply(i, ii);
                 }
             }

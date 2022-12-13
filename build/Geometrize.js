@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.0 (2022-12-12 23:14:40)
+*   @version 0.9.5 (2022-12-13 10:17:43)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.0 (2022-12-12 23:14:40)
+*   @version 0.9.5 (2022-12-13 10:17:43)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.9.0", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "0.9.5", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -2487,17 +2487,17 @@ var Polyline = makeClass(Curve, {
             j, k, p1, p2, p3, p4;
         for (j=0; j<n; ++j)
         {
-            if (j+1 >= n) continue;
+            if (j+1 >= n) break;
             for (k=j+2; k<n; ++k)
             {
-                if (k+1 >= n) continue;
+                if (k+1 >= n) break;
                 p1 = p[j]; p2 = p[j+1];
                 p3 = p[k]; p4 = p[k+1];
                 ii = line_segments_intersection(p1, p2, p3, p4);
                 if (ii)
                 {
-                    if ((j === 0) && (k === n-1) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
-                    else if ((k === j+1) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    if ((j === 0) && (k === n-2) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+2) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
                     i.push.apply(i, ii);
                 }
             }
@@ -3579,17 +3579,17 @@ var Polygon = makeClass(Curve, {
             j, k, p1, p2, p3, p4;
         for (j=0; j<n; ++j)
         {
-            if (j+1 >= n) continue;
+            if (j+1 >= n) break;
             for (k=j+2; k<n; ++k)
             {
-                if (k+1 >= n) continue;
+                if (k+1 >= n) break;
                 p1 = p[j]; p2 = p[j+1];
                 p3 = p[k]; p4 = p[k+1];
                 ii = line_segments_intersection(p1, p2, p3, p4);
                 if (ii)
                 {
-                    if ((j === 0) && (k === n-1) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
-                    else if ((k === j+1) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    if ((j === 0) && (k === n-2) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+2) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
                     i.push.apply(i, ii);
                 }
             }
@@ -4362,14 +4362,60 @@ function prepare_tween(tween, fps)
                 xmax: -Infinity
             }
         },
-        shapes = {},
-        maxCurves = -Infinity,
         easing = is_function(tween.easing) ? tween.easing : (is_string(tween.easing) && HAS.call(Tween.Easing, tween.easing) ? Tween.Easing[tween.easing] : Tween.Easing.linear)
     ;
+    var match_shapes = function match_shapes(kf1, kf2, dir) {
+        dir = dir || 0;
+        var s1 = kf1.shape[dir], s2 = kf2.shape[dir],
+            l1 = s1.length, l2 = s2.length,
+            m = stdMath.max(l1, l2),
+            i, i1, i2, p, b1, b2;
+        for (i1=0,i2=0,i=0; i<m; ++i)
+        {
+            if (i1 >= l1)
+            {
+                p = 0 < l1 ? s1[l1-1][3] : {x:0, y:0};
+                s1.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                ++l1; ++i1;
+                continue;
+            }
+            if (i2 >= l2)
+            {
+                p = 0 < l2 ? s2[l2-1][3] : {x:0, y:0};
+                s2.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                ++l2; ++i2;
+                continue;
+            }
+            b1 = s1[i1];
+            b2 = s2[i2];
+            if (!same_dir(b1[0], b1[3], b2[0], b2[3]))
+            {
+                // adjust shape to avoid curves splitting or crossing over
+                p = s1[l1-1][3];
+                s1.splice(i1, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                p = s2[l2-1][3];
+                s2.splice(i2+1, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                ++l1;
+                ++l2;
+                ++m;
+                i1 += 2;
+                i2 += 2;
+            }
+            else
+            {
+                ++i1;
+                ++i2;
+            }
+        }
+    };
+    var add_curves = function add_curves(shape, numCurves) {
+        var p = shape.length ? shape[shape.length - 1][3] : {x:0, y:0};
+        while (shape.length < numCurves) shape.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+    };
     t.nframes = stdMath.ceil(t.duration/1000*t.fps);
     t.keyframes = Object.keys(tween.keyframes || EMPTY_OBJ).map(function(key) {
         var kf = tween.keyframes[key] || EMPTY_OBJ,
-            shape = kf.shape && is_function(kf.shape.bezierPoints) ? (shapes[kf.shape.id] || kf.shape.bezierPoints()) : [],
+            shape = kf.shape && is_function(kf.shape.bezierPoints) ? kf.shape.bezierPoints() : [],
             transform = kf.transform || EMPTY_OBJ,
             sc = transform.scale || EMPTY_OBJ,
             scOrig = sc.origin || {x:0, y:0},
@@ -4382,8 +4428,6 @@ function prepare_tween(tween, fps)
             hasStroke = is_array(stroke),
             hasFill = is_array(fill), bb
         ;
-        if (kf.shape && kf.shape.id && (null == shapes[kf.shape.id])) shapes[kf.shape.id] = shape;
-        maxCurves = stdMath.max(maxCurves, shape.length);
         if (kf.shape && is_function(kf.shape.getBoundingBox))
         {
             bb = kf.shape.getBoundingBox();
@@ -4394,7 +4438,7 @@ function prepare_tween(tween, fps)
         }
         return {
             frame: stdMath.round(Num(key)/100*(t.nframes - 1)),
-            shape: shape,
+            shape: [shape.slice(), shape.slice()],
             transform: {
                 scale: {
                     origin: {
@@ -4426,23 +4470,25 @@ function prepare_tween(tween, fps)
             },
             easing: is_function(kf.easing) ? kf.easing : (is_string(kf.easing) && HAS.call(Tween.Easing, kf.easing) ? Tween.Easing[kf.easing] : easing)
         };
-    }).sort(function(a, b) {return a.frame - b.frame});
-    var add_curves = function(curves, nCurves) {
-        if (curves.length < nCurves)
+    }).sort(function(a, b) {
+        return a.frame - b.frame
+    });
+    var maxCurves = [0, 0];
+    t.keyframes.forEach(function(_, i) {
+        if (i+1 < t.keyframes.length)
         {
-            var i = curves.length ? 1 : 0,  p = {x:0, y:0};
-            nCurves -= curves.length;
-            while (0 < nCurves)
-            {
-                if (i >= 1) p = curves[i-1][3];
-                curves.splice(i, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                --nCurves;
-                i += curves.length > i+1 ? 2 : 1;
-            }
+            match_shapes(t.keyframes[i], t.keyframes[i+1], 0);
+            maxCurves[0] = stdMath.max(maxCurves[0], t.keyframes[i].shape[0].length);
         }
-    };
-    t.keyframes.forEach(function(kf) {
-        add_curves(kf.shape, maxCurves);
+        if (i-1 >= 0)
+        {
+            match_shapes(t.keyframes[i], t.keyframes[i-1], 1);
+            maxCurves[1] = stdMath.max(maxCurves[1], t.keyframes[i].shape[1].length);
+        }
+    });
+    t.keyframes.forEach(function(kf, i) {
+        add_curves(kf.shape[0], maxCurves[0]);
+        add_curves(kf.shape[1], maxCurves[1]);
     });
     return t;
 }
@@ -4471,7 +4517,7 @@ function first_frame(tween)
         ory = a.transform.rotate.origin.y,
         angle = a.transform.rotate.angle,
         cos = 1, sin = 0,
-        as = a.shape, ai, aij,
+        as = a.shape[tween.reverse ? 1 : 0], ai, aij,
         i, j, n = as.length, x, y,
         s, cs = new Array(n)
     ;
@@ -4553,7 +4599,8 @@ function next_frame(tween)
         ory = interpolate(a.transform.rotate.origin.y, b.transform.rotate.origin.y, t),
         angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t),
         cos = 1, sin = 0,
-        as = a.shape, bs = b.shape,
+        as = a.shape[tween.reverse ? 1 : 0],
+        bs = b.shape[tween.reverse ? 1 : 0],
         ai, bi, aij, bij,
         i, j, n = as.length, x, y,
         s, cs = new Array(n)
@@ -5422,43 +5469,45 @@ function polyline_area(polyline_points)
 }
 function convex_hull(points)
 {
-    var pc = points.length;
+    var pc = points.length, p0, i0, i, p, ps, convexHull, hullSize;
 
     // at least 3 points must define a non-trivial convex hull
     if (3 > pc) return points;
 
-    var p0 = points[0], i0 = 0;
-    points.forEach(function(p, i) {
+    p0 = points[0]; i0 = 0;
+    for (i=1; i<pc; ++i)
+    {
+        p = points[i];
         if ((p.y < p0.y) || (is_almost_equal(p.y, p0.y) && (p.x < p0.x)))
         {
             p0 = p;
             i0 = i;
         }
-    });
+    }
     points.splice(i0, 1);
     --pc;
 
-    var ps = points
-        .map(function(p, i) {
-            return [polar_angle(p0.x, p0.y, p.x, p.y), i];
-        })
-        .sort(sort_asc0)
-        .map(function(a) {
-            return points[a[1]];
-        });
+    ps = points.map(function(p, i) {
+        return [polar_angle(p0.x, p0.y, p.x, p.y), i];
+    }).sort(function(a, b) {
+        return a[0] - b[0];
+    }).map(function(pi) {
+        return points[pi[1]];
+    });
 
-    var convexHull = [p0, ps[0], ps[1]], hullSize = 3, i;
-
+    // pre-allocate array to avoid slow array size changing ops inside loop
+    convexHull = new Array(pc + 1);
+    convexHull[0] = p0;
+    convexHull[1] = ps[0];
+    convexHull[2] = ps[1];
+    hullSize = 3;
     for (i=2; i<pc; ++i)
     {
-        while (0 <= dir(ps[i], convexHull[hullSize-1], convexHull[hullSize-2]))
-        {
-            convexHull.pop();
-            --hullSize;
-        }
-        convexHull.push(ps[i]);
-        ++hullSize;
+        while ((1 < hullSize) && (0 <= dir(ps[i], convexHull[hullSize-1], convexHull[hullSize-2]))) --hullSize;
+        convexHull[hullSize++] = ps[i];
     }
+    // truncate to actual size
+    convexHull.length = hullSize;
     return convexHull;
 }
 function in_convex_hull(convexHull, p, strict)
@@ -5479,7 +5528,7 @@ function is_convex(points)
 {
     // https://stackoverflow.com/a/45372025/3591273
     var n = points.length;
-    if ( 3 > n) return false;
+    if (3 > n) return false;
 
     var old_x = points[n-2].x, old_y = points[n-2].y,
         new_x = points[n-1].x, new_y = points[n-1].y,
@@ -5964,6 +6013,12 @@ function dir(p1, p2, p3)
 {
     return crossp(p1.x - p3.x, p1.y - p3.y, p2.x - p3.x, p2.y - p3.y);
 }
+function same_dir(p1, p2, p3, p4)
+{
+    var a = (p1.y - p2.y)*(p3.x - p4.x),
+        b = (p3.y - p4.y)*(p1.x - p2.x);
+    return is_almost_equal(a, 0) || is_almost_equal(b, 0) || (sign(a) === sign(b));
+}
 function clamp(x, xmin, xmax)
 {
     return stdMath.min(stdMath.max(x, xmin), xmax);
@@ -6237,14 +6292,6 @@ function unobserveArray(array, onDel)
 function equal(a, b)
 {
     return a === b;
-}
-function sort_asc(a, b)
-{
-    return a - b;
-}
-function sort_asc0(a, b)
-{
-    return a[0] - b[0];
 }
 var TRIM_RE = /^\s+|\s+$/gm;
 var trim = String.prototype.trim ? function trim(s) {

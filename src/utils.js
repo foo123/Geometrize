@@ -495,43 +495,45 @@ function polyline_area(polyline_points)
 }
 function convex_hull(points)
 {
-    var pc = points.length;
+    var pc = points.length, p0, i0, i, p, ps, convexHull, hullSize;
 
     // at least 3 points must define a non-trivial convex hull
     if (3 > pc) return points;
 
-    var p0 = points[0], i0 = 0;
-    points.forEach(function(p, i) {
+    p0 = points[0]; i0 = 0;
+    for (i=1; i<pc; ++i)
+    {
+        p = points[i];
         if ((p.y < p0.y) || (is_almost_equal(p.y, p0.y) && (p.x < p0.x)))
         {
             p0 = p;
             i0 = i;
         }
-    });
+    }
     points.splice(i0, 1);
     --pc;
 
-    var ps = points
-        .map(function(p, i) {
-            return [polar_angle(p0.x, p0.y, p.x, p.y), i];
-        })
-        .sort(sort_asc0)
-        .map(function(a) {
-            return points[a[1]];
-        });
+    ps = points.map(function(p, i) {
+        return [polar_angle(p0.x, p0.y, p.x, p.y), i];
+    }).sort(function(a, b) {
+        return a[0] - b[0];
+    }).map(function(pi) {
+        return points[pi[1]];
+    });
 
-    var convexHull = [p0, ps[0], ps[1]], hullSize = 3, i;
-
+    // pre-allocate array to avoid slow array size changing ops inside loop
+    convexHull = new Array(pc + 1);
+    convexHull[0] = p0;
+    convexHull[1] = ps[0];
+    convexHull[2] = ps[1];
+    hullSize = 3;
     for (i=2; i<pc; ++i)
     {
-        while (0 <= dir(ps[i], convexHull[hullSize-1], convexHull[hullSize-2]))
-        {
-            convexHull.pop();
-            --hullSize;
-        }
-        convexHull.push(ps[i]);
-        ++hullSize;
+        while ((1 < hullSize) && (0 <= dir(ps[i], convexHull[hullSize-1], convexHull[hullSize-2]))) --hullSize;
+        convexHull[hullSize++] = ps[i];
     }
+    // truncate to actual size
+    convexHull.length = hullSize;
     return convexHull;
 }
 function in_convex_hull(convexHull, p, strict)
@@ -552,7 +554,7 @@ function is_convex(points)
 {
     // https://stackoverflow.com/a/45372025/3591273
     var n = points.length;
-    if ( 3 > n) return false;
+    if (3 > n) return false;
 
     var old_x = points[n-2].x, old_y = points[n-2].y,
         new_x = points[n-1].x, new_y = points[n-1].y,
@@ -1037,6 +1039,12 @@ function dir(p1, p2, p3)
 {
     return crossp(p1.x - p3.x, p1.y - p3.y, p2.x - p3.x, p2.y - p3.y);
 }
+function same_dir(p1, p2, p3, p4)
+{
+    var a = (p1.y - p2.y)*(p3.x - p4.x),
+        b = (p3.y - p4.y)*(p1.x - p2.x);
+    return is_almost_equal(a, 0) || is_almost_equal(b, 0) || (sign(a) === sign(b));
+}
 function clamp(x, xmin, xmax)
 {
     return stdMath.min(stdMath.max(x, xmin), xmax);
@@ -1310,14 +1318,6 @@ function unobserveArray(array, onDel)
 function equal(a, b)
 {
     return a === b;
-}
-function sort_asc(a, b)
-{
-    return a - b;
-}
-function sort_asc0(a, b)
-{
-    return a[0] - b[0];
 }
 var TRIM_RE = /^\s+|\s+$/gm;
 var trim = String.prototype.trim ? function trim(s) {

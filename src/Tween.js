@@ -149,14 +149,60 @@ function prepare_tween(tween, fps)
                 xmax: -Infinity
             }
         },
-        shapes = {},
-        maxCurves = -Infinity,
         easing = is_function(tween.easing) ? tween.easing : (is_string(tween.easing) && HAS.call(Tween.Easing, tween.easing) ? Tween.Easing[tween.easing] : Tween.Easing.linear)
     ;
+    var match_shapes = function match_shapes(kf1, kf2, dir) {
+        dir = dir || 0;
+        var s1 = kf1.shape[dir], s2 = kf2.shape[dir],
+            l1 = s1.length, l2 = s2.length,
+            m = stdMath.max(l1, l2),
+            i, i1, i2, p, b1, b2;
+        for (i1=0,i2=0,i=0; i<m; ++i)
+        {
+            if (i1 >= l1)
+            {
+                p = 0 < l1 ? s1[l1-1][3] : {x:0, y:0};
+                s1.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                ++l1; ++i1;
+                continue;
+            }
+            if (i2 >= l2)
+            {
+                p = 0 < l2 ? s2[l2-1][3] : {x:0, y:0};
+                s2.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                ++l2; ++i2;
+                continue;
+            }
+            b1 = s1[i1];
+            b2 = s2[i2];
+            if (!same_dir(b1[0], b1[3], b2[0], b2[3]))
+            {
+                // adjust shape to avoid curves splitting or crossing over
+                p = s1[l1-1][3];
+                s1.splice(i1, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                p = s2[l2-1][3];
+                s2.splice(i2+1, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                ++l1;
+                ++l2;
+                ++m;
+                i1 += 2;
+                i2 += 2;
+            }
+            else
+            {
+                ++i1;
+                ++i2;
+            }
+        }
+    };
+    var add_curves = function add_curves(shape, numCurves) {
+        var p = shape.length ? shape[shape.length - 1][3] : {x:0, y:0};
+        while (shape.length < numCurves) shape.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+    };
     t.nframes = stdMath.ceil(t.duration/1000*t.fps);
     t.keyframes = Object.keys(tween.keyframes || EMPTY_OBJ).map(function(key) {
         var kf = tween.keyframes[key] || EMPTY_OBJ,
-            shape = kf.shape && is_function(kf.shape.bezierPoints) ? (shapes[kf.shape.id] || kf.shape.bezierPoints()) : [],
+            shape = kf.shape && is_function(kf.shape.bezierPoints) ? kf.shape.bezierPoints() : [],
             transform = kf.transform || EMPTY_OBJ,
             sc = transform.scale || EMPTY_OBJ,
             scOrig = sc.origin || {x:0, y:0},
@@ -169,8 +215,6 @@ function prepare_tween(tween, fps)
             hasStroke = is_array(stroke),
             hasFill = is_array(fill), bb
         ;
-        if (kf.shape && kf.shape.id && (null == shapes[kf.shape.id])) shapes[kf.shape.id] = shape;
-        maxCurves = stdMath.max(maxCurves, shape.length);
         if (kf.shape && is_function(kf.shape.getBoundingBox))
         {
             bb = kf.shape.getBoundingBox();
@@ -181,7 +225,7 @@ function prepare_tween(tween, fps)
         }
         return {
             frame: stdMath.round(Num(key)/100*(t.nframes - 1)),
-            shape: shape,
+            shape: [shape.slice(), shape.slice()],
             transform: {
                 scale: {
                     origin: {
@@ -213,23 +257,25 @@ function prepare_tween(tween, fps)
             },
             easing: is_function(kf.easing) ? kf.easing : (is_string(kf.easing) && HAS.call(Tween.Easing, kf.easing) ? Tween.Easing[kf.easing] : easing)
         };
-    }).sort(function(a, b) {return a.frame - b.frame});
-    var add_curves = function(curves, nCurves) {
-        if (curves.length < nCurves)
+    }).sort(function(a, b) {
+        return a.frame - b.frame
+    });
+    var maxCurves = [0, 0];
+    t.keyframes.forEach(function(_, i) {
+        if (i+1 < t.keyframes.length)
         {
-            var i = curves.length ? 1 : 0,  p = {x:0, y:0};
-            nCurves -= curves.length;
-            while (0 < nCurves)
-            {
-                if (i >= 1) p = curves[i-1][3];
-                curves.splice(i, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                --nCurves;
-                i += curves.length > i+1 ? 2 : 1;
-            }
+            match_shapes(t.keyframes[i], t.keyframes[i+1], 0);
+            maxCurves[0] = stdMath.max(maxCurves[0], t.keyframes[i].shape[0].length);
         }
-    };
-    t.keyframes.forEach(function(kf) {
-        add_curves(kf.shape, maxCurves);
+        if (i-1 >= 0)
+        {
+            match_shapes(t.keyframes[i], t.keyframes[i-1], 1);
+            maxCurves[1] = stdMath.max(maxCurves[1], t.keyframes[i].shape[1].length);
+        }
+    });
+    t.keyframes.forEach(function(kf, i) {
+        add_curves(kf.shape[0], maxCurves[0]);
+        add_curves(kf.shape[1], maxCurves[1]);
     });
     return t;
 }
@@ -258,7 +304,7 @@ function first_frame(tween)
         ory = a.transform.rotate.origin.y,
         angle = a.transform.rotate.angle,
         cos = 1, sin = 0,
-        as = a.shape, ai, aij,
+        as = a.shape[tween.reverse ? 1 : 0], ai, aij,
         i, j, n = as.length, x, y,
         s, cs = new Array(n)
     ;
@@ -340,7 +386,8 @@ function next_frame(tween)
         ory = interpolate(a.transform.rotate.origin.y, b.transform.rotate.origin.y, t),
         angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t),
         cos = 1, sin = 0,
-        as = a.shape, bs = b.shape,
+        as = a.shape[tween.reverse ? 1 : 0],
+        bs = b.shape[tween.reverse ? 1 : 0],
         ai, bi, aij, bij,
         i, j, n = as.length, x, y,
         s, cs = new Array(n)
