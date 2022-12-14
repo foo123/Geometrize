@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.6 (2022-12-14 18:40:23)
+*   @version 0.9.6 (2022-12-14 19:17:17)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.6 (2022-12-14 18:40:23)
+*   @version 0.9.6 (2022-12-14 19:17:17)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -4431,26 +4431,36 @@ function prepare_tween(tween, fps)
     }).sort(function(a, b) {
         return a.frame - b.frame
     });
-    var maxCurves = 0;
-    var match_shapes = function match_shapes(kf1, kf2, index, dir) {
-        var s1 = kf1.shape[index], s2 = kf2.shape[index+dir],
+    //var maxCurves = 0;
+    var match_shapes = function match_shapes(kf1, kf2, index1, index2) {
+        var s1 = kf1.shape[index1], s2 = kf2.shape[index2],
             l1 = s1.length, l2 = s2.length,
             m = stdMath.max(l1, l2),
             i, i1, i2, p, b1, b2;
         for (i1=0,i2=0,i=0; i<m; ++i)
         {
-            if (i1 >= l1)
+            if (i1 >= l1 && i2 >= l2)
             {
                 p = 0 < l1 ? s1[l1-1][3] : {x:0, y:0};
                 s1.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
                 ++l1; ++i1;
-                continue;
-            }
-            if (i2 >= l2)
-            {
                 p = 0 < l2 ? s2[l2-1][3] : {x:0, y:0};
                 s2.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
                 ++l2; ++i2;
+                continue;
+            }
+            else if (i1 >= l1)
+            {
+                p = 0 < l1 ? s1[l1-1][3] : {x:0, y:0};
+                s1.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                ++l1; ++i1; ++i2;
+                continue;
+            }
+            else if (i2 >= l2)
+            {
+                p = 0 < l2 ? s2[l2-1][3] : {x:0, y:0};
+                s2.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                ++l2; ++i2; ++i1;
                 continue;
             }
             b1 = s1[i1];
@@ -4474,22 +4484,31 @@ function prepare_tween(tween, fps)
                 ++i2;
             }
         }
+        //s1.length must equal s2.length after matching
     };
-    var add_curves = function add_curves(shape, numCurves) {
+    /*var add_curves = function add_curves(shape, numCurves) {
         var p = shape.length ? shape[shape.length - 1][3] : {x:0, y:0};
         while (shape.length < numCurves) shape.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-    };
+    };*/
     t.keyframes.forEach(function(_, i) {
         if (i+1 < t.keyframes.length)
         {
             match_shapes(t.keyframes[i], t.keyframes[i+1], 0, 1);
         }
-        maxCurves = stdMath.max(maxCurves, t.keyframes[i].shape[0].length);
+        if (0 === i)
+        {
+            t.keyframes[i].shape[1] = t.keyframes[i].shape[0].slice();
+        }
+        if (i+1 === t.keyframes.length)
+        {
+            t.keyframes[i].shape[0] = t.keyframes[i].shape[1].slice();
+        }
+        //maxCurves = stdMath.max(maxCurves, t.keyframes[i].shape[0].length);
     });
-    t.keyframes.forEach(function(kf, i) {
+    /*t.keyframes.forEach(function(kf, i) {
         add_curves(kf.shape[0], maxCurves);
         add_curves(kf.shape[1], maxCurves);
-    });
+    });*/
     return t;
 }
 function first_frame(tween)
@@ -4602,7 +4621,7 @@ function next_frame(tween)
         as = a.shape[tween.reverse ? 1 : 0],
         bs = b.shape[tween.reverse ? 0 : 1],
         ai, bi, aij, bij,
-        i, j, n = as.length, x, y,
+        i, j, n = stdMath.min(as.length, bs.length), x, y,
         s, cs = new Array(n)
     ;
     if (!is_almost_equal(angle, 0))
