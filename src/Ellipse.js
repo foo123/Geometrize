@@ -226,7 +226,7 @@ var Ellipse = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false

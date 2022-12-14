@@ -1039,11 +1039,12 @@ function dir(p1, p2, p3)
 {
     return crossp(p1.x - p3.x, p1.y - p3.y, p2.x - p3.x, p2.y - p3.y);
 }
-function same_dir(p1, p2, p3, p4)
+function similar_curve(p1, p2, p3, p4)
 {
-    var a = (p1.y - p2.y)*(p3.x - p4.x),
+    return (dist2(p1, p3) <= dist2(p1, p4)) && (dist2(p2, p4) <= dist2(p2, p3));
+    /*var a = (p1.y - p2.y)*(p3.x - p4.x),
         b = (p3.y - p4.y)*(p1.x - p2.x);
-    return is_almost_equal(a, 0) || is_almost_equal(b, 0) || (sign(a) === sign(b));
+    return is_almost_equal(a, 0) || is_almost_equal(b, 0) || (sign(a) === sign(b))*/;
 }
 function clamp(x, xmin, xmax)
 {

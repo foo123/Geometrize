@@ -1,6 +1,6 @@
-// 2D Quadratic Bezier class
-var Bezier2 = makeClass(Bezier, {
-    constructor: function Bezier2(points) {
+// 2D Cubic Bezier class
+var CBezier = makeClass(Bezier, {
+    constructor: function CBezier(points) {
         var self = this,
             _length = null,
             _bbox = null,
@@ -8,8 +8,8 @@ var Bezier2 = makeClass(Bezier, {
             BB = null
         ;
 
-        if (points instanceof Bezier2) return points;
-        if (!(self instanceof Bezier2)) return new Bezier2(points);
+        if (points instanceof CBezier) return points;
+        if (!(self instanceof CBezier)) return new CBezier(points);
 
         self.$super('constructor', [points]);
 
@@ -25,20 +25,20 @@ var Bezier2 = makeClass(Bezier, {
             enumerable: true,
             configurable: false
         });
-        BB = function BB(p) {
+        BB = function BB(c) {
             // find min/max from zeroes of directional derivative along x and y
-            var tx = solve_linear(p[0].x - 2*p[1].x + p[2].x, p[1].x - p[0].x),
-                px = false === tx ? [p[1]] : tx.map(function(t) {
-                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
+            var tx = solve_quadratic(3*(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x), 2*(3*c[0].x - 6*c[1].x + 3*c[2].x), -3*c[0].x + 3*c[1].x),
+                px = false === tx ? [c[1], c[2]] : tx.map(function(t, i) {
+                    return 0 <= t && t <= 1 ? bezier3(t, c) : c[i+1];
                 }),
-                ty = solve_linear(p[0].y - 2*p[1].y + p[2].y, p[1].y - p[0].y),
-                py = false === ty ? [p[1]] : ty.map(function(t) {
-                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
+                ty = solve_quadratic(3*(-c[0].y + 3*c[1].y - 3*c[2].y + c[3].y), 2*(3*c[0].y - 6*c[1].y + 3*c[2].y), -3*c[0].y + 3*c[1].y),
+                py = false === ty ? [c[1], c[2]] : ty.map(function(t, i) {
+                    return 0 <= t && t <= 1 ? bezier3(t, c) : c[i+1];
                 }),
-                xmin = stdMath.min.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
-                xmax = stdMath.max.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
-                ymin = stdMath.min.apply(stdMath, py.concat([p[0], p[2]]).map(y)),
-                ymax = stdMath.max.apply(stdMath, py.concat([p[0], p[2]]).map(y))
+                xmin = stdMath.min.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
+                xmax = stdMath.max.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
+                ymin = stdMath.min.apply(stdMath, py.concat([c[0], c[3]]).map(y)),
+                ymax = stdMath.max.apply(stdMath, py.concat([c[0], c[3]]).map(y))
             ;
             return {
                 ymin: ymin,
@@ -93,60 +93,64 @@ var Bezier2 = makeClass(Bezier, {
             return self.$super('isChanged', arguments);
         };
     },
-    name: 'QBezier',
+    name: 'CBezier',
     clone: function() {
-        return new Bezier2(this.points.map(function(p) {return p.clone();}));
+        return new CBezier(this.points.map(function(p) {return p.clone();}));
     },
     transform: function(matrix) {
-        return new Bezier2(this.points.map(function(p) {return p.transform(matrix);}));
+        return new CBezier(this.points.map(function(p) {return p.transform(matrix);}));
     },
     hasPoint: function(point) {
-        return point_on_qbezier(point, this._points)
+        return point_on_cbezier(point, this._points)
     },
     intersects: function(other) {
         var self = this, i;
         if (other instanceof Point)
         {
-            i = point_on_qbezier(other, self._points)
-            return i ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Arc)
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier2)
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Primitive))
+        else if (other instanceof CBezier)
+        {
+            i = polyline_cbezier_intersection(self._lines, other._points);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Primitive)
         {
             return other.intersects(self);
         }
         return false;
     },
     f: function(t) {
-        return bezier2(t, this._points);
+        return bezier3(t, this._points);
     },
     bezierPoints: function() {
         var p = this._points;
         return [
         [
         {x:p[0].x, y:p[0].y},
-        {x:p[0].x + (p[1].x - p[0].x)*2/3, y:p[0].y + (p[1].y - p[0].y)*2/3},
-        {x:p[2].x + (p[1].x - p[2].x)*2/3, y:p[2].y + (p[1].y - p[2].y)*2/3},
-        {x:p[2].x, y:p[2].y}
+        {x:p[1].x, y:p[1].y},
+        {x:p[2].x, y:p[2].y},
+        {x:p[3].x, y:p[3].y}
         ]
         ];
     },
@@ -155,7 +159,7 @@ var Bezier2 = makeClass(Bezier, {
     },
     toSVGPath: function(svg) {
         var self = this, p = self._points,
-            path = ['M',p[0].x,p[0].y,'Q',p[1].x,p[1].y,p[2].x,p[2].y].join(' ');
+            path = ['M',p[0].x,p[0].y,'C',p[1].x,p[1].y,p[2].x,p[2].y,p[3].x,p[3].y].join(' ');
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
             'd': [path, self.isChanged()],
@@ -172,7 +176,7 @@ var Bezier2 = makeClass(Bezier, {
         var p = this._points;
         ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
-        ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
+        ctx.bezierCurveTo(p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
     }
 });
-Geometrize.QBezier = Geometrize.Bezier2 = Bezier2;
+Geometrize.CBezier = CBezier;

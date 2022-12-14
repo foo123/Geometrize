@@ -155,32 +155,32 @@ var Polygon = makeClass(Curve, {
             i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Arc)
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier2)
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier3)
+        else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
         {
             i = polyline_cbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Polyline) || (other instanceof Polygon))
+        else if ((Geometrize.Polyline && (other instanceof Polyline)) || (other instanceof Polygon))
         {
             i = polyline_polyline_intersection(self._lines, other._lines);
             return i ? i.map(Point) : false;

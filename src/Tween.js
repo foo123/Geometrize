@@ -242,7 +242,7 @@ function prepare_tween(tween, fps)
             }
             b1 = s1[i1];
             b2 = s2[i2];
-            if (!same_dir(b1[0], b1[3], b2[0], b2[3]))
+            if (!similar_curve(b1[0], b1[3], b2[0], b2[3]))
             {
                 // adjust shape to avoid curves splitting or crossing over
                 p = b1[0];
@@ -430,6 +430,9 @@ function next_frame(tween)
 }
 
 // Tween between 2D shapes
+// TODO:
+// 1. export frames to images via toCanvas and to responsive CSS steps animation
+// 2. animate curve length (eg from 0% to 100%) so that a shape can be animated as being hand-drawn
 var Tween = makeClass(Primitive, {
     constructor: function Tween(tween) {
         var self = this, run = false,
@@ -568,7 +571,7 @@ var Tween = makeClass(Primitive, {
                     firstx = b[0].x;
                     firsty = b[0].y;
                     ctx.beginPath();
-                    ctx.moveTo(b[0].x, b[0].y);
+                    ctx.moveTo(firstx, firsty);
                     ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
                 }
                 else
@@ -593,7 +596,7 @@ var Tween = makeClass(Primitive, {
                         }
                         firstx = b[0].x;
                         firsty = b[0].y;
-                        ctx.moveTo(b[0].x, b[0].y);
+                        ctx.moveTo(firstx, firsty);
                         ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
                     }
                 }

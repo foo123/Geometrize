@@ -363,12 +363,12 @@ var Arc = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false

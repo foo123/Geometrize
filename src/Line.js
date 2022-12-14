@@ -1,16 +1,16 @@
 // 2D Line segment class (equivalent to Linear Bezier curve)
-var Bezier1 = makeClass(Bezier, {
-    constructor: function Bezier1(start, end) {
+var Line = makeClass(Bezier, {
+    constructor: function Line(start, end) {
         var self = this,
             _length = null,
             _bbox = null,
             _hull = null
         ;
 
-        if (start instanceof Bezier1) return start;
-        if (!(self instanceof Bezier1)) return new Bezier1(start, end);
+        if (start instanceof Line) return start;
+        if (!(self instanceof Line)) return new Line(start, end);
 
-        if (is_array(start) && null == end)
+        if (is_array(start) && (null == end))
         {
             end = start[1];
             start = start[0];
@@ -118,37 +118,37 @@ var Bezier1 = makeClass(Bezier, {
             i = line_segments_intersection(p[0], p[1], other._points[0], other._points[1]);
             return i ? [Point(i)] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             p = self._points;
             i = line_circle_intersection(p[0], p[1], other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             p = self._points;
             i = line_ellipse_intersection(p[0], p[1], other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Arc)
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             p = self._points;
             i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier2)
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             p = self._points;
             i = line_qbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier3)
+        else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
         {
             p = self._points;
             i = line_cbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Primitive))
+        else if (other instanceof Primitive)
         {
             return other.intersects(this);
         }
@@ -212,7 +212,5 @@ var Bezier1 = makeClass(Bezier, {
         return 'Line('+[Str(self.start), Str(self.end)].join(',')+')';
     }
 });
-var Line = Bezier1;
-Geometrize.Bezier1 = Bezier1;
 Geometrize.Line = Line;
 

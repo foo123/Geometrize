@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.5 (2022-12-13 18:11:08)
+*   @version 0.9.6 (2022-12-14 18:40:23)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.5 (2022-12-13 18:11:08)
+*   @version 0.9.6 (2022-12-14 18:40:23)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.9.5", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "0.9.6", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -1924,6 +1924,10 @@ var CompositeCurve = makeClass(Curve, {
         if ((1 === n) && c[0].isClosed()) return true;
         return c[0]._points[0].eq(c[n-1]._points[c[n-1]._points.length-1]);
     },
+    f: function(t) {
+        var c = this.curves, n = c.length - 1, i = stdMath.floor(t*n);
+        return 1 === t ? c[n].f(t) : c[i].f(n*(t - i/n));
+    },
     derivative: function() {
         return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
     },
@@ -2088,18 +2092,18 @@ var CompositeCurve = makeClass(Curve, {
 });
 Geometrize.CompositeCurve = CompositeCurve;
 // 2D Line segment class (equivalent to Linear Bezier curve)
-var Bezier1 = makeClass(Bezier, {
-    constructor: function Bezier1(start, end) {
+var Line = makeClass(Bezier, {
+    constructor: function Line(start, end) {
         var self = this,
             _length = null,
             _bbox = null,
             _hull = null
         ;
 
-        if (start instanceof Bezier1) return start;
-        if (!(self instanceof Bezier1)) return new Bezier1(start, end);
+        if (start instanceof Line) return start;
+        if (!(self instanceof Line)) return new Line(start, end);
 
-        if (is_array(start) && null == end)
+        if (is_array(start) && (null == end))
         {
             end = start[1];
             start = start[0];
@@ -2207,37 +2211,37 @@ var Bezier1 = makeClass(Bezier, {
             i = line_segments_intersection(p[0], p[1], other._points[0], other._points[1]);
             return i ? [Point(i)] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             p = self._points;
             i = line_circle_intersection(p[0], p[1], other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             p = self._points;
             i = line_ellipse_intersection(p[0], p[1], other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Arc)
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             p = self._points;
             i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier2)
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             p = self._points;
             i = line_qbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier3)
+        else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
         {
             p = self._points;
             i = line_cbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Primitive))
+        else if (other instanceof Primitive)
         {
             return other.intersects(this);
         }
@@ -2301,8 +2305,6 @@ var Bezier1 = makeClass(Bezier, {
         return 'Line('+[Str(self.start), Str(self.end)].join(',')+')';
     }
 });
-var Line = Bezier1;
-Geometrize.Bezier1 = Bezier1;
 Geometrize.Line = Line;
 
 // 2D Polyline class
@@ -2446,27 +2448,27 @@ var Polyline = makeClass(Curve, {
             i = polyline_line_intersection(self._points, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._points, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._points, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Arc)
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             i = polyline_arc_intersection(self._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier2)
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             i = polyline_qbezier_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier3)
+        else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
         {
             i = polyline_cbezier_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
@@ -2478,7 +2480,7 @@ var Polyline = makeClass(Curve, {
         }
         else if (other instanceof Primitive)
         {
-            return other.intersects(self = this);
+            return other.intersects(self);
         }
         return false;
     },
@@ -2934,12 +2936,12 @@ var Arc = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false
@@ -3021,8 +3023,8 @@ var Arc = makeClass(Curve, {
 });
 Geometrize.Arc = Arc;
 // 2D Quadratic Bezier class
-var Bezier2 = makeClass(Bezier, {
-    constructor: function Bezier2(points) {
+var QBezier = makeClass(Bezier, {
+    constructor: function QBezier(points) {
         var self = this,
             _length = null,
             _bbox = null,
@@ -3030,8 +3032,8 @@ var Bezier2 = makeClass(Bezier, {
             BB = null
         ;
 
-        if (points instanceof Bezier2) return points;
-        if (!(self instanceof Bezier2)) return new Bezier2(points);
+        if (points instanceof QBezier) return points;
+        if (!(self instanceof QBezier)) return new QBezier(points);
 
         self.$super('constructor', [points]);
 
@@ -3117,10 +3119,10 @@ var Bezier2 = makeClass(Bezier, {
     },
     name: 'QBezier',
     clone: function() {
-        return new Bezier2(this.points.map(function(p) {return p.clone();}));
+        return new QBezier(this.points.map(function(p) {return p.clone();}));
     },
     transform: function(matrix) {
-        return new Bezier2(this.points.map(function(p) {return p.transform(matrix);}));
+        return new QBezier(this.points.map(function(p) {return p.transform(matrix);}));
     },
     hasPoint: function(point) {
         return point_on_qbezier(point, this._points)
@@ -3129,30 +3131,29 @@ var Bezier2 = makeClass(Bezier, {
         var self = this, i;
         if (other instanceof Point)
         {
-            i = point_on_qbezier(other, self._points)
-            return i ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Arc)
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier2)
+        else if (other instanceof QBezier)
         {
             i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Primitive))
+        else if (other instanceof Primitive)
         {
             return other.intersects(self);
         }
@@ -3197,10 +3198,10 @@ var Bezier2 = makeClass(Bezier, {
         ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
     }
 });
-Geometrize.QBezier = Geometrize.Bezier2 = Bezier2;
+Geometrize.QBezier = QBezier;
 // 2D Cubic Bezier class
-var Bezier3 = makeClass(Bezier, {
-    constructor: function Bezier3(points) {
+var CBezier = makeClass(Bezier, {
+    constructor: function CBezier(points) {
         var self = this,
             _length = null,
             _bbox = null,
@@ -3208,8 +3209,8 @@ var Bezier3 = makeClass(Bezier, {
             BB = null
         ;
 
-        if (points instanceof Bezier3) return points;
-        if (!(self instanceof Bezier3)) return new Bezier3(points);
+        if (points instanceof CBezier) return points;
+        if (!(self instanceof CBezier)) return new CBezier(points);
 
         self.$super('constructor', [points]);
 
@@ -3295,10 +3296,10 @@ var Bezier3 = makeClass(Bezier, {
     },
     name: 'CBezier',
     clone: function() {
-        return new Bezier3(this.points.map(function(p) {return p.clone();}));
+        return new CBezier(this.points.map(function(p) {return p.clone();}));
     },
     transform: function(matrix) {
-        return new Bezier3(this.points.map(function(p) {return p.transform(matrix);}));
+        return new CBezier(this.points.map(function(p) {return p.transform(matrix);}));
     },
     hasPoint: function(point) {
         return point_on_cbezier(point, this._points)
@@ -3307,35 +3308,34 @@ var Bezier3 = makeClass(Bezier, {
         var self = this, i;
         if (other instanceof Point)
         {
-            i = point_on_cbezier(other, self._points)
-            return i ? [other] : false;
+            return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Arc)
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier2)
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier3)
+        else if (other instanceof CBezier)
         {
             i = polyline_cbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Primitive))
+        else if (other instanceof Primitive)
         {
             return other.intersects(self);
         }
@@ -3380,7 +3380,7 @@ var Bezier3 = makeClass(Bezier, {
         ctx.bezierCurveTo(p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
     }
 });
-Geometrize.CBezier = Geometrize.Bezier3 = Bezier3;
+Geometrize.CBezier = CBezier;
 // 2D Polygon class
 // defined by vertices as a closed polyline
 var Polygon = makeClass(Curve, {
@@ -3538,32 +3538,32 @@ var Polygon = makeClass(Curve, {
             i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Ellipse)
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Arc)
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier2)
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Bezier3)
+        else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
         {
             i = polyline_cbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((other instanceof Polyline) || (other instanceof Polygon))
+        else if ((Geometrize.Polyline && (other instanceof Polyline)) || (other instanceof Polygon))
         {
             i = polyline_polyline_intersection(self._lines, other._lines);
             return i ? i.map(Point) : false;
@@ -4130,7 +4130,7 @@ var Ellipse = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Circle)
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
             return i ? i.map(Point) : false
@@ -4455,7 +4455,7 @@ function prepare_tween(tween, fps)
             }
             b1 = s1[i1];
             b2 = s2[i2];
-            if (!same_dir(b1[0], b1[3], b2[0], b2[3]))
+            if (!similar_curve(b1[0], b1[3], b2[0], b2[3]))
             {
                 // adjust shape to avoid curves splitting or crossing over
                 p = b1[0];
@@ -4643,6 +4643,9 @@ function next_frame(tween)
 }
 
 // Tween between 2D shapes
+// TODO:
+// 1. export frames to images via toCanvas and to responsive CSS steps animation
+// 2. animate curve length (eg from 0% to 100%) so that a shape can be animated as being hand-drawn
 var Tween = makeClass(Primitive, {
     constructor: function Tween(tween) {
         var self = this, run = false,
@@ -4781,7 +4784,7 @@ var Tween = makeClass(Primitive, {
                     firstx = b[0].x;
                     firsty = b[0].y;
                     ctx.beginPath();
-                    ctx.moveTo(b[0].x, b[0].y);
+                    ctx.moveTo(firstx, firsty);
                     ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
                 }
                 else
@@ -4806,7 +4809,7 @@ var Tween = makeClass(Primitive, {
                         }
                         firstx = b[0].x;
                         firsty = b[0].y;
-                        ctx.moveTo(b[0].x, b[0].y);
+                        ctx.moveTo(firstx, firsty);
                         ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
                     }
                 }
@@ -6097,11 +6100,12 @@ function dir(p1, p2, p3)
 {
     return crossp(p1.x - p3.x, p1.y - p3.y, p2.x - p3.x, p2.y - p3.y);
 }
-function same_dir(p1, p2, p3, p4)
+function similar_curve(p1, p2, p3, p4)
 {
-    var a = (p1.y - p2.y)*(p3.x - p4.x),
+    return (dist2(p1, p3) <= dist2(p1, p4)) && (dist2(p2, p4) <= dist2(p2, p3));
+    /*var a = (p1.y - p2.y)*(p3.x - p4.x),
         b = (p3.y - p4.y)*(p1.x - p2.x);
-    return is_almost_equal(a, 0) || is_almost_equal(b, 0) || (sign(a) === sign(b));
+    return is_almost_equal(a, 0) || is_almost_equal(b, 0) || (sign(a) === sign(b))*/;
 }
 function clamp(x, xmin, xmax)
 {

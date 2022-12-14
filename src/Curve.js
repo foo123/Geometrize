@@ -498,6 +498,10 @@ var CompositeCurve = makeClass(Curve, {
         if ((1 === n) && c[0].isClosed()) return true;
         return c[0]._points[0].eq(c[n-1]._points[c[n-1]._points.length-1]);
     },
+    f: function(t) {
+        var c = this.curves, n = c.length - 1, i = stdMath.floor(t*n);
+        return 1 === t ? c[n].f(t) : c[i].f(n*(t - i/n));
+    },
     derivative: function() {
         return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
     },
