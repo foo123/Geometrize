@@ -339,6 +339,10 @@ var Arc = makeClass(Curve, {
         var self = this, c = self.center, cs = self.cs;
         return arc(self.theta + t*self.dtheta, c.x, c.y, self.rX, self.rY, cs[0], cs[1]);
     },
+    fto: function(t) {
+        var self = this;
+        return new Arc(self.start, self.f(t), self.radiusX, self.radiusY, self.angle, self.largeArc, self.sweep);
+    },
     d: function() {
         var self = this,
             p = ellipse2arc(self.center.x, self.center.y, self.rY, self.rX, [self.cs[0], -self.cs[1]], -self.theta, -self.dtheta);
@@ -384,31 +388,12 @@ var Arc = makeClass(Curve, {
         }
         return false;
     },
-    bezierPoints: function() {
-        var self = this,
-            c = self.center,
-            cx = c.x,
-            cy = c.y,
-            rx = self.rX,
-            ry = self.rY,
-            cs = self.cs,
-            cos = cs[0],
-            sin = cs[1],
-            theta = self.theta,
-            dtheta = self.dtheta,
-            r = 2*abs(dtheta)/PI,
-            i, n, beziers
-        ;
-        if (is_almost_equal(r, 1)) r = 1;
-        if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
-        n = stdMath.max(1, stdMath.ceil(r));
-        dtheta /= n;
-        beziers = new Array(n);
-        for (i=0; i<n; ++i,theta+=dtheta)
-        {
-            beziers[i] = arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin);
-        }
-        return beziers;
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var self = this, c = self.center, cs = self.cs;
+        return bezierfromarc(c.x, c.y, self.rX, self.rY, cs[0], cs[1], self.theta, t*self.dtheta);
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);

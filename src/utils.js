@@ -866,6 +866,40 @@ function bezier3(t, p)
        y: t111*p[0].y + t110*p[1].y + t100*p[2].y + t000*p[3].y
    };
 }
+function de_casteljau(t, p, subdivide)
+{
+    // 0 <= t <= 1
+    var l = p.length, n = l - 1, q = p.slice(), qt = new Array(l), k, i, q0, q1;
+    qt[0] = p[0];
+    for (k=1; k<=n; ++k)
+    {
+        for (i=0; i+k<=n; ++i)
+        {
+            q0 = q[i];
+            q1 = q[i + 1];
+            q[i] = {
+                x: q0.x + t*(q1.x - q0.x),
+                y: q0.y + t*(q1.y - q0.y)
+            };
+        }
+        qt[k] = q[0];
+    }
+    return subdivide ? {pt:q[0], points:qt} : q[0];
+}
+function bezierfrom(p1, p2)
+{
+    return 1 < arguments.length ? [
+    p1,
+    bezier1(0.5, [p1, p2]),
+    bezier1(0.5, [p1, p2]),
+    p2
+    ] : [
+    {x:p1.x, y:p1.y},
+    {x:p1.x, y:p1.y},
+    {x:p1.x, y:p1.y},
+    {x:p1.x, y:p1.y}
+    ];
+}
 function arc(t, cx, cy, rx, ry, cos, sin)
 {
     // t is angle in radians around arc
@@ -925,6 +959,17 @@ function arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin, reverse)
     toarc(x2, y2, cx, cy, rx, ry, cos, sin)
     ];
 }
+function bezierfromarc(cx, cy, rx, ry, cos, sin, theta, dtheta)
+{
+    var r = 2*abs(dtheta)/PI, i, n, b;
+    if (is_almost_equal(r, 1)) r = 1;
+    if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
+    n = stdMath.max(1, stdMath.ceil(r));
+    dtheta /= n;
+    b = new Array(n);
+    for (i=0; i<n; ++i,theta+=dtheta) b[i] = arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin);
+    return b;
+}
 function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {
     // Step 1: simplify through translation/rotation
@@ -969,7 +1014,7 @@ function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
         p0: arc(theta, cx, cy, rx, ry, cs[0], cs[1]),
         p1: arc(theta + dtheta, cx, cy, rx, ry, cs[0], cs[1]),
         fa: abs(dtheta) > PI,
-        fs: abs(dtheta) > 0
+        fs: dtheta > 0
     };
 }
 function align_curve(points)
@@ -1038,13 +1083,6 @@ function polar_angle(x1, y1, x2, y2)
 function dir(p1, p2, p3)
 {
     return crossp(p1.x - p3.x, p1.y - p3.y, p2.x - p3.x, p2.y - p3.y);
-}
-function similar_curve(p1, p2, p3, p4)
-{
-    return (dist2(p1, p3) <= dist2(p1, p4)) && (dist2(p2, p4) <= dist2(p2, p3));
-    /*var a = (p1.y - p2.y)*(p3.x - p4.x),
-        b = (p3.y - p4.y)*(p1.x - p2.x);
-    return is_almost_equal(a, 0) || is_almost_equal(b, 0) || (sign(a) === sign(b))*/;
 }
 function clamp(x, xmin, xmax)
 {

@@ -203,6 +203,10 @@ var Ellipse = makeClass(Curve, {
         var self = this, c = self.center, cs = self.cs;
         return arc(t*TWO_PI, c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1]);
     },
+    fto: function(t) {
+        var self = this;
+        return new Arc(self.f(0), self.f(t), self.radiusX, self.radiusY, self.angle, t*TWO_PI > PI, 1);
+    },
     d: function() {
         var self = this;
         return new Ellipse(
@@ -242,16 +246,12 @@ var Ellipse = makeClass(Curve, {
         }
         return false;
     },
-    bezierPoints: function() {
-        var self = this, c = self.center, cs = self.cs,
-            cos = cs[0], sin = cs[1],
-            rx = self.radiusX, ry = self.radiusY;
-        return [
-        arc2bezier(0, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 0*/),
-        arc2bezier(-HALF_PI, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 1*/),
-        arc2bezier(-PI, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 0*/),
-        arc2bezier(-PI3_2, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 1*/)
-        ];
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var self = this, c = self.center, cs = self.cs;
+        return bezierfromarc(c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1], 0, -t*4*HALF_PI);
     },
     toSVG: function(svg) {
         var self = this,

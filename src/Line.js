@@ -100,6 +100,9 @@ var Line = makeClass(Bezier, {
         var self = this;
         return new Line(self.start.transform(matrix), self.end.transform(matrix));
     },
+    f: function(t) {
+        return bezier1(t, this._points);
+    },
     hasPoint: function(point) {
         var p = this._points;
         return !!point_on_line_segment(point, p[0], p[1]);
@@ -154,22 +157,15 @@ var Line = makeClass(Bezier, {
         }
         return false;
     },
-    f: function(t) {
-        return bezier1(t, this._points);
-    },
     distanceToPoint: function(point) {
         return point_line_segment_distance(point, this._points[0], this._points[1]);
     },
-    bezierPoints: function() {
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
         var p = this._points;
-        return [
-        [
-        bezier1(0, p),
-        bezier1(0.5, p),
-        bezier1(0.5, p),
-        bezier1(1, p)
-        ]
-        ];
+        return [bezierfrom(p[0], 1 === t ? p[1] : bezier1(t, [p[0], p[1]]))];
     },
     toSVG: function(svg) {
         var self = this, p = self._points;

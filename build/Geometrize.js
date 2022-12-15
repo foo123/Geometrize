@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.6 (2022-12-14 19:17:17)
+*   @version 0.9.7 (2022-12-15 19:45:05)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.6 (2022-12-14 19:17:17)
+*   @version 0.9.7 (2022-12-15 19:45:05)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.9.6", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "0.9.7", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -663,26 +663,25 @@ function interpolateRGB(r0, g0, b0, a0, r1, g1, b1, a1, t)
 {
     if (9 <= arguments.length)
     {
-        var t0 = (t||0), t1 = 1 - t0;
         return [
-        clamp(stdMath.round(t1*r0 + t0*r1), 0, 255),
-        clamp(stdMath.round(t1*g0 + t0*g1), 0, 255),
-        clamp(stdMath.round(t1*b0 + t0*b1), 0, 255),
-        clamp(t1*a0 + t0*a1, 0, 1)
+        clamp(stdMath.round(r0 + t*(r1 - r0)), 0, 255),
+        clamp(stdMath.round(g0 + t*(g1 - g0)), 0, 255),
+        clamp(stdMath.round(b0 + t*(b1 - b0)), 0, 255),
+        clamp(a0 + t*(a1 - a0), 0, 1)
         ];
     }
     else
     {
-        var t0 = (b0||0), t1 = 1 - t0, rgba0 = r0, rgba1 = g0;
+        var rgba0 = r0, rgba1 = g0, t = b0;
         return 3 < rgba0.length ? [
-        clamp(stdMath.round(t1*rgba0[0] + t0*rgba1[0]), 0, 255),
-        clamp(stdMath.round(t1*rgba0[1] + t0*rgba1[1]), 0, 255),
-        clamp(stdMath.round(t1*rgba0[2] + t0*rgba1[2]), 0, 255),
-        clamp(t1*rgba0[3] + t0*rgba1[3], 0, 1)
+        clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255),
+        clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255),
+        clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255),
+        clamp(rgba0[3] + t*(rgba1[3] - rgba0[3]), 0, 1)
         ] : [
-        clamp(stdMath.round(t1*rgba0[0] + t0*rgba1[0]), 0, 255),
-        clamp(stdMath.round(t1*rgba0[1] + t0*rgba1[1]), 0, 255),
-        clamp(stdMath.round(t1*rgba0[2] + t0*rgba1[2]), 0, 255)
+        clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255),
+        clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255),
+        clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255)
         ];
     }
 }
@@ -1607,6 +1606,10 @@ var Curve = makeClass(Topos, {
         // override
         return {x:0, y:0};
     },
+    fto: function(t) {
+        // override
+        return self;
+    },
     d: function() {
         // override
         return this.clone();
@@ -1617,6 +1620,12 @@ var Curve = makeClass(Topos, {
         if (0 > t || 1 < t) return null;
         var p = this.f(t);
         return null == p ? null : Point(p);
+    },
+    curveUpTo: function(t) {
+        var self = this;
+        // 0 <= t <= 1
+        t = clamp(Num(t), 0, 1);
+        return is_almost_equal(t, 1) ? self : self.fto(t).setMatrix(self.matrix).setStyle(self.style.toObj());
     },
     getBoundingBox: function() {
         var bb = this._bbox;
@@ -1639,7 +1648,7 @@ var Curve = makeClass(Topos, {
     polylinePoints: function() {
         return this._lines.slice();
     },
-    bezierPoints: function() {
+    bezierPoints: function(t) {
         return [
         {x:0, y:0},
         {x:0, y:0},
@@ -1673,27 +1682,31 @@ var Bezier = makeClass(Curve, {
         });
     },
     name: 'Bezier',
+    fto: function(t) {
+        var self = this;
+        return new self.constructor(de_casteljau(t, self.points, true).points);
+    },
     d: function() {
         var self = this, p = self.points, n = p.length - 1, d;
-        if (self instanceof Bezier1)
+        if (Geometrize.Line && (self instanceof Geometrize.Line))
         {
             // point
-            d = new Bezier1([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}]);
+            d = new Geometrize.Line([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}]);
         }
-        else if (self instanceof Bezier2)
+        else if (Geometrize.QBezier && (self instanceof Geometrize.QBezier))
         {
             // line
-            d = new Bezier1([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}]);
+            d = new Geometrize.Line([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}]);
         }
-        else if (self instanceof Bezier3)
+        else if (Geometrize.CBezier && (self instanceof Geometrize.CBezier))
         {
             // quadratic
-            d = new Bezier2([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}, {x:n*(p[3].x - p[2].x), y:n*(p[3].y - p[2].y)}]);
+            d = new Geometrize.QBezier([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}, {x:n*(p[3].x - p[2].x), y:n*(p[3].y - p[2].y)}]);
         }
         else
         {
             // zero
-            d = new Bezier1([{x:0, y:0}, {x:0, y:0}]);
+            d = new Geometrize.Line([{x:0, y:0}, {x:0, y:0}]);
         }
         return d;
     },
@@ -1928,6 +1941,10 @@ var CompositeCurve = makeClass(Curve, {
         var c = this.curves, n = c.length - 1, i = stdMath.floor(t*n);
         return 1 === t ? c[n].f(t) : c[i].f(n*(t - i/n));
     },
+    fto: function(t) {
+        var self = this, c = self.curves, n = c.length - 1, i = stdMath.floor(t*n);
+        return new CompositeCurve(c.slice(0, i).concat([c[i].curveUpTo(1 === t ? 1 : (n*(t - i/n)))]));
+    },
     derivative: function() {
         return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
     },
@@ -1986,11 +2003,14 @@ var CompositeCurve = makeClass(Curve, {
             return lines;
         }, []);
     },
-    bezierPoints: function() {
-        return this.curves.reduce(function(beziers, curve) {
-            beziers.push.apply(beziers, curve.bezierPoints());
-            return beziers;
-        }, []);
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var c = this.curves, n = c.length - 1, i = stdMath.floor(t*n), j, b = [];
+        for (j=0; j<i; ++j) b.push.apply(b, c[j].bezierPoints(1));
+        b.push.apply(b, c[i].bezierPoints(1 === t ? 1 : (n*(t - i/n))));
+        return b;
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);
@@ -2193,6 +2213,9 @@ var Line = makeClass(Bezier, {
         var self = this;
         return new Line(self.start.transform(matrix), self.end.transform(matrix));
     },
+    f: function(t) {
+        return bezier1(t, this._points);
+    },
     hasPoint: function(point) {
         var p = this._points;
         return !!point_on_line_segment(point, p[0], p[1]);
@@ -2247,22 +2270,15 @@ var Line = makeClass(Bezier, {
         }
         return false;
     },
-    f: function(t) {
-        return bezier1(t, this._points);
-    },
     distanceToPoint: function(point) {
         return point_line_segment_distance(point, this._points[0], this._points[1]);
     },
-    bezierPoints: function() {
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
         var p = this._points;
-        return [
-        [
-        bezier1(0, p),
-        bezier1(0.5, p),
-        bezier1(0.5, p),
-        bezier1(1, p)
-        ]
-        ];
+        return [bezierfrom(p[0], 1 === t ? p[1] : bezier1(t, [p[0], p[1]]))];
     },
     toSVG: function(svg) {
         var self = this, p = self._points;
@@ -2425,6 +2441,14 @@ var Polyline = makeClass(Curve, {
     isConvex: function() {
         return this._is_convex;
     },
+    f: function(t) {
+        var p = this._points, n = p.length - 1, i = stdMath.floor(t*n);
+        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
+    },
+    fto: function(t) {
+        var self = this, p = self.points, n = p.length - 1, i = stdMath.floor(t*n);
+        return new Polyline(p.slice(0, i+1).concat([bezier1(n*(t - i/n), [p[i], p[i+1]])]));
+    },
     hasPoint: function(point) {
         return point_on_polyline(point, this._points);
     },
@@ -2432,10 +2456,6 @@ var Polyline = makeClass(Curve, {
         if (!this.isClosed()) return false;
         var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._points);
         return strict ? 1 === inside : 0 < inside;
-    },
-    f: function(t) {
-        var p = this._points, n = p.length - 1, i = stdMath.floor(t*n);
-        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
     },
     intersects: function(other) {
         var self = this, i;
@@ -2516,16 +2536,14 @@ var Polyline = makeClass(Curve, {
             return dist;
         }, Infinity));
     },
-    bezierPoints: function() {
-        var p = this._points, n = p.length;
-        return p.reduce(function(b, _, i) {
-            if (i+1 < n)
-            {
-                var pp = [p[i], p[i+1]];
-                b.push([bezier1(0, pp), bezier1(0.5, pp), bezier1(0.5, pp), bezier1(1, pp)]);
-            }
-            return b;
-        }, []);
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var p = this._points, n = p.length - 1, i = stdMath.floor(t*n), j, b = new Array(1 === t ? i : (i+1));
+        for (j=0; j<i; ++j) if (j+1 <= i) b[j] = bezierfrom(p[j], p[j+1]);
+        if (1 > t) b[i] = bezierfrom(p[i], bezier1(n*(t - i/n), [p[i], p[i+1]]));
+        return b;
     },
     toSVG: function(svg) {
         var self = this;
@@ -2912,6 +2930,10 @@ var Arc = makeClass(Curve, {
         var self = this, c = self.center, cs = self.cs;
         return arc(self.theta + t*self.dtheta, c.x, c.y, self.rX, self.rY, cs[0], cs[1]);
     },
+    fto: function(t) {
+        var self = this;
+        return new Arc(self.start, self.f(t), self.radiusX, self.radiusY, self.angle, self.largeArc, self.sweep);
+    },
     d: function() {
         var self = this,
             p = ellipse2arc(self.center.x, self.center.y, self.rY, self.rX, [self.cs[0], -self.cs[1]], -self.theta, -self.dtheta);
@@ -2957,31 +2979,12 @@ var Arc = makeClass(Curve, {
         }
         return false;
     },
-    bezierPoints: function() {
-        var self = this,
-            c = self.center,
-            cx = c.x,
-            cy = c.y,
-            rx = self.rX,
-            ry = self.rY,
-            cs = self.cs,
-            cos = cs[0],
-            sin = cs[1],
-            theta = self.theta,
-            dtheta = self.dtheta,
-            r = 2*abs(dtheta)/PI,
-            i, n, beziers
-        ;
-        if (is_almost_equal(r, 1)) r = 1;
-        if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
-        n = stdMath.max(1, stdMath.ceil(r));
-        dtheta /= n;
-        beziers = new Array(n);
-        for (i=0; i<n; ++i,theta+=dtheta)
-        {
-            beziers[i] = arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin);
-        }
-        return beziers;
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var self = this, c = self.center, cs = self.cs;
+        return bezierfromarc(c.x, c.y, self.rX, self.rY, cs[0], cs[1], self.theta, t*self.dtheta);
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);
@@ -3124,6 +3127,9 @@ var QBezier = makeClass(Bezier, {
     transform: function(matrix) {
         return new QBezier(this.points.map(function(p) {return p.transform(matrix);}));
     },
+    f: function(t) {
+        return bezier2(t, this._points);
+    },
     hasPoint: function(point) {
         return point_on_qbezier(point, this._points)
     },
@@ -3159,11 +3165,11 @@ var QBezier = makeClass(Bezier, {
         }
         return false;
     },
-    f: function(t) {
-        return bezier2(t, this._points);
-    },
-    bezierPoints: function() {
-        var p = this._points;
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var p1 = this._points, p = 1 === t ? p1 : de_casteljau(t, p1, true).points;
         return [
         [
         {x:p[0].x, y:p[0].y},
@@ -3301,6 +3307,9 @@ var CBezier = makeClass(Bezier, {
     transform: function(matrix) {
         return new CBezier(this.points.map(function(p) {return p.transform(matrix);}));
     },
+    f: function(t) {
+        return bezier3(t, this._points);
+    },
     hasPoint: function(point) {
         return point_on_cbezier(point, this._points)
     },
@@ -3341,11 +3350,11 @@ var CBezier = makeClass(Bezier, {
         }
         return false;
     },
-    f: function(t) {
-        return bezier3(t, this._points);
-    },
-    bezierPoints: function() {
-        var p = this._points;
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var p1 = this._points, p = 1 === t ? p1 : de_casteljau(t, p1, true).points;
         return [
         [
         {x:p[0].x, y:p[0].y},
@@ -3516,16 +3525,20 @@ var Polygon = makeClass(Curve, {
     isConvex: function() {
         return this._is_convex;
     },
+    f: function(t) {
+        var p = this._lines, n = p.length - 1, i = stdMath.floor(t*n);
+        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
+    },
+    fto: function(t) {
+        var self = this, p = self.points, n = p.length, i = stdMath.floor(t*n);
+        return new Polyline(p.slice(0, i+1).concat([bezier1(n*(t - i/n), [p[i], p[(i+1) % n]])]));
+    },
     hasPoint: function(point) {
         return 2 === point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
     },
     hasInsidePoint: function(point, strict) {
         var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
         return strict ? 1 === inside : 0 < inside;
-    },
-    f: function(t) {
-        var p = this._lines, n = p.length - 1, i = stdMath.floor(t*n);
-        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
     },
     intersects: function(other) {
         var self = this, i;
@@ -3596,16 +3609,14 @@ var Polygon = makeClass(Curve, {
         }
         return i ? i.map(Point) : false;
     },
-    bezierPoints: function() {
-        var p = this._lines, n = p.length;
-        return p.reduce(function(b, _, i) {
-            if (i+1 < n)
-            {
-                var pp = [p[i], p[i+1]];
-                b.push([bezier1(0, pp), bezier1(0.5, pp), bezier1(0.5, pp), bezier1(1, pp)]);
-            }
-            return b;
-        }, []);
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var p = this._lines, n = p.length - 1, i = stdMath.floor(t*n), j, b = new Array(1 === t ? i : (i+1));
+        for (j=0; j<i; ++j) if (j+1 <= i) b[j] = bezierfrom(p[j], p[j+1]);
+        if (1 > t) b[i] = bezierfrom(p[i], bezier1(n*(t - i/n), [p[i], p[i+1]]));
+        return b;
     },
     toSVG: function(svg) {
         var self = this;
@@ -3826,6 +3837,10 @@ var Circle = makeClass(Curve, {
         var self = this, c = self.center, r = self.radius;
         return arc(t*TWO_PI, c.x, c.y, r, r, 1, 0);
     },
+    fto: function(t) {
+        var self = this;
+        return new Arc(self.f(0), self.f(t), self.radius, self.radius, 0, t*TWO_PI > PI, 1);
+    },
     hasPoint: function(point) {
         self = this;
         return 2 === point_inside_circle(point, self.center, self.radius);
@@ -3851,14 +3866,12 @@ var Circle = makeClass(Curve, {
         }
         return false;
     },
-    bezierPoints: function() {
-        var self = this, c = self.center, r = self.radius;
-        return [
-        arc2bezier(0, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 0*/),
-        arc2bezier(-HALF_PI, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 1*/),
-        arc2bezier(-PI, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 0*/),
-        arc2bezier(-PI3_2, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 1*/)
-        ];
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var self = this, c = self.center;
+        return bezierfromarc(c.x, c.y, self.radius, self.radius, 1, 0, 0, -t*4*HALF_PI);
     },
     toSVG: function(svg) {
         var self = this, c = self.center, r = self.radius;
@@ -4107,6 +4120,10 @@ var Ellipse = makeClass(Curve, {
         var self = this, c = self.center, cs = self.cs;
         return arc(t*TWO_PI, c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1]);
     },
+    fto: function(t) {
+        var self = this;
+        return new Arc(self.f(0), self.f(t), self.radiusX, self.radiusY, self.angle, t*TWO_PI > PI, 1);
+    },
     d: function() {
         var self = this;
         return new Ellipse(
@@ -4146,16 +4163,12 @@ var Ellipse = makeClass(Curve, {
         }
         return false;
     },
-    bezierPoints: function() {
-        var self = this, c = self.center, cs = self.cs,
-            cos = cs[0], sin = cs[1],
-            rx = self.radiusX, ry = self.radiusY;
-        return [
-        arc2bezier(0, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 0*/),
-        arc2bezier(-HALF_PI, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 1*/),
-        arc2bezier(-PI, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 0*/),
-        arc2bezier(-PI3_2, -HALF_PI, c.x, c.y, rx, ry, cos, sin/*, 1*/)
-        ];
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var self = this, c = self.center, cs = self.cs;
+        return bezierfromarc(c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1], 0, -t*4*HALF_PI);
     },
     toSVG: function(svg) {
         var self = this,
@@ -4367,7 +4380,9 @@ function prepare_tween(tween, fps)
     t.nframes = stdMath.ceil(t.duration/1000*t.fps);
     t.keyframes = Object.keys(tween.keyframes || EMPTY_OBJ).map(function(key) {
         var kf = tween.keyframes[key] || EMPTY_OBJ,
-            shape = kf.shape && is_function(kf.shape.bezierPoints) ? kf.shape.bezierPoints() : [],
+            length = HAS.call(kf, 'length') ? clamp(Num(kf.length), 0, 1) : 1,
+            obj = kf.shape && is_function(kf.shape.bezierPoints) ? kf.shape : null,
+            shape = obj ? obj.bezierPoints(length) : [],
             transform = kf.transform || EMPTY_OBJ,
             sc = transform.scale || EMPTY_OBJ,
             scOrig = sc.origin || {x:0, y:0},
@@ -4383,20 +4398,27 @@ function prepare_tween(tween, fps)
             hasFillOpacity = HAS.call(style, 'fill-opacity'),
             bb
         ;
-        if (kf.shape && is_function(kf.shape.getBoundingBox))
+        if (obj && is_function(obj.getBoundingBox))
         {
-            bb = kf.shape.getBoundingBox();
-            t.bb.ymin = stdMath.min(t.bb.ymin, bb.ymin||0);
-            t.bb.xmin = stdMath.min(t.bb.xmin, bb.xmin||0);
-            t.bb.ymax = stdMath.max(t.bb.ymax, bb.ymax||0);
-            t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
+            bb = obj.getBoundingBox();
         }
+        else
+        {
+            bb = {ymin:0, ymax:0, xmin:0, xmax:0};
+        }
+        t.bb.ymin = stdMath.min(t.bb.ymin, bb.ymin||0);
+        t.bb.xmin = stdMath.min(t.bb.xmin, bb.xmin||0);
+        t.bb.ymax = stdMath.max(t.bb.ymax, bb.ymax||0);
+        t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
         return {
             frame: stdMath.round(Num(key)/100*(t.nframes - 1)),
+            obj: obj,
             shape: [
-                shape.slice(),
+                shape,
                 shape.slice()
             ],
+            box: bb,
+            length: length,
             transform: {
                 scale: {
                     origin: {
@@ -4431,50 +4453,71 @@ function prepare_tween(tween, fps)
     }).sort(function(a, b) {
         return a.frame - b.frame
     });
-    //var maxCurves = 0;
     var match_shapes = function match_shapes(kf1, kf2, index1, index2) {
         var s1 = kf1.shape[index1], s2 = kf2.shape[index2],
             l1 = s1.length, l2 = s2.length,
-            m = stdMath.max(l1, l2),
+            m = stdMath.max(1, l1, l2),
+            d00, d11, d01, d10, md,
             i, i1, i2, p, b1, b2;
+        /*if (l1 && l2)
+        {
+            b1 = s1[0];
+            b2 = s2[0];
+            md = stdMath.max(dist(b1[0], b2[0]), dist(b1[3], b2[3]));
+            i = 0;
+            for (i2=1; i2<l2; ++i2)
+            {
+                b2 = s2[i2];
+                d00 = stdMath.max(dist(b1[0], b2[0]), dist(b1[3], b2[3]));
+                if (d00 < md)
+                {
+                    md = d00;
+                    i = i2;
+                }
+            }
+            if (0 < i)
+            {
+                // rotate shape to match better with other shape
+                b2 = s2;
+                for (i2=0; i2<l2; ++i2)
+                {
+                    s2[i2] = b2[(i2+i) % l2];
+                }
+            }
+        }*/
         for (i1=0,i2=0,i=0; i<m; ++i)
         {
-            if (i1 >= l1 && i2 >= l2)
+            if ((i1 >= l1) || (i2 >= l2))
             {
-                p = 0 < l1 ? s1[l1-1][3] : {x:0, y:0};
-                s1.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l1; ++i1;
-                p = 0 < l2 ? s2[l2-1][3] : {x:0, y:0};
-                s2.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l2; ++i2;
-                continue;
-            }
-            else if (i1 >= l1)
-            {
-                p = 0 < l1 ? s1[l1-1][3] : {x:0, y:0};
-                s1.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l1; ++i1; ++i2;
-                continue;
-            }
-            else if (i2 >= l2)
-            {
-                p = 0 < l2 ? s2[l2-1][3] : {x:0, y:0};
-                s2.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l2; ++i2; ++i1;
+                if (i1 >= l1)
+                {
+                    s1.push(bezierfrom(0 < l1 ? s1[l1-1][3] : {x:0, y:0}));
+                    ++l1;
+                }
+                if (i2 >= l2)
+                {
+                    s2.push(bezierfrom(0 < l2 ? s2[l2-1][3] : {x:0, y:0}));
+                    ++l2;
+                }
+                ++i1; ++i2;
                 continue;
             }
             b1 = s1[i1];
             b2 = s2[i2];
-            if (!similar_curve(b1[0], b1[3], b2[0], b2[3]))
+            d00 = dist(b1[0], b2[0]);
+            d11 = dist(b1[3], b2[3]);
+            d01 = dist(b1[0], b2[3]);
+            d10 = dist(b1[3], b2[0]);
+            // adjust shapes to avoid curves splitting or crossing over
+            if (d00 > d01 || d11 > d10)
             {
-                // adjust shape to avoid curves splitting or crossing over
                 p = b1[0];
-                s1.splice(i1, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                s1.splice(i1, 0, bezierfrom(p));
                 p = b2[3];
-                s2.splice(i2+1, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l1;
-                ++l2;
-                ++m;
+                s2.splice(i2+1, 0, bezierfrom(p));
+                l1 += 1;
+                l2 += 1;
+                m += 1;
                 i1 += 2;
                 i2 += 2;
             }
@@ -4486,30 +4529,80 @@ function prepare_tween(tween, fps)
         }
         //s1.length must equal s2.length after matching
     };
-    /*var add_curves = function add_curves(shape, numCurves) {
-        var p = shape.length ? shape[shape.length - 1][3] : {x:0, y:0};
-        while (shape.length < numCurves) shape.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-    };*/
-    t.keyframes.forEach(function(_, i) {
+    t.keyframes.forEach(function(kf, i) {
         if (i+1 < t.keyframes.length)
         {
-            match_shapes(t.keyframes[i], t.keyframes[i+1], 0, 1);
+            match_shapes(kf, t.keyframes[i+1], 0, 1);
         }
         if (0 === i)
         {
-            t.keyframes[i].shape[1] = t.keyframes[i].shape[0].slice();
+            kf.shape[1] = kf.shape[0];
         }
         if (i+1 === t.keyframes.length)
         {
-            t.keyframes[i].shape[0] = t.keyframes[i].shape[1].slice();
+            kf.shape[0] = kf.shape[1];
         }
-        //maxCurves = stdMath.max(maxCurves, t.keyframes[i].shape[0].length);
     });
-    /*t.keyframes.forEach(function(kf, i) {
-        add_curves(kf.shape[0], maxCurves);
-        add_curves(kf.shape[1], maxCurves);
-    });*/
     return t;
+}
+function render_shape(t, as, bs, sx, sy, osx, osy, angle, orx, ory, tx, ty)
+{
+    var cos = 1, sin = 0,
+        ai, aij, bi, bij,
+        i, j, n, x, y, s, cs
+    ;
+    if (!is_almost_equal(angle, 0))
+    {
+        cos = stdMath.cos(angle);
+        sin = stdMath.sin(angle);
+    }
+    tx += orx - cos*orx + sin*ory;
+    ty += ory - cos*ory - sin*orx;
+    if (bs)
+    {
+        n = stdMath.min(as.length, bs.length);
+        cs = new Array(n);
+        for (i=0; i<n; ++i)
+        {
+            ai = as[i];
+            bi = bs[i];
+            s = new Array(4);
+            for (j=0; j<4; ++j)
+            {
+                aij = ai[j];
+                bij = bi[j];
+                x = sx*(aij.x + t*(bij.x - aij.x) - osx) + osx;
+                y = sy*(aij.y + t*(bij.y - aij.y) - osy) + osy;
+                s[j] = {
+                x: cos*x - sin*y + tx,
+                y: sin*x + cos*y + ty
+               };
+            }
+            cs[i] = s;
+        }
+    }
+    else
+    {
+        n = as.length;
+        cs = new Array(n);
+        for (i=0; i<n; ++i)
+        {
+            ai = as[i];
+            s = new Array(4);
+            for (j=0; j<4; ++j)
+            {
+                aij = ai[j];
+                x = sx*(aij.x - osx) + osx;
+                y = sy*(aij.y - osy) + osy;
+                s[j] = {
+                x: cos*x - sin*y + tx,
+                y: sin*x + cos*y + ty
+               };
+            }
+            cs[i] = s;
+        }
+    }
+    return cs;
 }
 function first_frame(tween)
 {
@@ -4534,38 +4627,11 @@ function first_frame(tween)
         // rotate
         orx = a.transform.rotate.origin.x,
         ory = a.transform.rotate.origin.y,
-        angle = a.transform.rotate.angle,
-        cos = 1, sin = 0,
-        as = a.shape[tween.reverse ? 1 : 0], ai, aij,
-        i, j, n = as.length, x, y,
-        s, cs = new Array(n)
+        angle = a.transform.rotate.angle
     ;
-    if (!is_almost_equal(angle, 0))
-    {
-        cos = stdMath.cos(angle);
-        sin = stdMath.sin(angle);
-    }
-    tx += orx - cos*orx + sin*ory;
-    ty += ory - cos*ory - sin*orx;
-    for (i=0; i<n; ++i)
-    {
-        ai = as[i];
-        s = new Array(4);
-        for (j=0; j<4; ++j)
-        {
-            aij = ai[j];
-            x = sx*(aij.x - osx) + osx;
-            y = sy*(aij.y - osy) + osy;
-            s[j] = {
-            x: cos*x - sin*y + tx,
-            y: sin*x + cos*y + ty
-           };
-        }
-        cs[i] = s;
-    }
     tween.current = {
         frame: tween.reverse ? tween.nframes - 1 : 0,
-        shape: cs,
+        shape: render_shape(1, a.shape[tween.reverse ? 1 : 0], null, sx, sy, osx, osy, angle, orx, ory, tx, ty),
         transform: frame.transform,
         style: frame.style
     };
@@ -4591,7 +4657,7 @@ function next_frame(tween)
         }
         var a = tween.keyframes[tween.kf],
             b = tween.keyframes[tween.kf >= 1 ? tween.kf-1 : 0],
-            _t = abs(tween.current.frame - a.frame)/(a.frame - b.frame + 1);
+            _t = abs(tween.current.frame - a.frame)/stdMath.max(EPS, a.frame - b.frame);
     }
     else
     {
@@ -4602,7 +4668,7 @@ function next_frame(tween)
         }
         var a = tween.keyframes[tween.kf],
             b = tween.keyframes[tween.kf+1 < tween.keyframes.length ? tween.kf+1 : tween.keyframes.length-1],
-            _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1);
+            _t = (tween.current.frame - a.frame)/stdMath.max(EPS, b.frame - a.frame);
     }
     var t = a.easing(_t),
         // translate
@@ -4616,40 +4682,16 @@ function next_frame(tween)
         // rotate
         orx = interpolate(a.transform.rotate.origin.x, b.transform.rotate.origin.x, t),
         ory = interpolate(a.transform.rotate.origin.y, b.transform.rotate.origin.y, t),
-        angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t),
-        cos = 1, sin = 0,
-        as = a.shape[tween.reverse ? 1 : 0],
-        bs = b.shape[tween.reverse ? 0 : 1],
-        ai, bi, aij, bij,
-        i, j, n = stdMath.min(as.length, bs.length), x, y,
-        s, cs = new Array(n)
+        angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t)
     ;
-    if (!is_almost_equal(angle, 0))
+    if (a.obj === b.obj)
     {
-        cos = stdMath.cos(angle);
-        sin = stdMath.sin(angle);
+        tween.current.shape = render_shape(t, a.obj && (a.length !== b.length) ? a.obj.bezierPoints(a.length + t*(b.length - a.length)) : a.shape[tween.reverse ? 1 : 0], null, sx, sy, osx, osy, angle, orx, ory, tx, ty);
     }
-    tx += orx - cos*orx + sin*ory;
-    ty += ory - cos*ory - sin*orx;
-    for (i=0; i<n; ++i)
+    else
     {
-        ai = as[i];
-        bi = bs[i];
-        s = new Array(4);
-        for (j=0; j<4; ++j)
-        {
-            aij = ai[j];
-            bij = bi[j];
-            x = sx*(aij.x + t*(bij.x - aij.x) - osx) + osx;
-            y = sy*(aij.y + t*(bij.y - aij.y) - osy) + osy;
-            s[j] = {
-            x: cos*x - sin*y + tx,
-            y: sin*x + cos*y + ty
-           };
-        }
-        cs[i] = s;
+        tween.current.shape = render_shape(t, a.shape[tween.reverse ? 1 : 0], b.shape[tween.reverse ? 0 : 1], sx, sy, osx, osy, angle, orx, ory, tx, ty);
     }
-    tween.current.shape = cs;
     tween.current.style = {
         'stroke': a.style.hasStroke && b.style.hasStroke ? interpolateRGB(a.style['stroke'], b.style['stroke'], t) : (a.style['stroke'] ? a.style['stroke'] : (b.style['stroke'] || tween.current.style['stroke'])),
         'stroke-opacity': interpolate(a.style['stroke-opacity'], b.style['stroke-opacity'], t),
@@ -4664,7 +4706,6 @@ function next_frame(tween)
 // Tween between 2D shapes
 // TODO:
 // 1. export frames to images via toCanvas and to responsive CSS steps animation
-// 2. animate curve length (eg from 0% to 100%) so that a shape can be animated as being hand-drawn
 var Tween = makeClass(Primitive, {
     constructor: function Tween(tween) {
         var self = this, run = false,
@@ -5946,6 +5987,40 @@ function bezier3(t, p)
        y: t111*p[0].y + t110*p[1].y + t100*p[2].y + t000*p[3].y
    };
 }
+function de_casteljau(t, p, subdivide)
+{
+    // 0 <= t <= 1
+    var l = p.length, n = l - 1, q = p.slice(), qt = new Array(l), k, i, q0, q1;
+    qt[0] = p[0];
+    for (k=1; k<=n; ++k)
+    {
+        for (i=0; i+k<=n; ++i)
+        {
+            q0 = q[i];
+            q1 = q[i + 1];
+            q[i] = {
+                x: q0.x + t*(q1.x - q0.x),
+                y: q0.y + t*(q1.y - q0.y)
+            };
+        }
+        qt[k] = q[0];
+    }
+    return subdivide ? {pt:q[0], points:qt} : q[0];
+}
+function bezierfrom(p1, p2)
+{
+    return 1 < arguments.length ? [
+    p1,
+    bezier1(0.5, [p1, p2]),
+    bezier1(0.5, [p1, p2]),
+    p2
+    ] : [
+    {x:p1.x, y:p1.y},
+    {x:p1.x, y:p1.y},
+    {x:p1.x, y:p1.y},
+    {x:p1.x, y:p1.y}
+    ];
+}
 function arc(t, cx, cy, rx, ry, cos, sin)
 {
     // t is angle in radians around arc
@@ -6005,6 +6080,17 @@ function arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin, reverse)
     toarc(x2, y2, cx, cy, rx, ry, cos, sin)
     ];
 }
+function bezierfromarc(cx, cy, rx, ry, cos, sin, theta, dtheta)
+{
+    var r = 2*abs(dtheta)/PI, i, n, b;
+    if (is_almost_equal(r, 1)) r = 1;
+    if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
+    n = stdMath.max(1, stdMath.ceil(r));
+    dtheta /= n;
+    b = new Array(n);
+    for (i=0; i<n; ++i,theta+=dtheta) b[i] = arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin);
+    return b;
+}
 function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {
     // Step 1: simplify through translation/rotation
@@ -6049,7 +6135,7 @@ function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
         p0: arc(theta, cx, cy, rx, ry, cs[0], cs[1]),
         p1: arc(theta + dtheta, cx, cy, rx, ry, cs[0], cs[1]),
         fa: abs(dtheta) > PI,
-        fs: abs(dtheta) > 0
+        fs: dtheta > 0
     };
 }
 function align_curve(points)
@@ -6118,13 +6204,6 @@ function polar_angle(x1, y1, x2, y2)
 function dir(p1, p2, p3)
 {
     return crossp(p1.x - p3.x, p1.y - p3.y, p2.x - p3.x, p2.y - p3.y);
-}
-function similar_curve(p1, p2, p3, p4)
-{
-    return (dist2(p1, p3) <= dist2(p1, p4)) && (dist2(p2, p4) <= dist2(p2, p3));
-    /*var a = (p1.y - p2.y)*(p3.x - p4.x),
-        b = (p3.y - p4.y)*(p1.x - p2.x);
-    return is_almost_equal(a, 0) || is_almost_equal(b, 0) || (sign(a) === sign(b))*/;
 }
 function clamp(x, xmin, xmax)
 {

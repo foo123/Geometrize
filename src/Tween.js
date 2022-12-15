@@ -154,7 +154,9 @@ function prepare_tween(tween, fps)
     t.nframes = stdMath.ceil(t.duration/1000*t.fps);
     t.keyframes = Object.keys(tween.keyframes || EMPTY_OBJ).map(function(key) {
         var kf = tween.keyframes[key] || EMPTY_OBJ,
-            shape = kf.shape && is_function(kf.shape.bezierPoints) ? kf.shape.bezierPoints() : [],
+            length = HAS.call(kf, 'length') ? clamp(Num(kf.length), 0, 1) : 1,
+            obj = kf.shape && is_function(kf.shape.bezierPoints) ? kf.shape : null,
+            shape = obj ? obj.bezierPoints(length) : [],
             transform = kf.transform || EMPTY_OBJ,
             sc = transform.scale || EMPTY_OBJ,
             scOrig = sc.origin || {x:0, y:0},
@@ -170,20 +172,27 @@ function prepare_tween(tween, fps)
             hasFillOpacity = HAS.call(style, 'fill-opacity'),
             bb
         ;
-        if (kf.shape && is_function(kf.shape.getBoundingBox))
+        if (obj && is_function(obj.getBoundingBox))
         {
-            bb = kf.shape.getBoundingBox();
-            t.bb.ymin = stdMath.min(t.bb.ymin, bb.ymin||0);
-            t.bb.xmin = stdMath.min(t.bb.xmin, bb.xmin||0);
-            t.bb.ymax = stdMath.max(t.bb.ymax, bb.ymax||0);
-            t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
+            bb = obj.getBoundingBox();
         }
+        else
+        {
+            bb = {ymin:0, ymax:0, xmin:0, xmax:0};
+        }
+        t.bb.ymin = stdMath.min(t.bb.ymin, bb.ymin||0);
+        t.bb.xmin = stdMath.min(t.bb.xmin, bb.xmin||0);
+        t.bb.ymax = stdMath.max(t.bb.ymax, bb.ymax||0);
+        t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
         return {
             frame: stdMath.round(Num(key)/100*(t.nframes - 1)),
+            obj: obj,
             shape: [
-                shape.slice(),
+                shape,
                 shape.slice()
             ],
+            box: bb,
+            length: length,
             transform: {
                 scale: {
                     origin: {
@@ -218,50 +227,71 @@ function prepare_tween(tween, fps)
     }).sort(function(a, b) {
         return a.frame - b.frame
     });
-    //var maxCurves = 0;
     var match_shapes = function match_shapes(kf1, kf2, index1, index2) {
         var s1 = kf1.shape[index1], s2 = kf2.shape[index2],
             l1 = s1.length, l2 = s2.length,
-            m = stdMath.max(l1, l2),
+            m = stdMath.max(1, l1, l2),
+            d00, d11, d01, d10, md,
             i, i1, i2, p, b1, b2;
+        /*if (l1 && l2)
+        {
+            b1 = s1[0];
+            b2 = s2[0];
+            md = stdMath.max(dist(b1[0], b2[0]), dist(b1[3], b2[3]));
+            i = 0;
+            for (i2=1; i2<l2; ++i2)
+            {
+                b2 = s2[i2];
+                d00 = stdMath.max(dist(b1[0], b2[0]), dist(b1[3], b2[3]));
+                if (d00 < md)
+                {
+                    md = d00;
+                    i = i2;
+                }
+            }
+            if (0 < i)
+            {
+                // rotate shape to match better with other shape
+                b2 = s2;
+                for (i2=0; i2<l2; ++i2)
+                {
+                    s2[i2] = b2[(i2+i) % l2];
+                }
+            }
+        }*/
         for (i1=0,i2=0,i=0; i<m; ++i)
         {
-            if (i1 >= l1 && i2 >= l2)
+            if ((i1 >= l1) || (i2 >= l2))
             {
-                p = 0 < l1 ? s1[l1-1][3] : {x:0, y:0};
-                s1.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l1; ++i1;
-                p = 0 < l2 ? s2[l2-1][3] : {x:0, y:0};
-                s2.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l2; ++i2;
-                continue;
-            }
-            else if (i1 >= l1)
-            {
-                p = 0 < l1 ? s1[l1-1][3] : {x:0, y:0};
-                s1.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l1; ++i1; ++i2;
-                continue;
-            }
-            else if (i2 >= l2)
-            {
-                p = 0 < l2 ? s2[l2-1][3] : {x:0, y:0};
-                s2.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l2; ++i2; ++i1;
+                if (i1 >= l1)
+                {
+                    s1.push(bezierfrom(0 < l1 ? s1[l1-1][3] : {x:0, y:0}));
+                    ++l1;
+                }
+                if (i2 >= l2)
+                {
+                    s2.push(bezierfrom(0 < l2 ? s2[l2-1][3] : {x:0, y:0}));
+                    ++l2;
+                }
+                ++i1; ++i2;
                 continue;
             }
             b1 = s1[i1];
             b2 = s2[i2];
-            if (!similar_curve(b1[0], b1[3], b2[0], b2[3]))
+            d00 = dist(b1[0], b2[0]);
+            d11 = dist(b1[3], b2[3]);
+            d01 = dist(b1[0], b2[3]);
+            d10 = dist(b1[3], b2[0]);
+            // adjust shapes to avoid curves splitting or crossing over
+            if (d00 > d01 || d11 > d10)
             {
-                // adjust shape to avoid curves splitting or crossing over
                 p = b1[0];
-                s1.splice(i1, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
+                s1.splice(i1, 0, bezierfrom(p));
                 p = b2[3];
-                s2.splice(i2+1, 0, [{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-                ++l1;
-                ++l2;
-                ++m;
+                s2.splice(i2+1, 0, bezierfrom(p));
+                l1 += 1;
+                l2 += 1;
+                m += 1;
                 i1 += 2;
                 i2 += 2;
             }
@@ -273,30 +303,80 @@ function prepare_tween(tween, fps)
         }
         //s1.length must equal s2.length after matching
     };
-    /*var add_curves = function add_curves(shape, numCurves) {
-        var p = shape.length ? shape[shape.length - 1][3] : {x:0, y:0};
-        while (shape.length < numCurves) shape.push([{x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}, {x:p.x, y:p.y}]);
-    };*/
-    t.keyframes.forEach(function(_, i) {
+    t.keyframes.forEach(function(kf, i) {
         if (i+1 < t.keyframes.length)
         {
-            match_shapes(t.keyframes[i], t.keyframes[i+1], 0, 1);
+            match_shapes(kf, t.keyframes[i+1], 0, 1);
         }
         if (0 === i)
         {
-            t.keyframes[i].shape[1] = t.keyframes[i].shape[0].slice();
+            kf.shape[1] = kf.shape[0];
         }
         if (i+1 === t.keyframes.length)
         {
-            t.keyframes[i].shape[0] = t.keyframes[i].shape[1].slice();
+            kf.shape[0] = kf.shape[1];
         }
-        //maxCurves = stdMath.max(maxCurves, t.keyframes[i].shape[0].length);
     });
-    /*t.keyframes.forEach(function(kf, i) {
-        add_curves(kf.shape[0], maxCurves);
-        add_curves(kf.shape[1], maxCurves);
-    });*/
     return t;
+}
+function render_shape(t, as, bs, sx, sy, osx, osy, angle, orx, ory, tx, ty)
+{
+    var cos = 1, sin = 0,
+        ai, aij, bi, bij,
+        i, j, n, x, y, s, cs
+    ;
+    if (!is_almost_equal(angle, 0))
+    {
+        cos = stdMath.cos(angle);
+        sin = stdMath.sin(angle);
+    }
+    tx += orx - cos*orx + sin*ory;
+    ty += ory - cos*ory - sin*orx;
+    if (bs)
+    {
+        n = stdMath.min(as.length, bs.length);
+        cs = new Array(n);
+        for (i=0; i<n; ++i)
+        {
+            ai = as[i];
+            bi = bs[i];
+            s = new Array(4);
+            for (j=0; j<4; ++j)
+            {
+                aij = ai[j];
+                bij = bi[j];
+                x = sx*(aij.x + t*(bij.x - aij.x) - osx) + osx;
+                y = sy*(aij.y + t*(bij.y - aij.y) - osy) + osy;
+                s[j] = {
+                x: cos*x - sin*y + tx,
+                y: sin*x + cos*y + ty
+               };
+            }
+            cs[i] = s;
+        }
+    }
+    else
+    {
+        n = as.length;
+        cs = new Array(n);
+        for (i=0; i<n; ++i)
+        {
+            ai = as[i];
+            s = new Array(4);
+            for (j=0; j<4; ++j)
+            {
+                aij = ai[j];
+                x = sx*(aij.x - osx) + osx;
+                y = sy*(aij.y - osy) + osy;
+                s[j] = {
+                x: cos*x - sin*y + tx,
+                y: sin*x + cos*y + ty
+               };
+            }
+            cs[i] = s;
+        }
+    }
+    return cs;
 }
 function first_frame(tween)
 {
@@ -321,38 +401,11 @@ function first_frame(tween)
         // rotate
         orx = a.transform.rotate.origin.x,
         ory = a.transform.rotate.origin.y,
-        angle = a.transform.rotate.angle,
-        cos = 1, sin = 0,
-        as = a.shape[tween.reverse ? 1 : 0], ai, aij,
-        i, j, n = as.length, x, y,
-        s, cs = new Array(n)
+        angle = a.transform.rotate.angle
     ;
-    if (!is_almost_equal(angle, 0))
-    {
-        cos = stdMath.cos(angle);
-        sin = stdMath.sin(angle);
-    }
-    tx += orx - cos*orx + sin*ory;
-    ty += ory - cos*ory - sin*orx;
-    for (i=0; i<n; ++i)
-    {
-        ai = as[i];
-        s = new Array(4);
-        for (j=0; j<4; ++j)
-        {
-            aij = ai[j];
-            x = sx*(aij.x - osx) + osx;
-            y = sy*(aij.y - osy) + osy;
-            s[j] = {
-            x: cos*x - sin*y + tx,
-            y: sin*x + cos*y + ty
-           };
-        }
-        cs[i] = s;
-    }
     tween.current = {
         frame: tween.reverse ? tween.nframes - 1 : 0,
-        shape: cs,
+        shape: render_shape(1, a.shape[tween.reverse ? 1 : 0], null, sx, sy, osx, osy, angle, orx, ory, tx, ty),
         transform: frame.transform,
         style: frame.style
     };
@@ -378,7 +431,7 @@ function next_frame(tween)
         }
         var a = tween.keyframes[tween.kf],
             b = tween.keyframes[tween.kf >= 1 ? tween.kf-1 : 0],
-            _t = abs(tween.current.frame - a.frame)/(a.frame - b.frame + 1);
+            _t = abs(tween.current.frame - a.frame)/stdMath.max(EPS, a.frame - b.frame);
     }
     else
     {
@@ -389,7 +442,7 @@ function next_frame(tween)
         }
         var a = tween.keyframes[tween.kf],
             b = tween.keyframes[tween.kf+1 < tween.keyframes.length ? tween.kf+1 : tween.keyframes.length-1],
-            _t = (tween.current.frame - a.frame)/(b.frame - a.frame + 1);
+            _t = (tween.current.frame - a.frame)/stdMath.max(EPS, b.frame - a.frame);
     }
     var t = a.easing(_t),
         // translate
@@ -403,40 +456,16 @@ function next_frame(tween)
         // rotate
         orx = interpolate(a.transform.rotate.origin.x, b.transform.rotate.origin.x, t),
         ory = interpolate(a.transform.rotate.origin.y, b.transform.rotate.origin.y, t),
-        angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t),
-        cos = 1, sin = 0,
-        as = a.shape[tween.reverse ? 1 : 0],
-        bs = b.shape[tween.reverse ? 0 : 1],
-        ai, bi, aij, bij,
-        i, j, n = stdMath.min(as.length, bs.length), x, y,
-        s, cs = new Array(n)
+        angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t)
     ;
-    if (!is_almost_equal(angle, 0))
+    if (a.obj === b.obj)
     {
-        cos = stdMath.cos(angle);
-        sin = stdMath.sin(angle);
+        tween.current.shape = render_shape(t, a.obj && (a.length !== b.length) ? a.obj.bezierPoints(a.length + t*(b.length - a.length)) : a.shape[tween.reverse ? 1 : 0], null, sx, sy, osx, osy, angle, orx, ory, tx, ty);
     }
-    tx += orx - cos*orx + sin*ory;
-    ty += ory - cos*ory - sin*orx;
-    for (i=0; i<n; ++i)
+    else
     {
-        ai = as[i];
-        bi = bs[i];
-        s = new Array(4);
-        for (j=0; j<4; ++j)
-        {
-            aij = ai[j];
-            bij = bi[j];
-            x = sx*(aij.x + t*(bij.x - aij.x) - osx) + osx;
-            y = sy*(aij.y + t*(bij.y - aij.y) - osy) + osy;
-            s[j] = {
-            x: cos*x - sin*y + tx,
-            y: sin*x + cos*y + ty
-           };
-        }
-        cs[i] = s;
+        tween.current.shape = render_shape(t, a.shape[tween.reverse ? 1 : 0], b.shape[tween.reverse ? 0 : 1], sx, sy, osx, osy, angle, orx, ory, tx, ty);
     }
-    tween.current.shape = cs;
     tween.current.style = {
         'stroke': a.style.hasStroke && b.style.hasStroke ? interpolateRGB(a.style['stroke'], b.style['stroke'], t) : (a.style['stroke'] ? a.style['stroke'] : (b.style['stroke'] || tween.current.style['stroke'])),
         'stroke-opacity': interpolate(a.style['stroke-opacity'], b.style['stroke-opacity'], t),
@@ -451,7 +480,6 @@ function next_frame(tween)
 // Tween between 2D shapes
 // TODO:
 // 1. export frames to images via toCanvas and to responsive CSS steps animation
-// 2. animate curve length (eg from 0% to 100%) so that a shape can be animated as being hand-drawn
 var Tween = makeClass(Primitive, {
     constructor: function Tween(tween) {
         var self = this, run = false,

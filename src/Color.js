@@ -159,26 +159,25 @@ function interpolateRGB(r0, g0, b0, a0, r1, g1, b1, a1, t)
 {
     if (9 <= arguments.length)
     {
-        var t0 = (t||0), t1 = 1 - t0;
         return [
-        clamp(stdMath.round(t1*r0 + t0*r1), 0, 255),
-        clamp(stdMath.round(t1*g0 + t0*g1), 0, 255),
-        clamp(stdMath.round(t1*b0 + t0*b1), 0, 255),
-        clamp(t1*a0 + t0*a1, 0, 1)
+        clamp(stdMath.round(r0 + t*(r1 - r0)), 0, 255),
+        clamp(stdMath.round(g0 + t*(g1 - g0)), 0, 255),
+        clamp(stdMath.round(b0 + t*(b1 - b0)), 0, 255),
+        clamp(a0 + t*(a1 - a0), 0, 1)
         ];
     }
     else
     {
-        var t0 = (b0||0), t1 = 1 - t0, rgba0 = r0, rgba1 = g0;
+        var rgba0 = r0, rgba1 = g0, t = b0;
         return 3 < rgba0.length ? [
-        clamp(stdMath.round(t1*rgba0[0] + t0*rgba1[0]), 0, 255),
-        clamp(stdMath.round(t1*rgba0[1] + t0*rgba1[1]), 0, 255),
-        clamp(stdMath.round(t1*rgba0[2] + t0*rgba1[2]), 0, 255),
-        clamp(t1*rgba0[3] + t0*rgba1[3], 0, 1)
+        clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255),
+        clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255),
+        clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255),
+        clamp(rgba0[3] + t*(rgba1[3] - rgba0[3]), 0, 1)
         ] : [
-        clamp(stdMath.round(t1*rgba0[0] + t0*rgba1[0]), 0, 255),
-        clamp(stdMath.round(t1*rgba0[1] + t0*rgba1[1]), 0, 255),
-        clamp(stdMath.round(t1*rgba0[2] + t0*rgba1[2]), 0, 255)
+        clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255),
+        clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255),
+        clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255)
         ];
     }
 }

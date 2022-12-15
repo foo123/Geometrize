@@ -100,6 +100,9 @@ var QBezier = makeClass(Bezier, {
     transform: function(matrix) {
         return new QBezier(this.points.map(function(p) {return p.transform(matrix);}));
     },
+    f: function(t) {
+        return bezier2(t, this._points);
+    },
     hasPoint: function(point) {
         return point_on_qbezier(point, this._points)
     },
@@ -135,11 +138,11 @@ var QBezier = makeClass(Bezier, {
         }
         return false;
     },
-    f: function(t) {
-        return bezier2(t, this._points);
-    },
-    bezierPoints: function() {
-        var p = this._points;
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var p1 = this._points, p = 1 === t ? p1 : de_casteljau(t, p1, true).points;
         return [
         [
         {x:p[0].x, y:p[0].y},

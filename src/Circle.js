@@ -116,6 +116,10 @@ var Circle = makeClass(Curve, {
         var self = this, c = self.center, r = self.radius;
         return arc(t*TWO_PI, c.x, c.y, r, r, 1, 0);
     },
+    fto: function(t) {
+        var self = this;
+        return new Arc(self.f(0), self.f(t), self.radius, self.radius, 0, t*TWO_PI > PI, 1);
+    },
     hasPoint: function(point) {
         self = this;
         return 2 === point_inside_circle(point, self.center, self.radius);
@@ -141,14 +145,12 @@ var Circle = makeClass(Curve, {
         }
         return false;
     },
-    bezierPoints: function() {
-        var self = this, c = self.center, r = self.radius;
-        return [
-        arc2bezier(0, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 0*/),
-        arc2bezier(-HALF_PI, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 1*/),
-        arc2bezier(-PI, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 0*/),
-        arc2bezier(-PI3_2, -HALF_PI, c.x, c.y, r, r, 1, 0/*, 1*/)
-        ];
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var self = this, c = self.center;
+        return bezierfromarc(c.x, c.y, self.radius, self.radius, 1, 0, 0, -t*4*HALF_PI);
     },
     toSVG: function(svg) {
         var self = this, c = self.center, r = self.radius;

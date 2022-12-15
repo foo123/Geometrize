@@ -181,6 +181,10 @@ var Curve = makeClass(Topos, {
         // override
         return {x:0, y:0};
     },
+    fto: function(t) {
+        // override
+        return self;
+    },
     d: function() {
         // override
         return this.clone();
@@ -191,6 +195,12 @@ var Curve = makeClass(Topos, {
         if (0 > t || 1 < t) return null;
         var p = this.f(t);
         return null == p ? null : Point(p);
+    },
+    curveUpTo: function(t) {
+        var self = this;
+        // 0 <= t <= 1
+        t = clamp(Num(t), 0, 1);
+        return is_almost_equal(t, 1) ? self : self.fto(t).setMatrix(self.matrix).setStyle(self.style.toObj());
     },
     getBoundingBox: function() {
         var bb = this._bbox;
@@ -213,7 +223,7 @@ var Curve = makeClass(Topos, {
     polylinePoints: function() {
         return this._lines.slice();
     },
-    bezierPoints: function() {
+    bezierPoints: function(t) {
         return [
         {x:0, y:0},
         {x:0, y:0},
@@ -247,27 +257,31 @@ var Bezier = makeClass(Curve, {
         });
     },
     name: 'Bezier',
+    fto: function(t) {
+        var self = this;
+        return new self.constructor(de_casteljau(t, self.points, true).points);
+    },
     d: function() {
         var self = this, p = self.points, n = p.length - 1, d;
-        if (self instanceof Bezier1)
+        if (Geometrize.Line && (self instanceof Geometrize.Line))
         {
             // point
-            d = new Bezier1([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}]);
+            d = new Geometrize.Line([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}]);
         }
-        else if (self instanceof Bezier2)
+        else if (Geometrize.QBezier && (self instanceof Geometrize.QBezier))
         {
             // line
-            d = new Bezier1([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}]);
+            d = new Geometrize.Line([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}]);
         }
-        else if (self instanceof Bezier3)
+        else if (Geometrize.CBezier && (self instanceof Geometrize.CBezier))
         {
             // quadratic
-            d = new Bezier2([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}, {x:n*(p[3].x - p[2].x), y:n*(p[3].y - p[2].y)}]);
+            d = new Geometrize.QBezier([{x:n*(p[1].x - p[0].x), y:n*(p[1].y - p[0].y)}, {x:n*(p[2].x - p[1].x), y:n*(p[2].y - p[1].y)}, {x:n*(p[3].x - p[2].x), y:n*(p[3].y - p[2].y)}]);
         }
         else
         {
             // zero
-            d = new Bezier1([{x:0, y:0}, {x:0, y:0}]);
+            d = new Geometrize.Line([{x:0, y:0}, {x:0, y:0}]);
         }
         return d;
     },
@@ -502,6 +516,10 @@ var CompositeCurve = makeClass(Curve, {
         var c = this.curves, n = c.length - 1, i = stdMath.floor(t*n);
         return 1 === t ? c[n].f(t) : c[i].f(n*(t - i/n));
     },
+    fto: function(t) {
+        var self = this, c = self.curves, n = c.length - 1, i = stdMath.floor(t*n);
+        return new CompositeCurve(c.slice(0, i).concat([c[i].curveUpTo(1 === t ? 1 : (n*(t - i/n)))]));
+    },
     derivative: function() {
         return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
     },
@@ -560,11 +578,14 @@ var CompositeCurve = makeClass(Curve, {
             return lines;
         }, []);
     },
-    bezierPoints: function() {
-        return this.curves.reduce(function(beziers, curve) {
-            beziers.push.apply(beziers, curve.bezierPoints());
-            return beziers;
-        }, []);
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var c = this.curves, n = c.length - 1, i = stdMath.floor(t*n), j, b = [];
+        for (j=0; j<i; ++j) b.push.apply(b, c[j].bezierPoints(1));
+        b.push.apply(b, c[i].bezierPoints(1 === t ? 1 : (n*(t - i/n))));
+        return b;
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);

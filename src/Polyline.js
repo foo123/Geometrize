@@ -116,6 +116,14 @@ var Polyline = makeClass(Curve, {
     isConvex: function() {
         return this._is_convex;
     },
+    f: function(t) {
+        var p = this._points, n = p.length - 1, i = stdMath.floor(t*n);
+        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
+    },
+    fto: function(t) {
+        var self = this, p = self.points, n = p.length - 1, i = stdMath.floor(t*n);
+        return new Polyline(p.slice(0, i+1).concat([bezier1(n*(t - i/n), [p[i], p[i+1]])]));
+    },
     hasPoint: function(point) {
         return point_on_polyline(point, this._points);
     },
@@ -123,10 +131,6 @@ var Polyline = makeClass(Curve, {
         if (!this.isClosed()) return false;
         var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._points);
         return strict ? 1 === inside : 0 < inside;
-    },
-    f: function(t) {
-        var p = this._points, n = p.length - 1, i = stdMath.floor(t*n);
-        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
     },
     intersects: function(other) {
         var self = this, i;
@@ -207,16 +211,14 @@ var Polyline = makeClass(Curve, {
             return dist;
         }, Infinity));
     },
-    bezierPoints: function() {
-        var p = this._points, n = p.length;
-        return p.reduce(function(b, _, i) {
-            if (i+1 < n)
-            {
-                var pp = [p[i], p[i+1]];
-                b.push([bezier1(0, pp), bezier1(0.5, pp), bezier1(0.5, pp), bezier1(1, pp)]);
-            }
-            return b;
-        }, []);
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var p = this._points, n = p.length - 1, i = stdMath.floor(t*n), j, b = new Array(1 === t ? i : (i+1));
+        for (j=0; j<i; ++j) if (j+1 <= i) b[j] = bezierfrom(p[j], p[j+1]);
+        if (1 > t) b[i] = bezierfrom(p[i], bezier1(n*(t - i/n), [p[i], p[i+1]]));
+        return b;
     },
     toSVG: function(svg) {
         var self = this;
