@@ -139,12 +139,21 @@ const tween = Tween({
     keyframes: {
         "0%": {
             shape: arc,
+            length: 0,
             style: {
                 stroke: 'cyan'
             },
             easing: 'ease-out'
         },
-        "25%": {
+        "10%": {
+            shape: arc,
+            length: 1,
+            style: {
+                stroke: 'cyan'
+            },
+            easing: 'ease-out'
+        },
+        "30%": {
             shape: ellipse,
             style: {
                 stroke: 'orange'
@@ -158,7 +167,7 @@ const tween = Tween({
             },
             easing: 'ease-out'
         },
-        "75%": {
+        "70%": {
             shape: square,
             transform: {
                 rotate: {
@@ -174,8 +183,25 @@ const tween = Tween({
             },
             easing: 'ease-out-back'
         },
+        "90%": {
+            shape: square,
+            transform: {
+                rotate: {
+                    origin: {
+                        x: square.getCenter().x,
+                        y: square.getCenter().y
+                    },
+                    angle: -45
+                }
+            },
+            style: {
+                stroke: 'blue'
+            },
+            easing: 'ease-out'
+        },
         "100%": {
             shape: square,
+            length: 0,
             transform: {
                 rotate: {
                     origin: {
@@ -190,7 +216,7 @@ const tween = Tween({
             }
         }
     },
-    duration: 4000,
+    duration: 5000,
     delay: 400
 });
 plane.add(tween);
