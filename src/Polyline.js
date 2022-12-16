@@ -216,8 +216,8 @@ var Polyline = makeClass(Curve, {
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
         var p = this._points, n = p.length - 1, i = stdMath.floor(t*n), j, b = new Array(1 === t ? i : (i+1));
-        for (j=0; j<i; ++j) if (j+1 <= i) b[j] = bezierfrom(p[j], p[j+1]);
-        if (1 > t) b[i] = bezierfrom(p[i], bezier1(n*(t - i/n), [p[i], p[i+1]]));
+        for (j=0; j<i; ++j) b[j] = cbezier_from_points([p[j], p[j+1]], 1);
+        if (1 > t) b[i] = cbezier_from_points([p[i], p[i+1]], n*(t - i/n));
         return b;
     },
     toSVG: function(svg) {

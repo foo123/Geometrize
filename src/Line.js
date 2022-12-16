@@ -164,8 +164,7 @@ var Line = makeClass(Bezier, {
         if (arguments.length) t = clamp(t, 0, 1);
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
-        var p = this._points;
-        return [bezierfrom(p[0], 1 === t ? p[1] : bezier1(t, [p[0], p[1]]))];
+        return [cbezier_from_points(this._points, t)];
     },
     toSVG: function(svg) {
         var self = this, p = self._points;

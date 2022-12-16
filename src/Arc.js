@@ -393,7 +393,7 @@ var Arc = makeClass(Curve, {
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
         var self = this, c = self.center, cs = self.cs;
-        return bezierfromarc(c.x, c.y, self.rX, self.rY, cs[0], cs[1], self.theta, t*self.dtheta);
+        return cbezier_from_arc(c.x, c.y, self.rX, self.rY, cs[0], cs[1], self.theta, t*self.dtheta);
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);

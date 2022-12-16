@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.7 (2022-12-15 19:45:05)
+*   @version 0.9.8 (2022-12-16 10:11:47)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.7 (2022-12-15 19:45:05)
+*   @version 0.9.8 (2022-12-16 10:11:47)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.9.7", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "0.9.8", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -502,357 +502,6 @@ var Matrix = makeClass(null, {
 });
 var EYE = Matrix.eye();
 Geometrize.Matrix = Matrix;
-// Color utilities
-// eg for stroke, fill, ..
-var hexRE = /^#([0-9a-fA-F]{3,6})\b/,
-    rgbRE = /^(rgba?)\b\s*\(([^\)]*)\)/i,
-    hslRE = /^(hsla?)\b\s*\(([^\)]*)\)/i,
-    hwbRE = /^(hwba?)\b\s*\(([^\)]*)\)/i,
-    sepRE = /\s+|,/gm, aRE = /\/\s*(\d*?\.?\d+%?)/;
-
-function hex2rgb(h)
-{
-    if (!h || 3 > h.length)
-    {
-        return [0, 0, 0, 0];
-    }
-    else if (6 > h.length)
-    {
-        return [
-        clamp(parseInt(h[0]+h[0], 16)||0, 0, 255),
-        clamp(parseInt(h[1]+h[1], 16)||0, 0, 255),
-        clamp(parseInt(h[2]+h[2], 16)||0, 0, 255),
-        1
-        ];
-    }
-    else
-    {
-        return [
-        clamp(parseInt(h[0]+h[1], 16)||0, 0, 255),
-        clamp(parseInt(h[2]+h[3], 16)||0, 0, 255),
-        clamp(parseInt(h[4]+h[5], 16)||0, 0, 255),
-        1
-        ];
-    }
-}
-function hsl2rgb(h, s, l, a)
-{
-    var c, hp, d, x, m, r, g, b;
-    s /= 100;
-    l /= 100;
-    c = (1 - abs(2*l - 1))*s;
-    hp = h/60;
-    d = stdMath.floor(hp / 2);
-    x = c*(1 - abs(hp - 2*d - 1));
-    m = l - c/2;
-    if (hp >= 0 && hp < 1)
-    {
-        r = c + m;
-        g = x + m;
-        b = 0 + m;
-    }
-    else if (hp >= 1 && hp < 2)
-    {
-        r = x + m;
-        g = c + m;
-        b = 0 + m;
-    }
-    else if (hp >= 2 && hp < 3)
-    {
-        r = 0 + m;
-        g = c + m;
-        b = x + m;
-    }
-    else if (hp >= 3 && hp < 4)
-    {
-        r = 0 + m;
-        g = x + m;
-        b = c + m;
-    }
-    else if (hp >= 4 && hp < 5)
-    {
-        r = x + m;
-        g = 0 + m;
-        b = c + m;
-    }
-    else //if (hp >= 5 && hp < 6)
-    {
-        r = c + m;
-        g = 0 + m;
-        b = x + m;
-    }
-    return [
-    clamp(stdMath.round(r*255), 0, 255),
-    clamp(stdMath.round(g*255), 0, 255),
-    clamp(stdMath.round(b*255), 0, 255),
-    a
-    ];
-}
-function hsv2rgb(h, s, v, a)
-{
-    v /= 100;
-    var l = v*(1 - s/200), lm = stdMath.min(l, 1-l);
-    return hsl2rgb(h, 0 === lm ? 0 : 100*(v-l)/lm, 100*l, a);
-}
-function hwb2rgb(h, w, b, a)
-{
-    var b1 = 1 - b/100;
-    return hsv2rgb(h, 100 - w/b1, 100*b1, a);
-}
-function parseColor(s)
-{
-    var m, hasOpacity;
-    s = trim(Str(s)).toLowerCase();
-    if (m = s.match(hexRE))
-    {
-        // hex
-        return hex2rgb(m[1]);
-    }
-    if (m = s.match(hwbRE))
-    {
-        // hwb(a)
-        hasOpacity = m[2].match(aRE);
-        var col = trim(m[2]).split(sepRE).map(trim),
-            h = col[0] ? col[0] : '0',
-            w = col[1] ? col[1] : '0',
-            b = col[2] ? col[2] : '0',
-            a = hasOpacity ? hasOpacity[1] : '1';
-        h = parseFloat(h, 10);
-        w = '%' === w.slice(-1) ? parseFloat(w, 10) : parseFloat(w, 10)*100/255;
-        b = '%' === b.slice(-1) ? parseFloat(b, 10) : parseFloat(b, 10)*100/255;
-        a = '%' === a.slice(-1) ? parseFloat(a, 10)/100 : parseFloat(a, 10);
-        return hwb2rgb(h, w, b, a);
-    }
-    if (m = s.match(hslRE))
-    {
-        // hsl(a)
-        hasOpacity = m[2].match(aRE);
-        var col = trim(m[2]).split(sepRE).map(trim),
-            h = col[0] ? col[0] : '0',
-            s = col[1] ? col[1] : '0',
-            l = col[2] ? col[2] : '0',
-            a = hasOpacity ? hasOpacity[1] : ('hsla' === m[1] && null != col[3] ? col[3] : '1');
-        h = parseFloat(h, 10);
-        s = '%' === s.slice(-1) ? parseFloat(s, 10) : parseFloat(s, 10)*100/255;
-        l = '%' === l.slice(-1) ? parseFloat(l, 10) : parseFloat(l, 10)*100/255;
-        a = '%' === a.slice(-1) ? parseFloat(a, 10)/100 : parseFloat(a, 10);
-        return hsl2rgb(h, s, l, a);
-    }
-    if (m = s.match(rgbRE))
-    {
-        // rgb(a)
-        hasOpacity = m[2].match(aRE);
-        var col = trim(m[2]).split(sepRE).map(trim),
-            r = col[0] ? col[0] : '0',
-            g = col[1] ? col[1] : '0',
-            b = col[2] ? col[2] : '0',
-            a = hasOpacity ? hasOpacity[1] : ('rgba' === m[1] && null != col[3] ? col[3] : '1');
-        r = '%' === r.slice(-1) ? parseFloat(r, 10)*2.55 : parseFloat(r, 10);
-        g = '%' === g.slice(-1) ? parseFloat(g, 10)*2.55 : parseFloat(g, 10);
-        b = '%' === b.slice(-1) ? parseFloat(b, 10)*2.55 : parseFloat(b, 10);
-        a = '%' === a.slice(-1) ? parseFloat(a, 10)/100 : parseFloat(a, 10);
-        return [r, g, b, a];
-    }
-    if (HAS.call(Color.keywords, s))
-    {
-        // keyword
-        return Color.keywords[s].slice();
-    }
-}
-function interpolateRGB(r0, g0, b0, a0, r1, g1, b1, a1, t)
-{
-    if (9 <= arguments.length)
-    {
-        return [
-        clamp(stdMath.round(r0 + t*(r1 - r0)), 0, 255),
-        clamp(stdMath.round(g0 + t*(g1 - g0)), 0, 255),
-        clamp(stdMath.round(b0 + t*(b1 - b0)), 0, 255),
-        clamp(a0 + t*(a1 - a0), 0, 1)
-        ];
-    }
-    else
-    {
-        var rgba0 = r0, rgba1 = g0, t = b0;
-        return 3 < rgba0.length ? [
-        clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255),
-        clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255),
-        clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255),
-        clamp(rgba0[3] + t*(rgba1[3] - rgba0[3]), 0, 1)
-        ] : [
-        clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255),
-        clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255),
-        clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255)
-        ];
-    }
-}
-var Color = {
-    keywords: {
-    // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
-    /* extended */
-     'transparent'         : [  0,0,0        ,0]
-    ,'aliceblue'           : [  240,248,255  ,1]
-    ,'antiquewhite'        : [  250,235,215  ,1]
-    ,'aqua'                : [  0,255,255    ,1]
-    ,'aquamarine'          : [  127,255,212  ,1]
-    ,'azure'               : [  240,255,255  ,1]
-    ,'beige'               : [  245,245,220  ,1]
-    ,'bisque'              : [  255,228,196  ,1]
-    ,'black'               : [  0,0,0    ,    1]
-    ,'blanchedalmond'      : [  255,235,205  ,1]
-    ,'blue'                : [  0,0,255  ,    1]
-    ,'blueviolet'          : [  138,43,226   ,1]
-    ,'brown'               : [  165,42,42    ,1]
-    ,'burlywood'           : [  222,184,135  ,1]
-    ,'cadetblue'           : [  95,158,160   ,1]
-    ,'chartreuse'          : [  127,255,0    ,1]
-    ,'chocolate'           : [  210,105,30   ,1]
-    ,'coral'               : [  255,127,80   ,1]
-    ,'cornflowerblue'      : [  100,149,237  ,1]
-    ,'cornsilk'            : [  255,248,220  ,1]
-    ,'crimson'             : [  220,20,60    ,1]
-    ,'cyan'                : [  0,255,255    ,1]
-    ,'darkblue'            : [  0,0,139  ,    1]
-    ,'darkcyan'            : [  0,139,139    ,1]
-    ,'darkgoldenrod'       : [  184,134,11   ,1]
-    ,'darkgray'            : [  169,169,169  ,1]
-    ,'darkgreen'           : [  0,100,0  ,    1]
-    ,'darkgrey'            : [  169,169,169  ,1]
-    ,'darkkhaki'           : [  189,183,107  ,1]
-    ,'darkmagenta'         : [  139,0,139    ,1]
-    ,'darkolivegreen'      : [  85,107,47    ,1]
-    ,'darkorange'          : [  255,140,0    ,1]
-    ,'darkorchid'          : [  153,50,204   ,1]
-    ,'darkred'             : [  139,0,0  ,    1]
-    ,'darksalmon'          : [  233,150,122  ,1]
-    ,'darkseagreen'        : [  143,188,143  ,1]
-    ,'darkslateblue'       : [  72,61,139    ,1]
-    ,'darkslategray'       : [  47,79,79 ,    1]
-    ,'darkslategrey'       : [  47,79,79 ,    1]
-    ,'darkturquoise'       : [  0,206,209    ,1]
-    ,'darkviolet'          : [  148,0,211    ,1]
-    ,'deeppink'            : [  255,20,147   ,1]
-    ,'deepskyblue'         : [  0,191,255    ,1]
-    ,'dimgray'             : [  105,105,105  ,1]
-    ,'dimgrey'             : [  105,105,105  ,1]
-    ,'dodgerblue'          : [  30,144,255   ,1]
-    ,'firebrick'           : [  178,34,34    ,1]
-    ,'floralwhite'         : [  255,250,240  ,1]
-    ,'forestgreen'         : [  34,139,34    ,1]
-    ,'fuchsia'             : [  255,0,255    ,1]
-    ,'gainsboro'           : [  220,220,220  ,1]
-    ,'ghostwhite'          : [  248,248,255  ,1]
-    ,'gold'                : [  255,215,0    ,1]
-    ,'goldenrod'           : [  218,165,32   ,1]
-    ,'gray'                : [  128,128,128  ,1]
-    ,'green'               : [  0,128,0  ,    1]
-    ,'greenyellow'         : [  173,255,47   ,1]
-    ,'grey'                : [  128,128,128  ,1]
-    ,'honeydew'            : [  240,255,240  ,1]
-    ,'hotpink'             : [  255,105,180  ,1]
-    ,'indianred'           : [  205,92,92    ,1]
-    ,'indigo'              : [  75,0,130 ,    1]
-    ,'ivory'               : [  255,255,240  ,1]
-    ,'khaki'               : [  240,230,140  ,1]
-    ,'lavender'            : [  230,230,250  ,1]
-    ,'lavenderblush'       : [  255,240,245  ,1]
-    ,'lawngreen'           : [  124,252,0    ,1]
-    ,'lemonchiffon'        : [  255,250,205  ,1]
-    ,'lightblue'           : [  173,216,230  ,1]
-    ,'lightcoral'          : [  240,128,128  ,1]
-    ,'lightcyan'           : [  224,255,255  ,1]
-    ,'lightgoldenrodyellow': [  250,250,210  ,1]
-    ,'lightgray'           : [  211,211,211  ,1]
-    ,'lightgreen'          : [  144,238,144  ,1]
-    ,'lightgrey'           : [  211,211,211  ,1]
-    ,'lightpink'           : [  255,182,193  ,1]
-    ,'lightsalmon'         : [  255,160,122  ,1]
-    ,'lightseagreen'       : [  32,178,170   ,1]
-    ,'lightskyblue'        : [  135,206,250  ,1]
-    ,'lightslategray'      : [  119,136,153  ,1]
-    ,'lightslategrey'      : [  119,136,153  ,1]
-    ,'lightsteelblue'      : [  176,196,222  ,1]
-    ,'lightyellow'         : [  255,255,224  ,1]
-    ,'lime'                : [  0,255,0  ,    1]
-    ,'limegreen'           : [  50,205,50    ,1]
-    ,'linen'               : [  250,240,230  ,1]
-    ,'magenta'             : [  255,0,255    ,1]
-    ,'maroon'              : [  128,0,0  ,    1]
-    ,'mediumaquamarine'    : [  102,205,170  ,1]
-    ,'mediumblue'          : [  0,0,205  ,    1]
-    ,'mediumorchid'        : [  186,85,211   ,1]
-    ,'mediumpurple'        : [  147,112,219  ,1]
-    ,'mediumseagreen'      : [  60,179,113   ,1]
-    ,'mediumslateblue'     : [  123,104,238  ,1]
-    ,'mediumspringgreen'   : [  0,250,154    ,1]
-    ,'mediumturquoise'     : [  72,209,204   ,1]
-    ,'mediumvioletred'     : [  199,21,133   ,1]
-    ,'midnightblue'        : [  25,25,112    ,1]
-    ,'mintcream'           : [  245,255,250  ,1]
-    ,'mistyrose'           : [  255,228,225  ,1]
-    ,'moccasin'            : [  255,228,181  ,1]
-    ,'navajowhite'         : [  255,222,173  ,1]
-    ,'navy'                : [  0,0,128  ,    1]
-    ,'oldlace'             : [  253,245,230  ,1]
-    ,'olive'               : [  128,128,0    ,1]
-    ,'olivedrab'           : [  107,142,35   ,1]
-    ,'orange'              : [  255,165,0    ,1]
-    ,'orangered'           : [  255,69,0 ,    1]
-    ,'orchid'              : [  218,112,214  ,1]
-    ,'palegoldenrod'       : [  238,232,170  ,1]
-    ,'palegreen'           : [  152,251,152  ,1]
-    ,'paleturquoise'       : [  175,238,238  ,1]
-    ,'palevioletred'       : [  219,112,147  ,1]
-    ,'papayawhip'          : [  255,239,213  ,1]
-    ,'peachpuff'           : [  255,218,185  ,1]
-    ,'peru'                : [  205,133,63   ,1]
-    ,'pink'                : [  255,192,203  ,1]
-    ,'plum'                : [  221,160,221  ,1]
-    ,'powderblue'          : [  176,224,230  ,1]
-    ,'purple'              : [  128,0,128    ,1]
-    ,'red'                 : [  255,0,0  ,    1]
-    ,'rosybrown'           : [  188,143,143  ,1]
-    ,'royalblue'           : [  65,105,225   ,1]
-    ,'saddlebrown'         : [  139,69,19    ,1]
-    ,'salmon'              : [  250,128,114  ,1]
-    ,'sandybrown'          : [  244,164,96   ,1]
-    ,'seagreen'            : [  46,139,87    ,1]
-    ,'seashell'            : [  255,245,238  ,1]
-    ,'sienna'              : [  160,82,45    ,1]
-    ,'silver'              : [  192,192,192  ,1]
-    ,'skyblue'             : [  135,206,235  ,1]
-    ,'slateblue'           : [  106,90,205   ,1]
-    ,'slategray'           : [  112,128,144  ,1]
-    ,'slategrey'           : [  112,128,144  ,1]
-    ,'snow'                : [  255,250,250  ,1]
-    ,'springgreen'         : [  0,255,127    ,1]
-    ,'steelblue'           : [  70,130,180   ,1]
-    ,'tan'                 : [  210,180,140  ,1]
-    ,'teal'                : [  0,128,128    ,1]
-    ,'thistle'             : [  216,191,216  ,1]
-    ,'tomato'              : [  255,99,71    ,1]
-    ,'turquoise'           : [  64,224,208   ,1]
-    ,'violet'              : [  238,130,238  ,1]
-    ,'wheat'               : [  245,222,179  ,1]
-    ,'white'               : [  255,255,255  ,1]
-    ,'whitesmoke'          : [  245,245,245  ,1]
-    ,'yellow'              : [  255,255,0    ,1]
-    ,'yellowgreen'         : [  154,205,50   ,1]
-    },
-    parse: parseColor,
-    interpolateRGB: interpolateRGB,
-    toCSS: function(r, g, b, a) {
-        if (1 === arguments.length)
-        {
-            var rgba = r;
-            return 3 < rgba.length ? 'rgba('+rgba[0]+','+rgba[1]+','+rgba[2]+','+rgba[3]+')' : 'rgb('+rgba[0]+','+rgba[1]+','+rgba[2]+')';
-        }
-        else
-        {
-            return 3 < arguments.length ? 'rgba('+r+','+g+','+b+','+a+')' : 'rgb('+r+','+g+','+b+')';
-        }
-    }
-};
-Geometrize.Color = Color;
 // 2D Style class
 // eg stroke, fill, width, ..
 var Style = makeClass(null, merge(null, {
@@ -2277,8 +1926,7 @@ var Line = makeClass(Bezier, {
         if (arguments.length) t = clamp(t, 0, 1);
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
-        var p = this._points;
-        return [bezierfrom(p[0], 1 === t ? p[1] : bezier1(t, [p[0], p[1]]))];
+        return [cbezier_from_points(this._points, t)];
     },
     toSVG: function(svg) {
         var self = this, p = self._points;
@@ -2541,8 +2189,8 @@ var Polyline = makeClass(Curve, {
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
         var p = this._points, n = p.length - 1, i = stdMath.floor(t*n), j, b = new Array(1 === t ? i : (i+1));
-        for (j=0; j<i; ++j) if (j+1 <= i) b[j] = bezierfrom(p[j], p[j+1]);
-        if (1 > t) b[i] = bezierfrom(p[i], bezier1(n*(t - i/n), [p[i], p[i+1]]));
+        for (j=0; j<i; ++j) b[j] = cbezier_from_points([p[j], p[j+1]], 1);
+        if (1 > t) b[i] = cbezier_from_points([p[i], p[i+1]], n*(t - i/n));
         return b;
     },
     toSVG: function(svg) {
@@ -2984,7 +2632,7 @@ var Arc = makeClass(Curve, {
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
         var self = this, c = self.center, cs = self.cs;
-        return bezierfromarc(c.x, c.y, self.rX, self.rY, cs[0], cs[1], self.theta, t*self.dtheta);
+        return cbezier_from_arc(c.x, c.y, self.rX, self.rY, cs[0], cs[1], self.theta, t*self.dtheta);
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);
@@ -3169,15 +2817,7 @@ var QBezier = makeClass(Bezier, {
         if (arguments.length) t = clamp(t, 0, 1);
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
-        var p1 = this._points, p = 1 === t ? p1 : de_casteljau(t, p1, true).points;
-        return [
-        [
-        {x:p[0].x, y:p[0].y},
-        {x:p[0].x + (p[1].x - p[0].x)*2/3, y:p[0].y + (p[1].y - p[0].y)*2/3},
-        {x:p[2].x + (p[1].x - p[2].x)*2/3, y:p[2].y + (p[1].y - p[2].y)*2/3},
-        {x:p[2].x, y:p[2].y}
-        ]
-        ];
+        return [cbezier_from_points(this._points, t)];
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);
@@ -3354,15 +2994,7 @@ var CBezier = makeClass(Bezier, {
         if (arguments.length) t = clamp(t, 0, 1);
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
-        var p1 = this._points, p = 1 === t ? p1 : de_casteljau(t, p1, true).points;
-        return [
-        [
-        {x:p[0].x, y:p[0].y},
-        {x:p[1].x, y:p[1].y},
-        {x:p[2].x, y:p[2].y},
-        {x:p[3].x, y:p[3].y}
-        ]
-        ];
+        return [cbezier_from_points(this._points, t)];
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);
@@ -3614,8 +3246,8 @@ var Polygon = makeClass(Curve, {
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
         var p = this._lines, n = p.length - 1, i = stdMath.floor(t*n), j, b = new Array(1 === t ? i : (i+1));
-        for (j=0; j<i; ++j) if (j+1 <= i) b[j] = bezierfrom(p[j], p[j+1]);
-        if (1 > t) b[i] = bezierfrom(p[i], bezier1(n*(t - i/n), [p[i], p[i+1]]));
+        for (j=0; j<i; ++j) b[j] = cbezier_from_points([p[j], p[j+1]], 1);
+        if (1 > t) b[i] = cbezier_from_points([p[i], p[i+1]], n*(t - i/n));
         return b;
     },
     toSVG: function(svg) {
@@ -3871,7 +3503,7 @@ var Circle = makeClass(Curve, {
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
         var self = this, c = self.center;
-        return bezierfromarc(c.x, c.y, self.radius, self.radius, 1, 0, 0, -t*4*HALF_PI);
+        return cbezier_from_arc(c.x, c.y, self.radius, self.radius, 1, 0, 0, -t*TWO_PI);
     },
     toSVG: function(svg) {
         var self = this, c = self.center, r = self.radius;
@@ -4168,7 +3800,7 @@ var Ellipse = makeClass(Curve, {
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
         var self = this, c = self.center, cs = self.cs;
-        return bezierfromarc(c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1], 0, -t*4*HALF_PI);
+        return cbezier_from_arc(c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1], 0, -t*TWO_PI);
     },
     toSVG: function(svg) {
         var self = this,
@@ -4224,700 +3856,6 @@ Geometrize.Ellipse = Ellipse;
 // container for primitives shapes
 var Shape = makeClass(Primitive, {});
 Geometrize.Shape = Shape;
-// https://easings.net/
-var Easing = {
-    // x is in [0, 1], 0=start, 1=end of animation
-    // linear
-    'linear': function(x) {
-        return x;
-    },
-    // quadratic
-    'ease-in-quad': function(x) {
-        return x*x;
-    },
-    'ease-out-quad': function(x) {
-        var xp = 1 - x;
-        return 1 - xp*xp;
-    },
-    'ease-in-out-quad': function(x) {
-        return x < 0.5 ? 2*x*x : 1 - stdMath.pow(2 - 2*x, 2)/2;
-    },
-    // cubic
-    'ease-in-cubic': function(x) {
-        return x*x*x;
-    },
-    'ease-out-cubic': function(x) {
-        return 1 - stdMath.pow(1 - x, 3);
-    },
-    'ease-in-out-cubic': function(x) {
-        return x < 0.5 ? 4*x*x*x : 1 - stdMath.pow(2 - 2*x, 3)/2;
-    },
-    // cubic bezier
-    'cubic-bezier': function(c0, c1, c2, c3) {
-        return bezier([c0, c1, c2, c3]);
-    },
-    // exponential
-    'ease-in-expo': function(x) {
-        return 0 === x ? 0 : stdMath.pow(2, 10*x - 10);
-    },
-    'ease-out-expo': function(x) {
-        return 1 === x ? 1 : 1 - stdMath.pow(2, -10*x);
-    },
-    'ease-in-out-expo': function(x) {
-        return 0 === x
-              ? 0
-              : (1 === x
-              ? 1
-              : (x < 0.5
-              ? stdMath.pow(2, 20*x - 10)/2
-              : (2 - stdMath.pow(2, 10 - 20*x))/2));
-    },
-    // back
-    'ease-in-back': function(x) {
-        var c1 = 1.70158, c3 = c1 + 1;
-        return c3*x*x*x - c1*x*x;
-    },
-    'ease-out-back': function(x) {
-        var c1 = 1.70158, c3 = c1 + 1, xp = x - 1;
-        return 1 + c3*stdMath.pow(xp, 3) + c1*stdMath.pow(xp, 2);
-    },
-    'ease-in-out-back': function(x) {
-        var c1 = 1.70158, c2 = c1*1.525;
-        return x < 0.5
-            ? (stdMath.pow(2*x, 2)*((c2 + 1)*2*x - c2))/2
-            : (stdMath.pow(2*x - 2, 2)*((c2 + 1)*(x*2 - 2) + c2) + 2)/2;
-    },
-    //elastic
-    'ease-in-elastic': function(x) {
-        return 0 === x
-            ? 0
-            : (1 === x
-            ? 1
-            : -stdMath.pow(2, 10*x - 10)*stdMath.sin((x*10 - 10.75)*TWO_PI/3));
-    },
-    'ease-out-elastic': function(x) {
-        return 0 === x
-          ? 0
-          : (1 === x
-          ? 1
-          : stdMath.pow(2, -10*x)*stdMath.sin((x*10 - 0.75)*TWO_PI/3) + 1);
-    },
-    'ease-in-out-elastic': function(x) {
-        return 0 === x
-          ? 0
-          : (1 === x
-          ? 1
-          : (x < 0.5
-          ? -(stdMath.pow(2, 20*x - 10)*stdMath.sin((20*x - 11.125)*TWO_PI/4.5))/2
-          : (stdMath.pow(2, -20*x + 10)*stdMath.sin((20*x - 11.125)*TWO_PI/4.5))/2 + 1));
-    },
-    // bounce
-    'ease-in-bounce': function(x) {
-        return 1 - ease_out_bounce(1 - x);
-    },
-    'ease-out-bounce': function(x) {
-        return ease_out_bounce(x);
-    },
-    'ease-in-out-bounce': function(x) {
-        return x < 0.5
-          ? (1 - ease_out_bounce(1 - 2*x))/2
-          : (1 + ease_out_bounce(2*x - 1))/2;
-    }
-};
-function ease_out_bounce(x)
-{
-    var n1 = 7.5625, d1 = 2.75, x1;
-
-    if (x < 1/d1)
-    {
-        return n1*x*x;
-    }
-    else if (x < 2/d1)
-    {
-        x1 = x - 1.5;
-        return n1*(x1/d1)*x1 + 0.75;
-    }
-    else if (x < 2.5/d1)
-    {
-        x1 = x - 2.25;
-        return n1*(x1/d1)*x1 + 0.9375;
-    }
-    x1 = x - 2.625
-    return n1*(x1/d1)*x1 + 0.984375;
-}
-Easing['ease-in'] = Easing['ease-in-quad'];
-Easing['ease-out'] = Easing['ease-out-quad'];
-Easing['ease-in-out'] = Easing['ease-in-out-quad'];
-
-function prepare_tween(tween, fps)
-{
-    tween = tween || {};
-    if (!tween.keyframes)
-    {
-        tween.keyframes = {
-            "0%": tween.from,
-            "100%": tween.to
-        };
-    }
-    var t = {
-            duration: null == tween.duration ? 1000 : (tween.duration || 0),
-            delay: tween.delay || 0,
-            fps: clamp(null != tween.fps ? Num(tween.fps) : fps, 1, fps),
-            nframes: 0,
-            keyframes: null,
-            kf: 0,
-            current: null,
-            reverse: false,
-            bb: {
-                ymin: Infinity,
-                xmin: Infinity,
-                ymax: -Infinity,
-                xmax: -Infinity
-            }
-        },
-        easing = is_function(tween.easing) ? tween.easing : (is_string(tween.easing) && HAS.call(Tween.Easing, tween.easing) ? Tween.Easing[tween.easing] : Tween.Easing.linear)
-    ;
-    t.nframes = stdMath.ceil(t.duration/1000*t.fps);
-    t.keyframes = Object.keys(tween.keyframes || EMPTY_OBJ).map(function(key) {
-        var kf = tween.keyframes[key] || EMPTY_OBJ,
-            length = HAS.call(kf, 'length') ? clamp(Num(kf.length), 0, 1) : 1,
-            obj = kf.shape && is_function(kf.shape.bezierPoints) ? kf.shape : null,
-            shape = obj ? obj.bezierPoints(length) : [],
-            transform = kf.transform || EMPTY_OBJ,
-            sc = transform.scale || EMPTY_OBJ,
-            scOrig = sc.origin || {x:0, y:0},
-            rot = transform.rotate || EMPTY_OBJ,
-            rotOrig = rot.origin || {x:0, y:0},
-            tr = transform.translate || EMPTY_OBJ,
-            style = kf.style || EMPTY_OBJ,
-            stroke = is_string(style.stroke) ? (Color.parse(style.stroke) || style.stroke) : null,
-            fill = is_string(style.fill) ? (Color.parse(style.fill) || style.fill) : null,
-            hasStroke = is_array(stroke),
-            hasFill = is_array(fill),
-            hasStrokeOpacity = HAS.call(style, 'stroke-opacity'),
-            hasFillOpacity = HAS.call(style, 'fill-opacity'),
-            bb
-        ;
-        if (obj && is_function(obj.getBoundingBox))
-        {
-            bb = obj.getBoundingBox();
-        }
-        else
-        {
-            bb = {ymin:0, ymax:0, xmin:0, xmax:0};
-        }
-        t.bb.ymin = stdMath.min(t.bb.ymin, bb.ymin||0);
-        t.bb.xmin = stdMath.min(t.bb.xmin, bb.xmin||0);
-        t.bb.ymax = stdMath.max(t.bb.ymax, bb.ymax||0);
-        t.bb.xmax = stdMath.max(t.bb.xmax, bb.xmax||0);
-        return {
-            frame: stdMath.round(Num(key)/100*(t.nframes - 1)),
-            obj: obj,
-            shape: [
-                shape,
-                shape.slice()
-            ],
-            box: bb,
-            length: length,
-            transform: {
-                scale: {
-                    origin: {
-                        x: scOrig.x || 0,
-                        y: scOrig.y || 0
-                    },
-                    x: (null == sc.x ? 1 : sc.x) || 0,
-                    y: (null == sc.y ? 1 : sc.y) || 0
-                },
-                rotate: {
-                    origin: {
-                        x: rotOrig.x || 0,
-                        y: rotOrig.y || 0
-                    },
-                    angle: rad(rot.angle || 0)
-                },
-                translate: {
-                    x: tr.x || 0,
-                    y: tr.y || 0
-                }
-            },
-            style: {
-                'stroke': hasStroke ? stroke.slice(0, 3) : stroke,
-                'stroke-opacity': hasStrokeOpacity ? Num(style['stroke-opacity']) : (hasStroke ? stroke[3] : 1),
-                'fill': hasFill ? fill.slice(0, 3) : fill,
-                'fill-opacity': hasFillOpacity ? Num(style['fill-opacity']) : (hasFill ? fill[3] : 1),
-                hasStroke: hasStroke,
-                hasFill: hasFill
-            },
-            easing: is_function(kf.easing) ? kf.easing : (is_string(kf.easing) && HAS.call(Tween.Easing, kf.easing) ? Tween.Easing[kf.easing] : easing)
-        };
-    }).sort(function(a, b) {
-        return a.frame - b.frame
-    });
-    var match_shapes = function match_shapes(kf1, kf2, index1, index2) {
-        var s1 = kf1.shape[index1], s2 = kf2.shape[index2],
-            l1 = s1.length, l2 = s2.length,
-            m = stdMath.max(1, l1, l2),
-            d00, d11, d01, d10, md,
-            i, i1, i2, p, b1, b2;
-        /*if (l1 && l2)
-        {
-            b1 = s1[0];
-            b2 = s2[0];
-            md = stdMath.max(dist(b1[0], b2[0]), dist(b1[3], b2[3]));
-            i = 0;
-            for (i2=1; i2<l2; ++i2)
-            {
-                b2 = s2[i2];
-                d00 = stdMath.max(dist(b1[0], b2[0]), dist(b1[3], b2[3]));
-                if (d00 < md)
-                {
-                    md = d00;
-                    i = i2;
-                }
-            }
-            if (0 < i)
-            {
-                // rotate shape to match better with other shape
-                b2 = s2;
-                for (i2=0; i2<l2; ++i2)
-                {
-                    s2[i2] = b2[(i2+i) % l2];
-                }
-            }
-        }*/
-        for (i1=0,i2=0,i=0; i<m; ++i)
-        {
-            if ((i1 >= l1) || (i2 >= l2))
-            {
-                if (i1 >= l1)
-                {
-                    s1.push(bezierfrom(0 < l1 ? s1[l1-1][3] : {x:0, y:0}));
-                    ++l1;
-                }
-                if (i2 >= l2)
-                {
-                    s2.push(bezierfrom(0 < l2 ? s2[l2-1][3] : {x:0, y:0}));
-                    ++l2;
-                }
-                ++i1; ++i2;
-                continue;
-            }
-            b1 = s1[i1];
-            b2 = s2[i2];
-            d00 = dist(b1[0], b2[0]);
-            d11 = dist(b1[3], b2[3]);
-            d01 = dist(b1[0], b2[3]);
-            d10 = dist(b1[3], b2[0]);
-            // adjust shapes to avoid curves splitting or crossing over
-            if (d00 > d01 || d11 > d10)
-            {
-                p = b1[0];
-                s1.splice(i1, 0, bezierfrom(p));
-                p = b2[3];
-                s2.splice(i2+1, 0, bezierfrom(p));
-                l1 += 1;
-                l2 += 1;
-                m += 1;
-                i1 += 2;
-                i2 += 2;
-            }
-            else
-            {
-                ++i1;
-                ++i2;
-            }
-        }
-        //s1.length must equal s2.length after matching
-    };
-    t.keyframes.forEach(function(kf, i) {
-        if (i+1 < t.keyframes.length)
-        {
-            match_shapes(kf, t.keyframes[i+1], 0, 1);
-        }
-        if (0 === i)
-        {
-            kf.shape[1] = kf.shape[0];
-        }
-        if (i+1 === t.keyframes.length)
-        {
-            kf.shape[0] = kf.shape[1];
-        }
-    });
-    return t;
-}
-function render_shape(t, as, bs, sx, sy, osx, osy, angle, orx, ory, tx, ty)
-{
-    var cos = 1, sin = 0,
-        ai, aij, bi, bij,
-        i, j, n, x, y, s, cs
-    ;
-    if (!is_almost_equal(angle, 0))
-    {
-        cos = stdMath.cos(angle);
-        sin = stdMath.sin(angle);
-    }
-    tx += orx - cos*orx + sin*ory;
-    ty += ory - cos*ory - sin*orx;
-    if (bs)
-    {
-        n = stdMath.min(as.length, bs.length);
-        cs = new Array(n);
-        for (i=0; i<n; ++i)
-        {
-            ai = as[i];
-            bi = bs[i];
-            s = new Array(4);
-            for (j=0; j<4; ++j)
-            {
-                aij = ai[j];
-                bij = bi[j];
-                x = sx*(aij.x + t*(bij.x - aij.x) - osx) + osx;
-                y = sy*(aij.y + t*(bij.y - aij.y) - osy) + osy;
-                s[j] = {
-                x: cos*x - sin*y + tx,
-                y: sin*x + cos*y + ty
-               };
-            }
-            cs[i] = s;
-        }
-    }
-    else
-    {
-        n = as.length;
-        cs = new Array(n);
-        for (i=0; i<n; ++i)
-        {
-            ai = as[i];
-            s = new Array(4);
-            for (j=0; j<4; ++j)
-            {
-                aij = ai[j];
-                x = sx*(aij.x - osx) + osx;
-                y = sy*(aij.y - osy) + osy;
-                s[j] = {
-                x: cos*x - sin*y + tx,
-                y: sin*x + cos*y + ty
-               };
-            }
-            cs[i] = s;
-        }
-    }
-    return cs;
-}
-function first_frame(tween)
-{
-    if (tween.reverse)
-    {
-        tween.kf = tween.keyframes.length - 1;
-    }
-    else
-    {
-        tween.kf = 0;
-    }
-    var frame = tween.keyframes[tween.kf],
-        a = frame,
-        // translate
-        tx = a.transform.translate.x,
-        ty = a.transform.translate.y,
-        // scale
-        osx = a.transform.scale.origin.x,
-        osy = a.transform.scale.origin.y,
-        sx = a.transform.scale.x,
-        sy = a.transform.scale.y,
-        // rotate
-        orx = a.transform.rotate.origin.x,
-        ory = a.transform.rotate.origin.y,
-        angle = a.transform.rotate.angle
-    ;
-    tween.current = {
-        frame: tween.reverse ? tween.nframes - 1 : 0,
-        shape: render_shape(1, a.shape[tween.reverse ? 1 : 0], null, sx, sy, osx, osy, angle, orx, ory, tx, ty),
-        transform: frame.transform,
-        style: frame.style
-    };
-}
-function is_first_frame(tween)
-{
-    return tween.reverse ? (tween.nframes - 1 === tween.current.frame) : (0 === tween.current.frame);
-}
-function is_tween_finished(tween)
-{
-    return tween.reverse ? (0 > tween.current.frame) : (tween.current.frame >= tween.nframes);
-}
-function next_frame(tween)
-{
-    tween.current.frame = clamp(tween.current.frame + (tween.reverse ? -1 : 1), -1, tween.nframes);
-    if (is_tween_finished(tween)) return false;
-    if (tween.reverse)
-    {
-        if (tween.kf >= 1 && tween.current.frame <= tween.keyframes[tween.kf-1].frame)
-        {
-            if (tween.kf-2 >= 0)
-                --tween.kf;
-        }
-        var a = tween.keyframes[tween.kf],
-            b = tween.keyframes[tween.kf >= 1 ? tween.kf-1 : 0],
-            _t = abs(tween.current.frame - a.frame)/stdMath.max(EPS, a.frame - b.frame);
-    }
-    else
-    {
-        if (tween.kf+1 < tween.keyframes.length && tween.current.frame >= tween.keyframes[tween.kf+1].frame)
-        {
-            if (tween.kf+2 < tween.keyframes.length)
-                ++tween.kf;
-        }
-        var a = tween.keyframes[tween.kf],
-            b = tween.keyframes[tween.kf+1 < tween.keyframes.length ? tween.kf+1 : tween.keyframes.length-1],
-            _t = (tween.current.frame - a.frame)/stdMath.max(EPS, b.frame - a.frame);
-    }
-    var t = a.easing(_t),
-        // translate
-        tx = interpolate(a.transform.translate.x, b.transform.translate.x, t),
-        ty = interpolate(a.transform.translate.y, b.transform.translate.y, t),
-        // scale
-        osx = interpolate(a.transform.scale.origin.x, b.transform.scale.origin.x, t),
-        osy = interpolate(a.transform.scale.origin.y, b.transform.scale.origin.y, t),
-        sx = interpolate(a.transform.scale.x, b.transform.scale.x, t),
-        sy = interpolate(a.transform.scale.y, b.transform.scale.y, t),
-        // rotate
-        orx = interpolate(a.transform.rotate.origin.x, b.transform.rotate.origin.x, t),
-        ory = interpolate(a.transform.rotate.origin.y, b.transform.rotate.origin.y, t),
-        angle = interpolate(a.transform.rotate.angle, b.transform.rotate.angle, t)
-    ;
-    if (a.obj === b.obj)
-    {
-        tween.current.shape = render_shape(t, a.obj && (a.length !== b.length) ? a.obj.bezierPoints(a.length + t*(b.length - a.length)) : a.shape[tween.reverse ? 1 : 0], null, sx, sy, osx, osy, angle, orx, ory, tx, ty);
-    }
-    else
-    {
-        tween.current.shape = render_shape(t, a.shape[tween.reverse ? 1 : 0], b.shape[tween.reverse ? 0 : 1], sx, sy, osx, osy, angle, orx, ory, tx, ty);
-    }
-    tween.current.style = {
-        'stroke': a.style.hasStroke && b.style.hasStroke ? interpolateRGB(a.style['stroke'], b.style['stroke'], t) : (a.style['stroke'] ? a.style['stroke'] : (b.style['stroke'] || tween.current.style['stroke'])),
-        'stroke-opacity': interpolate(a.style['stroke-opacity'], b.style['stroke-opacity'], t),
-        'fill': a.style.hasFill && b.style.hasFill ? interpolateRGB(a.style['fill'], b.style['fill'], t) : (a.style['fill'] ? a.style['fill'] : (b.style['fill'] || 'none')),
-        'fill-opacity': interpolate(a.style['fill-opacity'], b.style['fill-opacity'], t),
-        hasStroke: a.style.hasStroke && b.style.hasStroke,
-        hasFill: a.style.hasFill && b.style.hasFill
-    };
-    return true;
-}
-
-// Tween between 2D shapes
-// TODO:
-// 1. export frames to images via toCanvas and to responsive CSS steps animation
-var Tween = makeClass(Primitive, {
-    constructor: function Tween(tween) {
-        var self = this, run = false,
-            fps = 60, dt = 0, timer = null,
-            onStart = null, onEnd = null, animate;
-
-        if (tween instanceof Tween) return tween;
-        if (!(self instanceof Tween)) return new Tween(tween);
-
-        Primitive.call(self);
-        self.start = function() {
-            run = true;
-            if (timer) {clearTimeout(timer); timer = null;}
-            if (is_first_frame(tween) && onStart) onStart(self);
-            timer = setTimeout(animate, (is_first_frame(tween) ? (tween.delay || 0) : 0) + dt);
-            return self;
-        };
-        self.stop = function() {
-            run = false;
-            if (timer) {clearTimeout(timer); timer = null;}
-            return self;
-        };
-        self.rewind = function() {
-            first_frame(tween);
-            self.isChanged(true);
-            return self;
-        };
-        self.reverse = function(bool) {
-            tween.reverse = !!bool;
-            return self;
-        };
-        self.onStart = function(cb) {
-            onStart = is_function(cb) ? cb : null;
-            return self;
-        };
-        self.onEnd = function(cb) {
-            onEnd = is_function(cb) ? cb : null;
-            return self;
-        };
-        self.numberOfFrames = function() {
-            return tween.nframes;
-        };
-        self.framesPerSecond = function() {
-            return tween.fps;
-        };
-        self.getBoundingBox = function() {
-            return {
-                ymin: tween.bb.ymin,
-                xmin: tween.bb.xmin,
-                ymax: tween.bb.ymax,
-                xmax: tween.bb.xmax
-            };
-        };
-        self.toSVGPath = function(svg) {
-            var firstx = 0, firsty = 0,
-                lastx = 0, lasty = 0,
-                isConnected = true,
-                path = tween.current.shape.map(function(b, i) {
-                    var connects = true, c;
-                    if (0 === i)
-                    {
-                        firstx = b[0].x;
-                        firsty = b[0].y;
-                        connects = true;
-                        c = ['M',b[0].x,b[0].y,'C',b[1].x,b[1].y,b[2].x,b[2].y,b[3].x,b[3].y].join(' ');
-                    }
-                    else
-                    {
-                        connects = is_almost_equal(b[0].x, lastx) && is_almost_equal(b[0].y, lasty);
-                        c = (connects ? ['C',b[1].x,b[1].y,b[2].x,b[2].y,b[3].x,b[3].y] : ['M',b[0].x,b[0].y,'C',b[1].x,b[1].y,b[2].x,b[2].y,b[3].x,b[3].y]).join(' ');
-                        if (!connects)
-                        {
-                            if (isConnected && is_almost_equal(firstx, lastx) && is_almost_equal(firsty, lasty))
-                            {
-                                // close this and start new path
-                                c = 'Z ' + c;
-                                isConnected = true;
-                            }
-                            else
-                            {
-                                isConnected = false;
-                            }
-                            firstx = b[0].x;
-                            firsty = b[0].y;
-                        }
-                    }
-                    lastx = b[3].x;
-                    lasty = b[3].y;
-                    return c;
-                }).join(' ')
-            ;
-            if (isConnected && is_almost_equal(firstx, lastx) && is_almost_equal(firsty, lasty))
-                path += ' Z';
-            if (arguments.length)
-            {
-                if (tween.current.style['stroke'])
-                {
-                    self.style['stroke'] = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke']) : tween.current.style['stroke'];
-                    self.style['stroke-opacity'] = tween.current.style['stroke-opacity'];
-                }
-                if (tween.current.style['fill'])
-                {
-                    self.style['fill'] = tween.current.style.hasFill ? Color.toCSS(tween.current.style['fill']) : tween.current.style['fill'];
-                    self.style['fill-opacity'] = tween.current.style['fill-opacity'];
-                }
-            }
-            return arguments.length ? SVG('path', {
-                'id': [self.id, false],
-                'd': [path, self.isChanged()],
-                'style': [self.style.toSVG(), self.style.isChanged()]
-            }, svg) : path;
-        };
-        self.toSVG = function(svg) {
-            return self.toSVGPath(arguments.length ? svg : false);
-        };
-        self.toCanvas = function(ctx) {
-            ctx.lineWidth = self.style['stroke-width'];
-            ctx.strokeStyle = tween.current.style.hasStroke ? Color.toCSS(tween.current.style['stroke'].concat([tween.current.style['stroke-opacity']])) : (tween.current.style['stroke'] || self.style['stroke']);
-            if (tween.current.style['fill'])
-            {
-                ctx.fillStyle = tween.current.style.hasFill ? Color.toCSS(tween.current.style['fill'].concat([tween.current.style['fill-opacity']])) : tween.current.style['fill'];
-            }
-            self.toCanvasPath(ctx);
-            if (tween.current.style['fill']) ctx.fill();
-            ctx.stroke();
-        };
-        self.toCanvasPath = function(ctx) {
-            var firstx = 0, firsty = 0,
-                lastx = 0, lasty = 0,
-                isConnected = true;
-            tween.current.shape.forEach(function(b, i) {
-                var connects = true;
-                if (0 === i)
-                {
-                    connects = true;
-                    firstx = b[0].x;
-                    firsty = b[0].y;
-                    ctx.beginPath();
-                    ctx.moveTo(firstx, firsty);
-                    ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
-                }
-                else
-                {
-                    connects = is_almost_equal(b[0].x, lastx) && is_almost_equal(b[0].y, lasty);
-                    if (connects)
-                    {
-                        ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
-                    }
-                    else
-                    {
-                        if (isConnected && is_almost_equal(firstx, lastx) && is_almost_equal(firsty, lasty))
-                        {
-                            // close this and start new path
-                            ctx.closePath();
-                            ctx.beginPath();
-                            isConnected = true;
-                        }
-                        else
-                        {
-                            isConnected = false;
-                        }
-                        firstx = b[0].x;
-                        firsty = b[0].y;
-                        ctx.moveTo(firstx, firsty);
-                        ctx.bezierCurveTo(b[1].x, b[1].y, b[2].x, b[2].y, b[3].x, b[3].y);
-                    }
-                }
-                lastx = b[3].x;
-                lasty = b[3].y;
-            });
-            if (isConnected && is_almost_equal(firstx, lastx) && is_almost_equal(firsty, lasty))
-                ctx.closePath();
-        };
-        self.dispose = function() {
-            run = false;
-            if (timer) clearTimeout(timer);
-            timer = null;
-            onStart = null;
-            onEnd = null;
-            tween = null;
-            self.$super('dispose');
-        };
-
-        fps = 60;
-        tween = prepare_tween(tween, fps);
-        fps = tween.fps;
-        dt = stdMath.floor(1000/fps);
-        animate = function animate() {
-            if (!run || !tween) return;
-            if (next_frame(tween))
-            {
-                self.isChanged(true);
-                if (is_tween_finished(tween))
-                {
-                    if (onEnd) setTimeout(function() {onEnd(self);}, dt);
-                }
-                else
-                {
-                    timer = setTimeout(animate, dt);
-                }
-            }
-        };
-        self.rewind();
-    },
-    name: 'Tween',
-    rewind: null,
-    start: null,
-    stop: null,
-    onStart: null,
-    onEnd: null
-}, {Easing: Easing});
-Geometrize.Tween = Tween;
 // Plane
 // scene container for 2D geometric objects
 var Plane = makeClass(null, {
@@ -6007,19 +4945,70 @@ function de_casteljau(t, p, subdivide)
     }
     return subdivide ? {pt:q[0], points:qt} : q[0];
 }
-function bezierfrom(p1, p2)
+function cbezier_from_points(po, t)
 {
-    return 1 < arguments.length ? [
-    p1,
-    bezier1(0.5, [p1, p2]),
-    bezier1(0.5, [p1, p2]),
-    p2
-    ] : [
-    {x:p1.x, y:p1.y},
-    {x:p1.x, y:p1.y},
-    {x:p1.x, y:p1.y},
-    {x:p1.x, y:p1.y}
-    ];
+    if (null == t) t = 1;
+    var p = 1 === t ? po : de_casteljau(t, po, true).points;
+    if (4 === p.length)
+    {
+        return [
+        {x:p[0].x, y:p[1].y},
+        {x:p[1].x, y:p[2].y},
+        {x:p[2].x, y:p[3].y},
+        {x:p[3].x, y:p[4].y}
+        ];
+    }
+    else if (3 === p.length)
+    {
+        return [
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x + (p[1].x - p[0].x)*2/3, y:p[0].y + (p[1].y - p[0].y)*2/3},
+        {x:p[2].x + (p[1].x - p[2].x)*2/3, y:p[2].y + (p[1].y - p[2].y)*2/3},
+        {x:p[2].x, y:p[2].y}
+        ];
+    }
+    else if (2 === p.length)
+    {
+        return [
+        p[0],
+        {x:p[0].x + (p[1].x - p[0].x)*1/2, y:p[0].y + (p[1].y - p[0].y)*1/2},
+        {x:p[0].x + (p[1].x - p[0].x)*1/2, y:p[0].y + (p[1].y - p[0].y)*1/2},
+        p[1]
+        ];
+    }
+    else
+    {
+        return [
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x, y:p[0].y}
+        ];
+    }
+}
+function cbezier_from_arc(cx, cy, rx, ry, cos, sin, theta, dtheta)
+{
+    var r = 2*stdMath.abs(dtheta)/PI, i, n, b, f, x1, y1, x2, y2;
+    if (is_almost_equal(r, 1)) r = 1;
+    if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
+    n = stdMath.max(1, stdMath.ceil(r));
+    dtheta /= n;
+    f = is_almost_equal(2*stdMath.abs(dtheta), PI) ? sign(dtheta)*/*0.55228*/0.551915024494 : stdMath.tan(dtheta/4)*4/3;
+    b = new Array(n);
+    for (i=0; i<n; ++i,theta+=dtheta)
+    {
+        x1 = stdMath.cos(theta);
+        y1 = stdMath.sin(theta);
+        x2 = stdMath.cos(theta + dtheta);
+        y2 = stdMath.sin(theta + dtheta);
+        b[i] = [
+        toarc(x1, y1, cx, cy, rx, ry, cos, sin),
+        toarc(x1 - y1*f, y1 + x1*f, cx, cy, rx, ry, cos, sin),
+        toarc(x2 + y2*f, y2 - x2*f, cx, cy, rx, ry, cos, sin),
+        toarc(x2, y2, cx, cy, rx, ry, cos, sin)
+        ];
+    }
+    return b;
 }
 function arc(t, cx, cy, rx, ry, cos, sin)
 {
@@ -6051,45 +5040,6 @@ function toarc(x, y, cx, cy, rx, ry, cos, sin)
         x: cx + cos*x - sin*y,
         y: cy + sin*x + cos*y
     };
-}
-function arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin, reverse)
-{
-    if (null == cos)
-    {
-        cos = 1;
-        sin = 0;
-    }
-    if (null == ry) ry = rx;
-    var f = is_almost_equal(2*abs(dtheta), PI)
-        ? sign(dtheta)*/*0.55228*/0.551915024494
-        : stdMath.tan(dtheta/4)*4/3,
-        x1 = stdMath.cos(theta),
-        y1 = stdMath.sin(theta),
-        x2 = stdMath.cos(theta + dtheta),
-        y2 = stdMath.sin(theta + dtheta)
-    ;
-    return reverse ? [
-    toarc(x2, y2, cx, cy, rx, ry, cos, sin),
-    toarc(x2 + y2*f, y2 - x2*f, cx, cy, rx, ry, cos, sin),
-    toarc(x1 - y1*f, y1 + x1*f, cx, cy, rx, ry, cos, sin),
-    toarc(x1, y1, cx, cy, rx, ry, cos, sin)
-    ] : [
-    toarc(x1, y1, cx, cy, rx, ry, cos, sin),
-    toarc(x1 - y1*f, y1 + x1*f, cx, cy, rx, ry, cos, sin),
-    toarc(x2 + y2*f, y2 - x2*f, cx, cy, rx, ry, cos, sin),
-    toarc(x2, y2, cx, cy, rx, ry, cos, sin)
-    ];
-}
-function bezierfromarc(cx, cy, rx, ry, cos, sin, theta, dtheta)
-{
-    var r = 2*abs(dtheta)/PI, i, n, b;
-    if (is_almost_equal(r, 1)) r = 1;
-    if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
-    n = stdMath.max(1, stdMath.ceil(r));
-    dtheta /= n;
-    b = new Array(n);
-    for (i=0; i<n; ++i,theta+=dtheta) b[i] = arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin);
-    return b;
 }
 function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {
@@ -6290,7 +5240,7 @@ function SVG(tag, atts, svg, childNodes)
     }
     return svg;
 }
-function shuffle(a)
+/*function shuffle(a)
 {
     for (var i=a.length-1,j,aj; i>0; --i)
     {
@@ -6301,7 +5251,7 @@ function shuffle(a)
     }
     return a;
 }
-/*function debounce(func, wait, immediate)
+function debounce(func, wait, immediate)
 {
     var timeout;
     return function() {
@@ -6542,7 +5492,6 @@ Geometrize.Math.solveQuadratic = solve_quadratic;
 Geometrize.Math.solveCubic = solve_cubic;
 Geometrize.Math.solveLinearLinear = solve_linear_linear_system;
 Geometrize.Math.solveLinearQuadratic = solve_linear_quadratic_system;
-Geometrize.Math.shuffle = shuffle;
 Geometrize.Geometry.linearBezierCurve = bezier1;
 Geometrize.Geometry.quadraticBezierCurve = bezier2;
 Geometrize.Geometry.cubicBezierCurve = bezier3;

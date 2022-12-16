@@ -886,19 +886,70 @@ function de_casteljau(t, p, subdivide)
     }
     return subdivide ? {pt:q[0], points:qt} : q[0];
 }
-function bezierfrom(p1, p2)
+function cbezier_from_points(po, t)
 {
-    return 1 < arguments.length ? [
-    p1,
-    bezier1(0.5, [p1, p2]),
-    bezier1(0.5, [p1, p2]),
-    p2
-    ] : [
-    {x:p1.x, y:p1.y},
-    {x:p1.x, y:p1.y},
-    {x:p1.x, y:p1.y},
-    {x:p1.x, y:p1.y}
-    ];
+    if (null == t) t = 1;
+    var p = 1 === t ? po : de_casteljau(t, po, true).points;
+    if (4 === p.length)
+    {
+        return [
+        {x:p[0].x, y:p[1].y},
+        {x:p[1].x, y:p[2].y},
+        {x:p[2].x, y:p[3].y},
+        {x:p[3].x, y:p[4].y}
+        ];
+    }
+    else if (3 === p.length)
+    {
+        return [
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x + (p[1].x - p[0].x)*2/3, y:p[0].y + (p[1].y - p[0].y)*2/3},
+        {x:p[2].x + (p[1].x - p[2].x)*2/3, y:p[2].y + (p[1].y - p[2].y)*2/3},
+        {x:p[2].x, y:p[2].y}
+        ];
+    }
+    else if (2 === p.length)
+    {
+        return [
+        p[0],
+        {x:p[0].x + (p[1].x - p[0].x)*1/2, y:p[0].y + (p[1].y - p[0].y)*1/2},
+        {x:p[0].x + (p[1].x - p[0].x)*1/2, y:p[0].y + (p[1].y - p[0].y)*1/2},
+        p[1]
+        ];
+    }
+    else
+    {
+        return [
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x, y:p[0].y},
+        {x:p[0].x, y:p[0].y}
+        ];
+    }
+}
+function cbezier_from_arc(cx, cy, rx, ry, cos, sin, theta, dtheta)
+{
+    var r = 2*stdMath.abs(dtheta)/PI, i, n, b, f, x1, y1, x2, y2;
+    if (is_almost_equal(r, 1)) r = 1;
+    if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
+    n = stdMath.max(1, stdMath.ceil(r));
+    dtheta /= n;
+    f = is_almost_equal(2*stdMath.abs(dtheta), PI) ? sign(dtheta)*/*0.55228*/0.551915024494 : stdMath.tan(dtheta/4)*4/3;
+    b = new Array(n);
+    for (i=0; i<n; ++i,theta+=dtheta)
+    {
+        x1 = stdMath.cos(theta);
+        y1 = stdMath.sin(theta);
+        x2 = stdMath.cos(theta + dtheta);
+        y2 = stdMath.sin(theta + dtheta);
+        b[i] = [
+        toarc(x1, y1, cx, cy, rx, ry, cos, sin),
+        toarc(x1 - y1*f, y1 + x1*f, cx, cy, rx, ry, cos, sin),
+        toarc(x2 + y2*f, y2 - x2*f, cx, cy, rx, ry, cos, sin),
+        toarc(x2, y2, cx, cy, rx, ry, cos, sin)
+        ];
+    }
+    return b;
 }
 function arc(t, cx, cy, rx, ry, cos, sin)
 {
@@ -930,45 +981,6 @@ function toarc(x, y, cx, cy, rx, ry, cos, sin)
         x: cx + cos*x - sin*y,
         y: cy + sin*x + cos*y
     };
-}
-function arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin, reverse)
-{
-    if (null == cos)
-    {
-        cos = 1;
-        sin = 0;
-    }
-    if (null == ry) ry = rx;
-    var f = is_almost_equal(2*abs(dtheta), PI)
-        ? sign(dtheta)*/*0.55228*/0.551915024494
-        : stdMath.tan(dtheta/4)*4/3,
-        x1 = stdMath.cos(theta),
-        y1 = stdMath.sin(theta),
-        x2 = stdMath.cos(theta + dtheta),
-        y2 = stdMath.sin(theta + dtheta)
-    ;
-    return reverse ? [
-    toarc(x2, y2, cx, cy, rx, ry, cos, sin),
-    toarc(x2 + y2*f, y2 - x2*f, cx, cy, rx, ry, cos, sin),
-    toarc(x1 - y1*f, y1 + x1*f, cx, cy, rx, ry, cos, sin),
-    toarc(x1, y1, cx, cy, rx, ry, cos, sin)
-    ] : [
-    toarc(x1, y1, cx, cy, rx, ry, cos, sin),
-    toarc(x1 - y1*f, y1 + x1*f, cx, cy, rx, ry, cos, sin),
-    toarc(x2 + y2*f, y2 - x2*f, cx, cy, rx, ry, cos, sin),
-    toarc(x2, y2, cx, cy, rx, ry, cos, sin)
-    ];
-}
-function bezierfromarc(cx, cy, rx, ry, cos, sin, theta, dtheta)
-{
-    var r = 2*abs(dtheta)/PI, i, n, b;
-    if (is_almost_equal(r, 1)) r = 1;
-    if (is_almost_equal(r, stdMath.floor(r))) r = stdMath.floor(r);
-    n = stdMath.max(1, stdMath.ceil(r));
-    dtheta /= n;
-    b = new Array(n);
-    for (i=0; i<n; ++i,theta+=dtheta) b[i] = arc2bezier(theta, dtheta, cx, cy, rx, ry, cos, sin);
-    return b;
 }
 function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
 {
@@ -1169,7 +1181,7 @@ function SVG(tag, atts, svg, childNodes)
     }
     return svg;
 }
-function shuffle(a)
+/*function shuffle(a)
 {
     for (var i=a.length-1,j,aj; i>0; --i)
     {
@@ -1180,7 +1192,7 @@ function shuffle(a)
     }
     return a;
 }
-/*function debounce(func, wait, immediate)
+function debounce(func, wait, immediate)
 {
     var timeout;
     return function() {
@@ -1421,7 +1433,6 @@ Geometrize.Math.solveQuadratic = solve_quadratic;
 Geometrize.Math.solveCubic = solve_cubic;
 Geometrize.Math.solveLinearLinear = solve_linear_linear_system;
 Geometrize.Math.solveLinearQuadratic = solve_linear_quadratic_system;
-Geometrize.Math.shuffle = shuffle;
 Geometrize.Geometry.linearBezierCurve = bezier1;
 Geometrize.Geometry.quadraticBezierCurve = bezier2;
 Geometrize.Geometry.cubicBezierCurve = bezier3;

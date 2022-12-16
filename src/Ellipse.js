@@ -251,7 +251,7 @@ var Ellipse = makeClass(Curve, {
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
         var self = this, c = self.center, cs = self.cs;
-        return bezierfromarc(c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1], 0, -t*4*HALF_PI);
+        return cbezier_from_arc(c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1], 0, -t*TWO_PI);
     },
     toSVG: function(svg) {
         var self = this,
