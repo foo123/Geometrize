@@ -54,7 +54,7 @@ var Arc = makeClass(Curve, {
             },
             set: function(radiusX) {
                 _radiusX.val(stdMath.abs(Num(radiusX)));
-                if (_radiusX.isChanged() && !self.isChanged())
+                if (_radiusX.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -69,7 +69,7 @@ var Arc = makeClass(Curve, {
             },
             set: function(radiusY) {
                 _radiusY.val(stdMath.abs(Num(radiusY)));
-                if (_radiusY.isChanged() && !self.isChanged())
+                if (_radiusY.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -86,7 +86,7 @@ var Arc = makeClass(Curve, {
                 _angle.val(angle);
                 _cos = stdMath.cos(rad(_angle.val()));
                 _sin = stdMath.sin(rad(_angle.val()));
-                if (_angle.isChanged() && !self.isChanged())
+                if (_angle.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -101,7 +101,7 @@ var Arc = makeClass(Curve, {
             },
             set: function(largeArc) {
                 _largeArc.val(!!largeArc ? 1 : 0);
-                if (_largeArc.isChanged() && !self.isChanged())
+                if (_largeArc.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -116,7 +116,7 @@ var Arc = makeClass(Curve, {
             },
             set: function(sweep) {
                 _sweep.val(!!sweep ? 1 : 0);
-                if (_sweep.isChanged() && !self.isChanged())
+                if (_sweep.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();

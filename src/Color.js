@@ -155,32 +155,6 @@ function parseColor(s)
         return Color.keywords[s].slice();
     }
 }
-function interpolateRGB(r0, g0, b0, a0, r1, g1, b1, a1, t)
-{
-    if (9 <= arguments.length)
-    {
-        return [
-        clamp(stdMath.round(r0 + t*(r1 - r0)), 0, 255),
-        clamp(stdMath.round(g0 + t*(g1 - g0)), 0, 255),
-        clamp(stdMath.round(b0 + t*(b1 - b0)), 0, 255),
-        clamp(a0 + t*(a1 - a0), 0, 1)
-        ];
-    }
-    else
-    {
-        var rgba0 = r0, rgba1 = g0, t = b0;
-        return 3 < rgba0.length ? [
-        clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255),
-        clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255),
-        clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255),
-        clamp(rgba0[3] + t*(rgba1[3] - rgba0[3]), 0, 1)
-        ] : [
-        clamp(stdMath.round(rgba0[0] + t*(rgba1[0] - rgba0[0])), 0, 255),
-        clamp(stdMath.round(rgba0[1] + t*(rgba1[1] - rgba0[1])), 0, 255),
-        clamp(stdMath.round(rgba0[2] + t*(rgba1[2] - rgba0[2])), 0, 255)
-        ];
-    }
-}
 var Color = {
     keywords: {
     // https://developer.mozilla.org/en-US/docs/Web/CSS/color_value
@@ -335,7 +309,6 @@ var Color = {
     ,'yellowgreen'         : [  154,205,50   ,1]
     },
     parse: parseColor,
-    interpolateRGB: interpolateRGB,
     toCSS: function(r, g, b, a) {
         if (1 === arguments.length)
         {

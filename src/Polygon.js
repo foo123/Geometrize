@@ -154,7 +154,7 @@ var Polygon = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Line)
+        else if (Geometrize.Line && (other instanceof Geometrize.Line))
         {
             i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
@@ -184,7 +184,7 @@ var Polygon = makeClass(Curve, {
             i = polyline_cbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((Geometrize.Polyline && (other instanceof Polyline)) || (other instanceof Polygon))
+        else if ((Geometrize.Polyline && (other instanceof Geometrize.Polyline)) || (other instanceof Polygon))
         {
             i = polyline_polyline_intersection(self._lines, other._lines);
             return i ? i.map(Point) : false;

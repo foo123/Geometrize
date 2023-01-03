@@ -47,8 +47,9 @@ body {
 <script>
 (function() {
 "use strict";
-const {Plane, CompositeCurve, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Point, Matrix, Geometry} = Geometrize;
+const {Plane, CompositeCurve, ParametricCurve, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Matrix} = Geometrize;
 const plane = Plane(document.getElementById('container'), 0, 0, 300, 300);
+const spiral = ParametricCurve((t) => ({x:190 + t*50*Math.cos(t*6*Math.PI), y:80 + t*50*Math.sin(t*6*Math.PI)}));
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
 const arc = Arc([100,100], [170,90], 30, 10, 30, 0, 1);
@@ -70,11 +71,14 @@ const drawBoundingBox = (shape, color) => {
     plane.add(Rect([bb.xmin,bb.ymin],[bb.xmax,bb.ymax]).setStyle('stroke', color||'red'));
 };
 const drawConvexHull = (shape, color) => {
-    plane.add(Polygon(shape.getConvexHull()).setStyle('stroke', color||'red'));
+    const hull = shape.getConvexHull();
+    console.log(shape.name, hull);
+    plane.add(Polygon(hull).setStyle('stroke', color||'red'));
 };
 
 let intersections = [];
 
+plane.add(spiral);
 plane.add(ellipse);
 plane.add(circle);
 plane.add(arc);
@@ -102,6 +106,7 @@ document.getElementById('intersections').addEventListener('click', () => {
 document.getElementById('boxes').addEventListener('click', () => {
     drawBoundingBox(circle, 'orange');
     drawBoundingBox(ellipse, 'red');
+    drawBoundingBox(spiral, 'turquoise');
     drawBoundingBox(arc, 'blue');
     drawBoundingBox(qbezier, 'cyan');
     drawBoundingBox(cbezier, 'magenta');
@@ -111,6 +116,7 @@ document.getElementById('boxes').addEventListener('click', () => {
 document.getElementById('hulls').addEventListener('click', () => {
     drawConvexHull(circle, 'orange');
     drawConvexHull(ellipse, 'red');
+    drawConvexHull(spiral, 'turquoise');
     drawConvexHull(arc, 'blue');
     drawConvexHull(qbezier, 'cyan');
     drawConvexHull(cbezier, 'magenta');

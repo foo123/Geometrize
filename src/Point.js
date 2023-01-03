@@ -34,7 +34,7 @@ var Point = makeClass(Primitive, {
                 x = Num(x);
                 var isChanged = !is_almost_equal(x, _x);
                 _x = x;
-                if (isChanged && !self.isChanged())
+                if (isChanged /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -51,7 +51,7 @@ var Point = makeClass(Primitive, {
                 y = Num(y);
                 var isChanged = !is_almost_equal(y, _y);
                 _y = y;
-                if (isChanged && !self.isChanged())
+                if (isChanged /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();

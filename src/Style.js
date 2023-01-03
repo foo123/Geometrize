@@ -21,7 +21,7 @@ var Style = makeClass(null, merge(null, {
                     if (_style[p] !== val)
                     {
                         _style[p] = val;
-                        if (!self.isChanged())
+                        //if (!self.isChanged())
                         {
                             self.isChanged(true);
                             self.triggerChange();

@@ -2,8 +2,7 @@
 var Matrix = makeClass(null, {
     constructor: function Matrix(
         m00, m01, m02,
-        m10, m11, m12,
-        m20, m21, m22
+        m10, m11, m12
     ) {
         var self = this;
         if (m00 instanceof Matrix)
@@ -14,11 +13,10 @@ var Matrix = makeClass(null, {
         {
             return new Matrix(
             m00, m01, m02,
-            m10, m11, m12,
-            m20, m21, m22
+            m10, m11, m12
             );
         }
-        if (is_array(m00) && (9 <= m00.length))
+        if (is_array(m00) && (6 <= m00.length))
         {
             self.$00 = Num(m00[0]);
             self.$01 = Num(m00[1]);
@@ -26,9 +24,6 @@ var Matrix = makeClass(null, {
             self.$10 = Num(m00[3]);
             self.$11 = Num(m00[4]);
             self.$12 = Num(m00[5]);
-            self.$20 = 0;
-            self.$21 = 0;
-            self.$22 = 1;
         }
         else
         {
@@ -38,9 +33,6 @@ var Matrix = makeClass(null, {
             self.$10 = m10;
             self.$11 = m11;
             self.$12 = m12;
-            self.$20 = 0;
-            self.$21 = 0;
-            self.$22 = 1;
         }
     },
     $00: 1,
@@ -49,16 +41,11 @@ var Matrix = makeClass(null, {
     $10: 0,
     $11: 1,
     $12: 0,
-    $20: 0,
-    $21: 0,
-    $22: 1,
     clone: function() {
         var self = this;
         return new Matrix(
         self.$00, self.$01, self.$02,
-        self.$10, self.$11, self.$12,
-        //self.$20, self.$21, self.$22
-        0, 0, 1
+        self.$10, self.$11, self.$12
         );
     },
     eq: function(other) {
@@ -75,8 +62,7 @@ var Matrix = makeClass(null, {
         {
             return new Matrix(
                 self.$00 + other.$00, self.$01 + other.$01, self.$02 + other.$02,
-                self.$10 + other.$10, self.$11 + other.$11, self.$12 + other.$12,
-                0, 0, 1
+                self.$10 + other.$10, self.$11 + other.$11, self.$12 + other.$12
             );
         }
         else
@@ -84,8 +70,7 @@ var Matrix = makeClass(null, {
             other = Num(other);
             return new Matrix(
                 self.$00 + other, self.$01 + other, self.$02 + other,
-                self.$10 + other, self.$11 + other, self.$12 + other,
-                0, 0, 1
+                self.$10 + other, self.$11 + other, self.$12 + other
             );
         }
     },
@@ -99,8 +84,7 @@ var Matrix = makeClass(null, {
                 self.$00*other.$02 + self.$01*other.$12 + self.$02*other.$22,
                 self.$10*other.$00 + self.$11*other.$10 + self.$12*other.$20,
                 self.$10*other.$01 + self.$11*other.$11 + self.$12*other.$21,
-                self.$10*other.$02 + self.$11*other.$12 + self.$12*other.$22,
-                0, 0, 1
+                self.$10*other.$02 + self.$11*other.$12 + self.$12*other.$22
             );
         }
         else
@@ -108,8 +92,7 @@ var Matrix = makeClass(null, {
             other = Num(other);
             return new Matrix(
                 self.$00*other, self.$01*other, self.$02*other,
-                self.$10*other, self.$11*other, self.$12*other,
-                0, 0, 1
+                self.$10*other, self.$11*other, self.$12*other
             );
         }
     },
@@ -140,8 +123,7 @@ var Matrix = makeClass(null, {
         i10 = -a10/det2; i11 = a00/det2;
         return new Matrix(
         i00, i01, -i00*a02 - i01*a12,
-        i10, i11, -i10*a02 - i11*a12,
-        0, 0, 1
+        i10, i11, -i10*a02 - i11*a12
         );
     },
     transform: function(point, newpoint) {
@@ -202,7 +184,7 @@ var Matrix = makeClass(null, {
         return [
         self.$00, self.$01, self.$02,
         self.$10, self.$11, self.$12,
-        self.$20, self.$21, self.$22
+        0, 0, 1
         ];
     },
     toSVG: function() {
@@ -228,15 +210,13 @@ var Matrix = makeClass(null, {
     eye: function() {
         return new Matrix(
         1,0,0,
-        0,1,0,
-        0,0,1
+        0,1,0
         );
     },
     translate: function(tx, ty) {
         return new Matrix(
         1, 0, Num(tx),
-        0, 1, Num(ty),
-        0, 0, 1
+        0, 1, Num(ty)
         );
     },
     rotate: function(theta, ox, oy) {
@@ -247,8 +227,7 @@ var Matrix = makeClass(null, {
         var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
         return new Matrix(
         cos, -sin, ox - cos*ox + sin*oy,
-        sin,  cos, oy - cos*oy - sin*ox,
-        0,    0,   1
+        sin,  cos, oy - cos*oy - sin*ox
         );
     },
     scale: function(sx, sy, ox, oy) {
@@ -259,36 +238,31 @@ var Matrix = makeClass(null, {
         sy = Num(sy);
         return new Matrix(
         sx, 0,  -sx*ox + ox,
-        0,  sy, -sy*oy + oy,
-        0,  0,  1
+        0,  sy, -sy*oy + oy
         );
     },
     reflectX: function() {
         return new Matrix(
         -1, 0, 0,
-        0,  1, 0,
-        0,  0, 1
+        0,  1, 0
         );
     },
     reflectY: function() {
         return new Matrix(
         1,  0, 0,
-        0, -1, 0,
-        0,  0, 1
+        0, -1, 0
         );
     },
     shearX: function(s) {
         return new Matrix(
         1, Num(s), 0,
-        0, 1,      0,
-        0, 0,      1
+        0, 1,      0
         );
     },
     shearY: function(s) {
         return new Matrix(
         1,      0, 0,
-        Num(s), 1, 0,
-        0,      0, 1
+        Num(s), 1, 0
         );
     },
     arrayTex: function(array, rows, cols) {

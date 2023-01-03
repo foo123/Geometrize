@@ -754,29 +754,34 @@ function cbezier_t_cubic(c)
         }
     ];
 }
-function sample_curve(f, n, pixelSize, do_refine)
+function sample_curve(f, n, pixelSize, do_refine, include_t)
 {
     if (null == n) n = NUM_POINTS;
     if (null == pixelSize) pixelSize = PIXEL_SIZE;
-    var i, points = [];
+    var i, t, pt, points = [];
     if (do_refine)
     {
-        points.push(f(0));
+        pt = f(0);
+        if (include_t) pt.t = 0;
+        points.push(pt);
         for (i=0; i<n; ++i)
         {
-            subdivide_curve(points, f, 0 === i ? 0 : i/n, n === i+1 ? 1 : (i+1)/n, pixelSize);
+            subdivide_curve(points, f, 0 === i ? 0 : i/n, n === i+1 ? 1 : (i+1)/n, pixelSize, null, null, include_t);
         }
     }
     else
     {
         for (i=0; i<=n; ++i)
         {
-            points.push(f(0 === i ? 0 : (n === i ? 1 : i/n)));
+            t = 0 === i ? 0 : (n === i ? 1 : i/n);
+            pt = f(t);
+            if (include_t) pt.t = t;
+            points.push(pt);
         }
     }
     return points;
 }
-function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
+function subdivide_curve(points, f, l, r, pixelSize, pl, pr, include_t)
 {
     if ((l >= r) || is_almost_equal(l, r)) return;
     var m = (l + r) / 2, left = pl || f(l), right = pr || f(r), middle = f(m);
@@ -784,13 +789,14 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
     {
         // no more refinement
         // return linear interpolation between left and right
+        if (include_t) right.t = r;
         points.push(right);
     }
     else
     {
         // recursively subdivide to refine samples with high enough curvature
-        subdivide_curve(points, f, l, m, pixelSize, left, middle);
-        subdivide_curve(points, f, m, r, pixelSize, middle, right);
+        subdivide_curve(points, f, l, m, pixelSize, left, middle, include_t);
+        subdivide_curve(points, f, m, r, pixelSize, middle, right, include_t);
     }
 }
 function interpolate(x0, x1, t)

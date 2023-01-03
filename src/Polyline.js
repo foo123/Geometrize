@@ -138,7 +138,7 @@ var Polyline = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Line)
+        else if (Geometrize.Line && (other instanceof Geometrize.Line))
         {
             i = polyline_line_intersection(self._points, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;

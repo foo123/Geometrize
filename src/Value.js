@@ -19,7 +19,7 @@ var Value = makeClass(null, merge(null, {
                 newv = newv instanceof Value ? newv.val() : Num(newv);
                 var isChanged = !is_almost_equal(v, newv);
                 v = newv;
-                if (isChanged && !self.isChanged())
+                if (isChanged /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();

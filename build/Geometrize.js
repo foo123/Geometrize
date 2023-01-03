@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.8 (2022-12-16 10:11:47)
+*   @version 0.9.9 (2023-01-03 18:38:02)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.8 (2022-12-16 10:11:47)
+*   @version 0.9.9 (2023-01-03 18:38:02)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.9.8", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "0.9.9", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -151,7 +151,7 @@ var Value = makeClass(null, merge(null, {
                 newv = newv instanceof Value ? newv.val() : Num(newv);
                 var isChanged = !is_almost_equal(v, newv);
                 v = newv;
-                if (isChanged && !self.isChanged())
+                if (isChanged /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -179,8 +179,7 @@ var Value = makeClass(null, merge(null, {
 var Matrix = makeClass(null, {
     constructor: function Matrix(
         m00, m01, m02,
-        m10, m11, m12,
-        m20, m21, m22
+        m10, m11, m12
     ) {
         var self = this;
         if (m00 instanceof Matrix)
@@ -191,11 +190,10 @@ var Matrix = makeClass(null, {
         {
             return new Matrix(
             m00, m01, m02,
-            m10, m11, m12,
-            m20, m21, m22
+            m10, m11, m12
             );
         }
-        if (is_array(m00) && (9 <= m00.length))
+        if (is_array(m00) && (6 <= m00.length))
         {
             self.$00 = Num(m00[0]);
             self.$01 = Num(m00[1]);
@@ -203,9 +201,6 @@ var Matrix = makeClass(null, {
             self.$10 = Num(m00[3]);
             self.$11 = Num(m00[4]);
             self.$12 = Num(m00[5]);
-            self.$20 = 0;
-            self.$21 = 0;
-            self.$22 = 1;
         }
         else
         {
@@ -215,9 +210,6 @@ var Matrix = makeClass(null, {
             self.$10 = m10;
             self.$11 = m11;
             self.$12 = m12;
-            self.$20 = 0;
-            self.$21 = 0;
-            self.$22 = 1;
         }
     },
     $00: 1,
@@ -226,16 +218,11 @@ var Matrix = makeClass(null, {
     $10: 0,
     $11: 1,
     $12: 0,
-    $20: 0,
-    $21: 0,
-    $22: 1,
     clone: function() {
         var self = this;
         return new Matrix(
         self.$00, self.$01, self.$02,
-        self.$10, self.$11, self.$12,
-        //self.$20, self.$21, self.$22
-        0, 0, 1
+        self.$10, self.$11, self.$12
         );
     },
     eq: function(other) {
@@ -252,8 +239,7 @@ var Matrix = makeClass(null, {
         {
             return new Matrix(
                 self.$00 + other.$00, self.$01 + other.$01, self.$02 + other.$02,
-                self.$10 + other.$10, self.$11 + other.$11, self.$12 + other.$12,
-                0, 0, 1
+                self.$10 + other.$10, self.$11 + other.$11, self.$12 + other.$12
             );
         }
         else
@@ -261,8 +247,7 @@ var Matrix = makeClass(null, {
             other = Num(other);
             return new Matrix(
                 self.$00 + other, self.$01 + other, self.$02 + other,
-                self.$10 + other, self.$11 + other, self.$12 + other,
-                0, 0, 1
+                self.$10 + other, self.$11 + other, self.$12 + other
             );
         }
     },
@@ -276,8 +261,7 @@ var Matrix = makeClass(null, {
                 self.$00*other.$02 + self.$01*other.$12 + self.$02*other.$22,
                 self.$10*other.$00 + self.$11*other.$10 + self.$12*other.$20,
                 self.$10*other.$01 + self.$11*other.$11 + self.$12*other.$21,
-                self.$10*other.$02 + self.$11*other.$12 + self.$12*other.$22,
-                0, 0, 1
+                self.$10*other.$02 + self.$11*other.$12 + self.$12*other.$22
             );
         }
         else
@@ -285,8 +269,7 @@ var Matrix = makeClass(null, {
             other = Num(other);
             return new Matrix(
                 self.$00*other, self.$01*other, self.$02*other,
-                self.$10*other, self.$11*other, self.$12*other,
-                0, 0, 1
+                self.$10*other, self.$11*other, self.$12*other
             );
         }
     },
@@ -317,8 +300,7 @@ var Matrix = makeClass(null, {
         i10 = -a10/det2; i11 = a00/det2;
         return new Matrix(
         i00, i01, -i00*a02 - i01*a12,
-        i10, i11, -i10*a02 - i11*a12,
-        0, 0, 1
+        i10, i11, -i10*a02 - i11*a12
         );
     },
     transform: function(point, newpoint) {
@@ -379,7 +361,7 @@ var Matrix = makeClass(null, {
         return [
         self.$00, self.$01, self.$02,
         self.$10, self.$11, self.$12,
-        self.$20, self.$21, self.$22
+        0, 0, 1
         ];
     },
     toSVG: function() {
@@ -405,15 +387,13 @@ var Matrix = makeClass(null, {
     eye: function() {
         return new Matrix(
         1,0,0,
-        0,1,0,
-        0,0,1
+        0,1,0
         );
     },
     translate: function(tx, ty) {
         return new Matrix(
         1, 0, Num(tx),
-        0, 1, Num(ty),
-        0, 0, 1
+        0, 1, Num(ty)
         );
     },
     rotate: function(theta, ox, oy) {
@@ -424,8 +404,7 @@ var Matrix = makeClass(null, {
         var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
         return new Matrix(
         cos, -sin, ox - cos*ox + sin*oy,
-        sin,  cos, oy - cos*oy - sin*ox,
-        0,    0,   1
+        sin,  cos, oy - cos*oy - sin*ox
         );
     },
     scale: function(sx, sy, ox, oy) {
@@ -436,36 +415,31 @@ var Matrix = makeClass(null, {
         sy = Num(sy);
         return new Matrix(
         sx, 0,  -sx*ox + ox,
-        0,  sy, -sy*oy + oy,
-        0,  0,  1
+        0,  sy, -sy*oy + oy
         );
     },
     reflectX: function() {
         return new Matrix(
         -1, 0, 0,
-        0,  1, 0,
-        0,  0, 1
+        0,  1, 0
         );
     },
     reflectY: function() {
         return new Matrix(
         1,  0, 0,
-        0, -1, 0,
-        0,  0, 1
+        0, -1, 0
         );
     },
     shearX: function(s) {
         return new Matrix(
         1, Num(s), 0,
-        0, 1,      0,
-        0, 0,      1
+        0, 1,      0
         );
     },
     shearY: function(s) {
         return new Matrix(
         1,      0, 0,
-        Num(s), 1, 0,
-        0,      0, 1
+        Num(s), 1, 0
         );
     },
     arrayTex: function(array, rows, cols) {
@@ -525,7 +499,7 @@ var Style = makeClass(null, merge(null, {
                     if (_style[p] !== val)
                     {
                         _style[p] = val;
-                        if (!self.isChanged())
+                        //if (!self.isChanged())
                         {
                             self.isChanged(true);
                             self.triggerChange();
@@ -595,7 +569,7 @@ var Primitive = makeClass(null, merge(null, {
         onStyleChange = function onStyleChange(style) {
             if (_style === style)
             {
-                if (!self.isChanged())
+                //if (!self.isChanged())
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -617,7 +591,7 @@ var Primitive = makeClass(null, merge(null, {
                     if (_style)
                     {
                         _style.onChange(onStyleChange);
-                        if (!self.isChanged())
+                        //if (!self.isChanged())
                         {
                             self.isChanged(true);
                             self.triggerChange();
@@ -737,7 +711,7 @@ var Point = makeClass(Primitive, {
                 x = Num(x);
                 var isChanged = !is_almost_equal(x, _x);
                 _x = x;
-                if (isChanged && !self.isChanged())
+                if (isChanged /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -754,7 +728,7 @@ var Point = makeClass(Primitive, {
                 y = Num(y);
                 var isChanged = !is_almost_equal(y, _y);
                 _y = y;
-                if (isChanged && !self.isChanged())
+                if (isChanged /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -940,7 +914,7 @@ var Topos = makeClass(Primitive, {
         onPointChange = function onPointChange(point) {
             if (is_array(_points) && (-1 !== _points.indexOf(point)))
             {
-                if (!self.isChanged())
+                //if (!self.isChanged())
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -949,7 +923,7 @@ var Topos = makeClass(Primitive, {
         };
         onPointChange.id = self.id;
         onArrayChange = function onArrayChange(changed) {
-            if (!self.isChanged())
+            //if (!self.isChanged())
             {
                 self.isChanged(true);
                 self.triggerChange();
@@ -976,7 +950,7 @@ var Topos = makeClass(Primitive, {
                     {
                         _points = observeArray(points, point_add, point_del, p_eq);
                         _points.onChange(onArrayChange);
-                        if (!self.isChanged())
+                        //if (!self.isChanged())
                         {
                             self.isChanged(true);
                             self.triggerChange();
@@ -1102,7 +1076,7 @@ var Curve = makeClass(Topos, {
                     matrix = Matrix(matrix);
                     var isChanged = !matrix.eq(_matrix);
                     _matrix = matrix;
-                    if (isChanged && !self.isChanged())
+                    if (isChanged /*&& !self.isChanged()*/)
                     {
                         _values.matrix.isChanged(true);
                         self.isChanged(true);
@@ -1145,7 +1119,7 @@ var Curve = makeClass(Topos, {
             get: function() {
                 if (null == _lines)
                 {
-                    _lines = sample_curve(self.f.bind(self), NUM_POINTS, PIXEL_SIZE, true);
+                    _lines = sample_curve(self.f.bind(self), NUM_POINTS, PIXEL_SIZE, true, true);
                 }
                 return _lines;
             },
@@ -1370,6 +1344,209 @@ var Bezier = makeClass(Curve, {
 });
 Geometrize.Bezier = Bezier;
 
+// 2D generix Parametric Curve class (defined by parametric function f)
+var ParametricCurve = makeClass(Curve, {
+    constructor: function ParametricCurve(f) {
+        var self = this, _length = null, _bbox = null;
+        if (f instanceof ParametricCurve) return f;
+        if (!(self instanceof ParametricCurve)) return new ParametricCurve(f);
+        self.f = is_function(f) ? f : function(t) {return {x:0, y:0};};
+        self.$super("constructor", [[self.f(0), self.f(1)]]);
+        def(self, 'length', {
+            get: function() {
+                if (null == _length)
+                {
+                    // approximate
+                    _length = polyline_length(self._lines);
+                }
+                return _length;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, '_bbox', {
+            get: function() {
+                if (null == _bbox)
+                {
+                    _bbox = {
+                        ymin: Infinity,
+                        xmin: Infinity,
+                        ymax: -Infinity,
+                        xmax: -Infinity
+                    };
+                    for (var i=0,p=self._lines,n=p.length; i<n; ++i)
+                    {
+                        _bbox.ymin = stdMath.min(_bbox.ymin, p[i].y);
+                        _bbox.ymax = stdMath.max(_bbox.ymax, p[i].y);
+                        _bbox.xmin = stdMath.min(_bbox.xmin, p[i].x);
+                        _bbox.xmax = stdMath.max(_bbox.xmax, p[i].x);
+                    }
+                }
+                return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
+            {
+                _length = null;
+                _bbox = null;
+            }
+            return self.$super('isChanged', arguments);
+        };
+    },
+    name: 'ParametricCurve',
+    clone: function() {
+        return new ParametricCurve(this.f);
+    },
+    transform: function(matrix) {
+        return (new ParametricCurve(this.f)).setMatrix(matrix);
+    },
+    fto: function(tt) {
+        var f = this.f, p1 = f(tt);
+        return new ParametricCurve(function(t) {return t > tt ? {x:p1.x, y:p1.y} : f(t);});
+    },
+    hasPoint: function(point) {
+        return point_on_polyline(point, this._lines);
+    },
+    intersects: function(other) {
+        var self = this, i;
+        if (other instanceof Point)
+        {
+            return self.hasPoint(other) ? [other] : false;
+        }
+        else if (Geometrize.Line && (other instanceof Geometrize.Line))
+        {
+            i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
+            return i ? i.map(Point) : false;
+        }
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
+        {
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
+            return i ? i.map(Point) : false;
+        }
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
+        {
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            return i ? i.map(Point) : false;
+        }
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
+        {
+            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point) : false;
+        }
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
+        {
+            i = polyline_qbezier_intersection(self._lines, other._points);
+            return i ? i.map(Point) : false;
+        }
+        else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
+        {
+            i = polyline_cbezier_intersection(self._lines, other._points);
+            return i ? i.map(Point) : false;
+        }
+        else if (Geometrize.Polyline && (other instanceof Geometrize.Polyline))
+        {
+            i = polyline_polyline_intersection(self._lines, other._points);
+            return i ? i.map(Point) : false;
+        }
+        else if (Geometrize.Polygon && (other instanceof Geometrize.Polygon))
+        {
+            i = polyline_polyline_intersection(self._lines, other._lines);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof ParametricCurve)
+        {
+            i = polyline_polyline_intersection(self._lines, other._lines);
+            return i ? i.map(Point) : false;
+        }
+        else if (other instanceof Primitive)
+        {
+            return other.intersects(self);
+        }
+        return false;
+    },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], p = self._lines, n = p.length,
+            j, k, p1, p2, p3, p4;
+        for (j=0; j<n; ++j)
+        {
+            if (j+1 >= n) break;
+            for (k=j+2; k<n; ++k)
+            {
+                if (k+1 >= n) break;
+                p1 = p[j]; p2 = p[j+1];
+                p3 = p[k]; p4 = p[k+1];
+                ii = line_segments_intersection(p1, p2, p3, p4);
+                if (ii)
+                {
+                    if ((j === 0) && (k === n-2) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+2) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    i.push.apply(i, ii);
+                }
+            }
+        }
+        return i ? i.map(Point) : false;
+    },
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var p = this._lines, n = p.length - 1, i, b = [];
+        for (i=0; i<n; ++i)
+        {
+            if (p[i+1].t < t)
+            {
+                b.push(cbezier_from_points([p[i], p[i+1]], 1));
+            }
+            else
+            {
+                b.push(cbezier_from_points([p[i], p[i+1]], n*(t - i/n)));
+                break;
+            }
+        }
+        return b;
+    },
+    toSVG: function(svg) {
+        return this.toSVGPath(arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var self = this,
+            p = self._lines,
+            path = 'M ' + p.map(function(p) {
+                return Str(p.x)+' '+Str(p.y);
+            }).join(' L ');
+        if (p_eq(p[0], p[p.length-1])) path += ' Z';
+        return arguments.length ? SVG('path', {
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var self = this, p = self._lines, n = p.length, i;
+        ctx.beginPath();
+        ctx.moveTo(p[0].x, p[0].y);
+        for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        if (p_eq(p[0], p[n-1])) ctx.closePath();
+    },
+    toTex: function() {
+        return '\\text{ParametricCurve('+this.id+')}';
+    },
+    toString: function() {
+        return 'ParametricCurve('+this.id+')';
+    }
+});
+Geometrize.ParametricCurve = ParametricCurve;
+
 // 2D Composite Curve class (container of multiple, joined, curves)
 var MZ = /[M]/g,
     XY = /^\s*(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
@@ -1403,7 +1580,7 @@ var CompositeCurve = makeClass(Curve, {
         onCurveChange = function onCurveChange(curve) {
             if (is_array(_curves) && (-1 !== _curves.indexOf(curve)))
             {
-                if (!self.isChanged())
+                //if (!self.isChanged())
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -1412,7 +1589,7 @@ var CompositeCurve = makeClass(Curve, {
         };
         onCurveChange.id = self.id;
         onArrayChange = function onArrayChange(changed) {
-            if (!self.isChanged())
+            //if (!self.isChanged())
             {
                 self.isChanged(true);
                 self.triggerChange();
@@ -1459,7 +1636,7 @@ var CompositeCurve = makeClass(Curve, {
                     {
                         _curves = observeArray(curves, curve_add, curve_del);
                         _curves.onChange(onArrayChange);
-                        if (!self.isChanged())
+                        //if (!self.isChanged())
                         {
                             self.isChanged(true);
                             self.triggerChange();
@@ -2111,7 +2288,7 @@ var Polyline = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Line)
+        else if (Geometrize.Line && (other instanceof Geometrize.Line))
         {
             i = polyline_line_intersection(self._points, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
@@ -2293,7 +2470,7 @@ var Arc = makeClass(Curve, {
             },
             set: function(radiusX) {
                 _radiusX.val(stdMath.abs(Num(radiusX)));
-                if (_radiusX.isChanged() && !self.isChanged())
+                if (_radiusX.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -2308,7 +2485,7 @@ var Arc = makeClass(Curve, {
             },
             set: function(radiusY) {
                 _radiusY.val(stdMath.abs(Num(radiusY)));
-                if (_radiusY.isChanged() && !self.isChanged())
+                if (_radiusY.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -2325,7 +2502,7 @@ var Arc = makeClass(Curve, {
                 _angle.val(angle);
                 _cos = stdMath.cos(rad(_angle.val()));
                 _sin = stdMath.sin(rad(_angle.val()));
-                if (_angle.isChanged() && !self.isChanged())
+                if (_angle.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -2340,7 +2517,7 @@ var Arc = makeClass(Curve, {
             },
             set: function(largeArc) {
                 _largeArc.val(!!largeArc ? 1 : 0);
-                if (_largeArc.isChanged() && !self.isChanged())
+                if (_largeArc.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -2355,7 +2532,7 @@ var Arc = makeClass(Curve, {
             },
             set: function(sweep) {
                 _sweep.val(!!sweep ? 1 : 0);
-                if (_sweep.isChanged() && !self.isChanged())
+                if (_sweep.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -3178,7 +3355,7 @@ var Polygon = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Line)
+        else if (Geometrize.Line && (other instanceof Geometrize.Line))
         {
             i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
             return i ? i.map(Point) : false;
@@ -3208,7 +3385,7 @@ var Polygon = makeClass(Curve, {
             i = polyline_cbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if ((Geometrize.Polyline && (other instanceof Polyline)) || (other instanceof Polygon))
+        else if ((Geometrize.Polyline && (other instanceof Geometrize.Polyline)) || (other instanceof Polygon))
         {
             i = polyline_polyline_intersection(self._lines, other._lines);
             return i ? i.map(Point) : false;
@@ -3383,7 +3560,7 @@ var Circle = makeClass(Curve, {
             },
             set: function(radius) {
                 _radius.val(stdMath.abs(Num(radius)));
-                if (_radius.isChanged() && !self.isChanged())
+                if (_radius.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -3588,7 +3765,7 @@ var Ellipse = makeClass(Curve, {
             },
             set: function(radiusX) {
                 _radiusX.val(stdMath.abs(Num(radiusX)));
-                if (_radiusX.isChanged() && !self.isChanged())
+                if (_radiusX.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -3603,7 +3780,7 @@ var Ellipse = makeClass(Curve, {
             },
             set: function(radiusY) {
                 _radiusY.val(stdMath.abs(Num(radiusY)));
-                if (_radiusY.isChanged() && !self.isChanged())
+                if (_radiusY.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -3620,7 +3797,7 @@ var Ellipse = makeClass(Curve, {
                 _angle.val(angle);
                 _cos = stdMath.cos(rad(_angle.val()));
                 _sin = stdMath.sin(rad(_angle.val()));
-                if (_angle.isChanged() && !self.isChanged())
+                if (_angle.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -4813,29 +4990,34 @@ function cbezier_t_cubic(c)
         }
     ];
 }
-function sample_curve(f, n, pixelSize, do_refine)
+function sample_curve(f, n, pixelSize, do_refine, include_t)
 {
     if (null == n) n = NUM_POINTS;
     if (null == pixelSize) pixelSize = PIXEL_SIZE;
-    var i, points = [];
+    var i, t, pt, points = [];
     if (do_refine)
     {
-        points.push(f(0));
+        pt = f(0);
+        if (include_t) pt.t = 0;
+        points.push(pt);
         for (i=0; i<n; ++i)
         {
-            subdivide_curve(points, f, 0 === i ? 0 : i/n, n === i+1 ? 1 : (i+1)/n, pixelSize);
+            subdivide_curve(points, f, 0 === i ? 0 : i/n, n === i+1 ? 1 : (i+1)/n, pixelSize, null, null, include_t);
         }
     }
     else
     {
         for (i=0; i<=n; ++i)
         {
-            points.push(f(0 === i ? 0 : (n === i ? 1 : i/n)));
+            t = 0 === i ? 0 : (n === i ? 1 : i/n);
+            pt = f(t);
+            if (include_t) pt.t = t;
+            points.push(pt);
         }
     }
     return points;
 }
-function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
+function subdivide_curve(points, f, l, r, pixelSize, pl, pr, include_t)
 {
     if ((l >= r) || is_almost_equal(l, r)) return;
     var m = (l + r) / 2, left = pl || f(l), right = pr || f(r), middle = f(m);
@@ -4843,13 +5025,14 @@ function subdivide_curve(points, f, l, r, pixelSize, pl, pr)
     {
         // no more refinement
         // return linear interpolation between left and right
+        if (include_t) right.t = r;
         points.push(right);
     }
     else
     {
         // recursively subdivide to refine samples with high enough curvature
-        subdivide_curve(points, f, l, m, pixelSize, left, middle);
-        subdivide_curve(points, f, m, r, pixelSize, middle, right);
+        subdivide_curve(points, f, l, m, pixelSize, left, middle, include_t);
+        subdivide_curve(points, f, m, r, pixelSize, middle, right, include_t);
     }
 }
 function interpolate(x0, x1, t)

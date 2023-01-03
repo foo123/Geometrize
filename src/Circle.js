@@ -30,7 +30,7 @@ var Circle = makeClass(Curve, {
             },
             set: function(radius) {
                 _radius.val(stdMath.abs(Num(radius)));
-                if (_radius.isChanged() && !self.isChanged())
+                if (_radius.isChanged() /*&& !self.isChanged()*/)
                 {
                     self.isChanged(true);
                     self.triggerChange();

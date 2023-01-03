@@ -8,7 +8,7 @@ var Primitive = makeClass(null, merge(null, {
         onStyleChange = function onStyleChange(style) {
             if (_style === style)
             {
-                if (!self.isChanged())
+                //if (!self.isChanged())
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -30,7 +30,7 @@ var Primitive = makeClass(null, merge(null, {
                     if (_style)
                     {
                         _style.onChange(onStyleChange);
-                        if (!self.isChanged())
+                        //if (!self.isChanged())
                         {
                             self.isChanged(true);
                             self.triggerChange();

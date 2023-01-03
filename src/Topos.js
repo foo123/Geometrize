@@ -26,7 +26,7 @@ var Topos = makeClass(Primitive, {
         onPointChange = function onPointChange(point) {
             if (is_array(_points) && (-1 !== _points.indexOf(point)))
             {
-                if (!self.isChanged())
+                //if (!self.isChanged())
                 {
                     self.isChanged(true);
                     self.triggerChange();
@@ -35,7 +35,7 @@ var Topos = makeClass(Primitive, {
         };
         onPointChange.id = self.id;
         onArrayChange = function onArrayChange(changed) {
-            if (!self.isChanged())
+            //if (!self.isChanged())
             {
                 self.isChanged(true);
                 self.triggerChange();
@@ -62,7 +62,7 @@ var Topos = makeClass(Primitive, {
                     {
                         _points = observeArray(points, point_add, point_del, p_eq);
                         _points.onChange(onArrayChange);
-                        if (!self.isChanged())
+                        //if (!self.isChanged())
                         {
                             self.isChanged(true);
                             self.triggerChange();
