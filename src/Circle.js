@@ -1,4 +1,11 @@
-// 2D Circle class
+/**[DOC_MD]
+ * ### 2D Circle
+ *
+ * Represents a circle of given center (point) and radius
+ * ```javascript
+ * const circle = Circle(center, radius);
+ * ```
+[/DOC_MD]**/
 var Circle = makeClass(Curve, {
     constructor: function Circle(center, radius) {
         var self = this,

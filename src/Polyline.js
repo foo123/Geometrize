@@ -1,5 +1,11 @@
-// 2D Polyline class
-// assembly of consecutive line segments between given points
+/**[DOC_MD]
+ * ### 2D Polyline
+ *
+ * Represents an assembly of consecutive line segments between given points
+ * ```javascript
+ * const polyline = Polyline([p1, p2, .., pn]);
+ * ```
+[/DOC_MD]**/
 var Polyline = makeClass(Curve, {
     constructor: function Polyline(points) {
         var self = this,
@@ -111,7 +117,7 @@ var Polyline = makeClass(Curve, {
     },
     isClosed: function() {
         var self = this, p = self.points;
-        return 2 < p.length ? p[0].eq(p[p.length-1]) : false;
+        return 2 < p.length ? p_eq(p[0], p[p.length-1]) : false;
     },
     isConvex: function() {
         return this._is_convex;

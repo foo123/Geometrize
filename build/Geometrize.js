@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.9 (2023-01-03 18:38:02)
+*   @version 0.9.8 (2023-01-04 10:07:44)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.9 (2023-01-03 18:38:02)
+*   @version 0.9.8 (2023-01-04 10:07:44)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.9.9", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "0.9.8", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -175,7 +175,17 @@ var Value = makeClass(null, merge(null, {
     val: null,
     valueOf: null,
     toString: null
-}, Changeable));// 2D Homogeneous Transformation Matrix class
+}, Changeable));/**[DOC_MD]
+ * ### 2D Homogeneous Transformation Matrix
+ *
+ * Represents a homogeneous transformation matrix for 2D transforms
+ *
+ * ```javascript
+ * const m = Matrix.translate(tx, ty).mul(Matrix.rotate(theta).mul(Matrix.scale(sx, sy)));
+ * // p is a point, p2 is a transformed point
+ * const p2 = m.transform(p);
+ * ```
+[/DOC_MD]**/
 var Matrix = makeClass(null, {
     constructor: function Matrix(
         m00, m01, m02,
@@ -256,12 +266,12 @@ var Matrix = makeClass(null, {
         if (other instanceof Matrix)
         {
             return new Matrix(
-                self.$00*other.$00 + self.$01*other.$10 + self.$02*other.$20,
-                self.$00*other.$01 + self.$01*other.$11 + self.$02*other.$21,
-                self.$00*other.$02 + self.$01*other.$12 + self.$02*other.$22,
-                self.$10*other.$00 + self.$11*other.$10 + self.$12*other.$20,
-                self.$10*other.$01 + self.$11*other.$11 + self.$12*other.$21,
-                self.$10*other.$02 + self.$11*other.$12 + self.$12*other.$22
+                self.$00*other.$00 + self.$01*other.$10,
+                self.$00*other.$01 + self.$01*other.$11,
+                self.$00*other.$02 + self.$01*other.$12 + self.$02,
+                self.$10*other.$00 + self.$11*other.$10,
+                self.$10*other.$01 + self.$11*other.$11,
+                self.$10*other.$02 + self.$11*other.$12 + self.$12
             );
         }
         else
@@ -275,13 +285,12 @@ var Matrix = makeClass(null, {
     },
     det: function() {
         var self = this;
-        return self.$00*(self.$11*self.$22 - self.$12*self.$21) + self.$01*(self.$12*self.$20 - self.$10*self.$22) + self.$02*(self.$21*self.$10 - self.$11*self.$20);
+        return self.$00*(self.$11*/*self.$22*/1 - self.$12*/*self.$21*/0) + self.$01*(self.$12*/*self.$20*/0 - self.$10*/*self.$22*/1) + self.$02*(0/*self.$21*/*self.$10 - self.$11*/*self.$20*/0);
     },
     inv: function() {
         var self = this,
             a00 = self.$00, a01 = self.$01, a02 = self.$02,
             a10 = self.$10, a11 = self.$11, a12 = self.$12,
-            //a20 = self.$20, a21 = self.$21, a22 = self.$22,
             det2 = a00*a11 - a01*a10,
             i00 = 0, i01 = 0, i10 = 0, i11 = 0;
 
@@ -675,7 +684,15 @@ var Primitive = makeClass(null, merge(null, {
     }
 }, Changeable));
 Geometrize.Primitive = Primitive;
-// 2D Point class
+/**[DOC_MD]
+ * ### 2D Point
+ *
+ * Represents a point in 2D space
+ * 
+ * ```javascript
+ * const p = Point(x, y);
+ * ```
+[/DOC_MD]**/
 var Point = makeClass(Primitive, {
     constructor: function Point(x, y) {
         var self = this, _x = 0, _y = 0, _n = null;
@@ -886,7 +903,14 @@ var Point = makeClass(Primitive, {
     }
 });
 Geometrize.Point = Point;
-// 2D geometric Topos ie set of points
+/**[DOC_MD]
+ * ### 2D Topos
+ *
+ * Represents a geometric topos, ie a set of points
+ * ```javascript
+ * const topos = Topos([p1, p2, p3, .., pn]);
+ * ```
+[/DOC_MD]**/
 var Topos = makeClass(Primitive, {
     constructor: function Topos(points) {
         var self = this,
@@ -1046,7 +1070,13 @@ var Topos = makeClass(Primitive, {
     }
 });
 Geometrize.Topos = Topos;
-// 2D generic Curve base class
+/**[DOC_MD]
+ * ### 2D Generic Curve Base Class
+ *
+ * Represents a generic curve in 2D space
+ * (not used directly)
+ *
+[/DOC_MD]**/
 var Curve = makeClass(Topos, {
     constructor: function Curve(points, values) {
         var self = this,
@@ -1288,7 +1318,13 @@ var Curve = makeClass(Topos, {
 });
 Geometrize.Curve = Curve;
 
-// 2D generic Bezier curve base class
+/**[DOC_MD]
+ * ### 2D Generic Bezier Curve Base Class
+ *
+ * Represents a generic bezier curve in 2D space
+ * (not used directly)
+ *
+[/DOC_MD]**/
 var Bezier = makeClass(Curve, {
     constructor: function Bezier(points, values) {
         var self = this;
@@ -1344,7 +1380,15 @@ var Bezier = makeClass(Curve, {
 });
 Geometrize.Bezier = Bezier;
 
-// 2D generix Parametric Curve class (defined by parametric function f)
+/**[DOC_MD]
+ * ### 2D Generic Parametric Curve
+ *
+ * Represents a generic parametric curve in 2D space
+ * ```javascript
+ * // construct a spiral (0 <= t <= 1)
+ * const spiral = ParametricCurve((t) => ({x: cx + t*r*Math.cos(t*6*Math.PI), y: cy + t*r*Math.sin(t*6*Math.PI)}));
+ * ```
+[/DOC_MD]**/
 var ParametricCurve = makeClass(Curve, {
     constructor: function ParametricCurve(f) {
         var self = this, _length = null, _bbox = null;
@@ -1403,12 +1447,21 @@ var ParametricCurve = makeClass(Curve, {
     transform: function(matrix) {
         return (new ParametricCurve(this.f)).setMatrix(matrix);
     },
-    fto: function(tt) {
-        var f = this.f, p1 = f(tt);
-        return new ParametricCurve(function(t) {return t > tt ? {x:p1.x, y:p1.y} : f(t);});
+    fto: function(t1) {
+        var f = this.f, p1 = f(t1);
+        return new ParametricCurve(function(t) {return t >= t1 ? {x:p1.x, y:p1.y} : f(t*t1);});
+    },
+    isClosed: function() {
+        var self = this, p = self._lines;
+        return 2 < p.length ? p_eq(p[0], p[p.length-1]) : false;
     },
     hasPoint: function(point) {
         return point_on_polyline(point, this._lines);
+    },
+    hasInsidePoint: function(point, strict) {
+        if (!this.isClosed()) return false;
+        var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
+        return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
         var self = this, i;
@@ -1517,7 +1570,7 @@ var ParametricCurve = makeClass(Curve, {
             path = 'M ' + p.map(function(p) {
                 return Str(p.x)+' '+Str(p.y);
             }).join(' L ');
-        if (p_eq(p[0], p[p.length-1])) path += ' Z';
+        if (self.isClosed()) path += ' Z';
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
             'd': [path, self.isChanged()],
@@ -1536,7 +1589,7 @@ var ParametricCurve = makeClass(Curve, {
         ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
         for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
-        if (p_eq(p[0], p[n-1])) ctx.closePath();
+        if (self.isClosed()) ctx.closePath();
     },
     toTex: function() {
         return '\\text{ParametricCurve('+this.id+')}';
@@ -1547,11 +1600,19 @@ var ParametricCurve = makeClass(Curve, {
 });
 Geometrize.ParametricCurve = ParametricCurve;
 
-// 2D Composite Curve class (container of multiple, joined, curves)
 var MZ = /[M]/g,
     XY = /^\s*(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
     PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
+/**[DOC_MD]
+ * ### 2D Generic Composite Curve
+ *
+ * Represents a container of multiple, not necessarily joined curves
+ * ```javascript
+ * // construct a complex curve
+ * const curve = CompositeCurve([Line(p1, p2), QBezier([p3, p4, p5]), Line(p6, p7)]);
+ * ```
+[/DOC_MD]**/
 var CompositeCurve = makeClass(Curve, {
     constructor: function CompositeCurve(curves) {
         var self = this,
@@ -1937,7 +1998,14 @@ var CompositeCurve = makeClass(Curve, {
     }
 });
 Geometrize.CompositeCurve = CompositeCurve;
-// 2D Line segment class (equivalent to Linear Bezier curve)
+/**[DOC_MD]
+ * ### 2D Line Segment (equivalent to Linear Bezier)
+ *
+ * Represents a line segment between 2 points
+ * ```javascript
+ * const line = Line(p1, p2);
+ * ```
+[/DOC_MD]**/
 var Line = makeClass(Bezier, {
     constructor: function Line(start, end) {
         var self = this,
@@ -2148,8 +2216,14 @@ var Line = makeClass(Bezier, {
 });
 Geometrize.Line = Line;
 
-// 2D Polyline class
-// assembly of consecutive line segments between given points
+/**[DOC_MD]
+ * ### 2D Polyline
+ *
+ * Represents an assembly of consecutive line segments between given points
+ * ```javascript
+ * const polyline = Polyline([p1, p2, .., pn]);
+ * ```
+[/DOC_MD]**/
 var Polyline = makeClass(Curve, {
     constructor: function Polyline(points) {
         var self = this,
@@ -2261,7 +2335,7 @@ var Polyline = makeClass(Curve, {
     },
     isClosed: function() {
         var self = this, p = self.points;
-        return 2 < p.length ? p[0].eq(p[p.length-1]) : false;
+        return 2 < p.length ? p_eq(p[0], p[p.length-1]) : false;
     },
     isConvex: function() {
         return this._is_convex;
@@ -2414,7 +2488,14 @@ var Polyline = makeClass(Curve, {
     }
 });
 Geometrize.Polyline = Polyline;
-// 2D Elliptic Arc class
+/**[DOC_MD]
+ * ### 2D Elliptical Arc
+ *
+ * Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
+ * ```javascript
+ * const arc = Arc(start, end, radiusX, radiusY, angle, largeArc, sweep);
+ * ```
+[/DOC_MD]**/
 var Arc = makeClass(Curve, {
     constructor: function Arc(start, end, radiusX, radiusY, angle, largeArc, sweep) {
         var self = this,
@@ -2850,7 +2931,14 @@ var Arc = makeClass(Curve, {
     }
 });
 Geometrize.Arc = Arc;
-// 2D Quadratic Bezier class
+/**[DOC_MD]
+ * ### 2D Quadratic Bezier
+ *
+ * Represents a quadratic bezier curve defined by its control points
+ * ```javascript
+ * const qbezier = QBezier([p1, p2, p3]);
+ * ```
+[/DOC_MD]**/
 var QBezier = makeClass(Bezier, {
     constructor: function QBezier(points) {
         var self = this,
@@ -3022,7 +3110,14 @@ var QBezier = makeClass(Bezier, {
     }
 });
 Geometrize.QBezier = QBezier;
-// 2D Cubic Bezier class
+/**[DOC_MD]
+ * ### 2D Cubic Bezier
+ *
+ * Represents a cubic bezier curve defined by its control points
+ * ```javascript
+ * const cbezier = CBezier([p1, p2, p3, p4]);
+ * ```
+[/DOC_MD]**/
 var CBezier = makeClass(Bezier, {
     constructor: function CBezier(points) {
         var self = this,
@@ -3199,8 +3294,14 @@ var CBezier = makeClass(Bezier, {
     }
 });
 Geometrize.CBezier = CBezier;
-// 2D Polygon class
-// defined by vertices as a closed polyline
+/**[DOC_MD]
+ * ### 2D Polygon
+ *
+ * Represents a polygon (a closed polyline) defined by its vertices
+ * ```javascript
+ * const polygon = Polygon([p1, p2, .., pn]);
+ * ```
+[/DOC_MD]**/
 var Polygon = makeClass(Curve, {
     constructor: function Polygon(vertices) {
         var self = this,
@@ -3528,7 +3629,14 @@ var Rect = makeClass(Polygon, {
     }
 });
 Geometrize.Rect = Rect;
-// 2D Circle class
+/**[DOC_MD]
+ * ### 2D Circle
+ *
+ * Represents a circle of given center (point) and radius
+ * ```javascript
+ * const circle = Circle(center, radius);
+ * ```
+[/DOC_MD]**/
 var Circle = makeClass(Curve, {
     constructor: function Circle(center, radius) {
         var self = this,
@@ -3724,7 +3832,14 @@ var Circle = makeClass(Curve, {
     }
 });
 Geometrize.Circle = Circle;
-// 2D Ellipse class
+/**[DOC_MD]
+ * ### 2D Ellipse
+ *
+ * Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
+ * ```javascript
+ * const ellipse = Ellipse(center, radiusX, radiusY, angle);
+ * ```
+[/DOC_MD]**/
 var Ellipse = makeClass(Curve, {
     constructor: function Ellipse(center, radiusX, radiusY, angle) {
         var self = this,
@@ -4029,12 +4144,25 @@ var Ellipse = makeClass(Curve, {
     }
 });
 Geometrize.Ellipse = Ellipse;
-// 2D generic Shape class
-// container for primitives shapes
+/**[DOC_MD]
+ * ### 2D generic Shape
+ *
+ * container for 2D geometric objects, grouped together
+ * (not implemented yet)
+ *
+[/DOC_MD]**/
 var Shape = makeClass(Primitive, {});
 Geometrize.Shape = Shape;
-// Plane
-// scene container for 2D geometric objects
+/**[DOC_MD]
+ * ### 2D Plane
+ *
+ * scene container for 2D geometric objects
+ *
+ * ```javascript
+ * const plane = Plane(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
+ * plane.add(Line([p1, p2]));
+ * ```
+[/DOC_MD]**/
 var Plane = makeClass(null, {
     constructor: function Plane(dom, x0, y0, x1, y1) {
         var self = this,

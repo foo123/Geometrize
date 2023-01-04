@@ -1,4 +1,11 @@
-// 2D Cubic Bezier class
+/**[DOC_MD]
+ * ### 2D Cubic Bezier
+ *
+ * Represents a cubic bezier curve defined by its control points
+ * ```javascript
+ * const cbezier = CBezier([p1, p2, p3, p4]);
+ * ```
+[/DOC_MD]**/
 var CBezier = makeClass(Bezier, {
     constructor: function CBezier(points) {
         var self = this,

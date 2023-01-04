@@ -1,4 +1,11 @@
-// 2D Quadratic Bezier class
+/**[DOC_MD]
+ * ### 2D Quadratic Bezier
+ *
+ * Represents a quadratic bezier curve defined by its control points
+ * ```javascript
+ * const qbezier = QBezier([p1, p2, p3]);
+ * ```
+[/DOC_MD]**/
 var QBezier = makeClass(Bezier, {
     constructor: function QBezier(points) {
         var self = this,

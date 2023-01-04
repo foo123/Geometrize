@@ -1,4 +1,10 @@
-// 2D generic Curve base class
+/**[DOC_MD]
+ * ### 2D Generic Curve Base Class
+ *
+ * Represents a generic curve in 2D space
+ * (not used directly)
+ *
+[/DOC_MD]**/
 var Curve = makeClass(Topos, {
     constructor: function Curve(points, values) {
         var self = this,
@@ -240,7 +246,13 @@ var Curve = makeClass(Topos, {
 });
 Geometrize.Curve = Curve;
 
-// 2D generic Bezier curve base class
+/**[DOC_MD]
+ * ### 2D Generic Bezier Curve Base Class
+ *
+ * Represents a generic bezier curve in 2D space
+ * (not used directly)
+ *
+[/DOC_MD]**/
 var Bezier = makeClass(Curve, {
     constructor: function Bezier(points, values) {
         var self = this;
@@ -296,7 +308,15 @@ var Bezier = makeClass(Curve, {
 });
 Geometrize.Bezier = Bezier;
 
-// 2D generix Parametric Curve class (defined by parametric function f)
+/**[DOC_MD]
+ * ### 2D Generic Parametric Curve
+ *
+ * Represents a generic parametric curve in 2D space
+ * ```javascript
+ * // construct a spiral (0 <= t <= 1)
+ * const spiral = ParametricCurve((t) => ({x: cx + t*r*Math.cos(t*6*Math.PI), y: cy + t*r*Math.sin(t*6*Math.PI)}));
+ * ```
+[/DOC_MD]**/
 var ParametricCurve = makeClass(Curve, {
     constructor: function ParametricCurve(f) {
         var self = this, _length = null, _bbox = null;
@@ -355,12 +375,21 @@ var ParametricCurve = makeClass(Curve, {
     transform: function(matrix) {
         return (new ParametricCurve(this.f)).setMatrix(matrix);
     },
-    fto: function(tt) {
-        var f = this.f, p1 = f(tt);
-        return new ParametricCurve(function(t) {return t > tt ? {x:p1.x, y:p1.y} : f(t);});
+    fto: function(t1) {
+        var f = this.f, p1 = f(t1);
+        return new ParametricCurve(function(t) {return t >= t1 ? {x:p1.x, y:p1.y} : f(t*t1);});
+    },
+    isClosed: function() {
+        var self = this, p = self._lines;
+        return 2 < p.length ? p_eq(p[0], p[p.length-1]) : false;
     },
     hasPoint: function(point) {
         return point_on_polyline(point, this._lines);
+    },
+    hasInsidePoint: function(point, strict) {
+        if (!this.isClosed()) return false;
+        var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
+        return strict ? 1 === inside : 0 < inside;
     },
     intersects: function(other) {
         var self = this, i;
@@ -469,7 +498,7 @@ var ParametricCurve = makeClass(Curve, {
             path = 'M ' + p.map(function(p) {
                 return Str(p.x)+' '+Str(p.y);
             }).join(' L ');
-        if (p_eq(p[0], p[p.length-1])) path += ' Z';
+        if (self.isClosed()) path += ' Z';
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
             'd': [path, self.isChanged()],
@@ -488,7 +517,7 @@ var ParametricCurve = makeClass(Curve, {
         ctx.beginPath();
         ctx.moveTo(p[0].x, p[0].y);
         for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
-        if (p_eq(p[0], p[n-1])) ctx.closePath();
+        if (self.isClosed()) ctx.closePath();
     },
     toTex: function() {
         return '\\text{ParametricCurve('+this.id+')}';
@@ -499,11 +528,19 @@ var ParametricCurve = makeClass(Curve, {
 });
 Geometrize.ParametricCurve = ParametricCurve;
 
-// 2D Composite Curve class (container of multiple, joined, curves)
 var MZ = /[M]/g,
     XY = /^\s*(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)/,
     PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
+/**[DOC_MD]
+ * ### 2D Generic Composite Curve
+ *
+ * Represents a container of multiple, not necessarily joined curves
+ * ```javascript
+ * // construct a complex curve
+ * const curve = CompositeCurve([Line(p1, p2), QBezier([p3, p4, p5]), Line(p6, p7)]);
+ * ```
+[/DOC_MD]**/
 var CompositeCurve = makeClass(Curve, {
     constructor: function CompositeCurve(curves) {
         var self = this,

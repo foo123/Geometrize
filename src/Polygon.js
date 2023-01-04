@@ -1,5 +1,11 @@
-// 2D Polygon class
-// defined by vertices as a closed polyline
+/**[DOC_MD]
+ * ### 2D Polygon
+ *
+ * Represents a polygon (a closed polyline) defined by its vertices
+ * ```javascript
+ * const polygon = Polygon([p1, p2, .., pn]);
+ * ```
+[/DOC_MD]**/
 var Polygon = makeClass(Curve, {
     constructor: function Polygon(vertices) {
         var self = this,

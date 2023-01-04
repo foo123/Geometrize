@@ -4,7 +4,11 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 0.9.9** (73 kB minified)
+**version: 0.9.8** (72 kB minified)
+
+
+[API Reference](/manual.md)
+
 
 Examples:
 
@@ -23,24 +27,34 @@ Examples:
 [See it](https://foo123.github.io/examples/geometrize/)
 
 ```javascript
-const {Plane, Ellipse, Circle, Arc, QBezier, CBezier, Line, Point} = Geometrize;
+const {Plane, CompositeCurve, ParametricCurve, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Matrix} = Geometrize;
 const plane = Plane(document.getElementById('container'), 0, 0, 300, 300);
+const spiral = ParametricCurve((t) => ({x:190 + t*50*Math.cos(t*6*Math.PI), y:80 + t*50*Math.sin(t*6*Math.PI)}));
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
 const arc = Arc([100,100], [170,90], 30, 10, 30, 0, 1);
 const qbezier = QBezier([[80,110], [120,40], [160,120]]);
 const cbezier = CBezier([[40,80], [120,40], [140,200], [160,90]]);
+const curve = CompositeCurve([
+    Line([20,100], [40,100]),
+    Arc([40,100], [40,80], 10, 10, 0, 0, 0),
+    QBezier([[40,80],[20,100],[60,120]]),
+    Line([60,120], [70,100])
+]).transform(Matrix.translate(-20, 0));
 const line1 = Line([20,20], [60,60]).setStyle('stroke', 'blue');
 const line2 = Line([50,2], [20,70]).setStyle('stroke', 'green');
 const line3 = Line([60,160], [300,0]).setStyle('stroke', 'orange');
 const line4 = Line([60,120], [300,-40]).setStyle('stroke', 'cyan');
+
 let intersections = [];
 
+plane.add(spiral);
 plane.add(ellipse);
 plane.add(circle);
 plane.add(arc);
 plane.add(qbezier);
 plane.add(cbezier);
+plane.add(curve);
 plane.add(line1);
 plane.add(line2);
 plane.add(line3);

@@ -1,4 +1,11 @@
-// 2D Ellipse class
+/**[DOC_MD]
+ * ### 2D Ellipse
+ *
+ * Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
+ * ```javascript
+ * const ellipse = Ellipse(center, radiusX, radiusY, angle);
+ * ```
+[/DOC_MD]**/
 var Ellipse = makeClass(Curve, {
     constructor: function Ellipse(center, radiusX, radiusY, angle) {
         var self = this,

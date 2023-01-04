@@ -1,5 +1,13 @@
-// Plane
-// scene container for 2D geometric objects
+/**[DOC_MD]
+ * ### 2D Plane
+ *
+ * scene container for 2D geometric objects
+ *
+ * ```javascript
+ * const plane = Plane(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
+ * plane.add(Line([p1, p2]));
+ * ```
+[/DOC_MD]**/
 var Plane = makeClass(null, {
     constructor: function Plane(dom, x0, y0, x1, y1) {
         var self = this,

@@ -1,4 +1,11 @@
-// 2D Elliptic Arc class
+/**[DOC_MD]
+ * ### 2D Elliptical Arc
+ *
+ * Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
+ * ```javascript
+ * const arc = Arc(start, end, radiusX, radiusY, angle, largeArc, sweep);
+ * ```
+[/DOC_MD]**/
 var Arc = makeClass(Curve, {
     constructor: function Arc(start, end, radiusX, radiusY, angle, largeArc, sweep) {
         var self = this,

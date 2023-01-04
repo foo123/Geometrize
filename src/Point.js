@@ -1,4 +1,12 @@
-// 2D Point class
+/**[DOC_MD]
+ * ### 2D Point
+ *
+ * Represents a point in 2D space
+ * 
+ * ```javascript
+ * const p = Point(x, y);
+ * ```
+[/DOC_MD]**/
 var Point = makeClass(Primitive, {
     constructor: function Point(x, y) {
         var self = this, _x = 0, _y = 0, _n = null;

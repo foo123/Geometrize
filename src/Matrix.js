@@ -1,4 +1,14 @@
-// 2D Homogeneous Transformation Matrix class
+/**[DOC_MD]
+ * ### 2D Homogeneous Transformation Matrix
+ *
+ * Represents a homogeneous transformation matrix for 2D transforms
+ *
+ * ```javascript
+ * const m = Matrix.translate(tx, ty).mul(Matrix.rotate(theta).mul(Matrix.scale(sx, sy)));
+ * // p is a point, p2 is a transformed point
+ * const p2 = m.transform(p);
+ * ```
+[/DOC_MD]**/
 var Matrix = makeClass(null, {
     constructor: function Matrix(
         m00, m01, m02,
@@ -79,12 +89,12 @@ var Matrix = makeClass(null, {
         if (other instanceof Matrix)
         {
             return new Matrix(
-                self.$00*other.$00 + self.$01*other.$10 + self.$02*other.$20,
-                self.$00*other.$01 + self.$01*other.$11 + self.$02*other.$21,
-                self.$00*other.$02 + self.$01*other.$12 + self.$02*other.$22,
-                self.$10*other.$00 + self.$11*other.$10 + self.$12*other.$20,
-                self.$10*other.$01 + self.$11*other.$11 + self.$12*other.$21,
-                self.$10*other.$02 + self.$11*other.$12 + self.$12*other.$22
+                self.$00*other.$00 + self.$01*other.$10,
+                self.$00*other.$01 + self.$01*other.$11,
+                self.$00*other.$02 + self.$01*other.$12 + self.$02,
+                self.$10*other.$00 + self.$11*other.$10,
+                self.$10*other.$01 + self.$11*other.$11,
+                self.$10*other.$02 + self.$11*other.$12 + self.$12
             );
         }
         else
@@ -98,13 +108,12 @@ var Matrix = makeClass(null, {
     },
     det: function() {
         var self = this;
-        return self.$00*(self.$11*self.$22 - self.$12*self.$21) + self.$01*(self.$12*self.$20 - self.$10*self.$22) + self.$02*(self.$21*self.$10 - self.$11*self.$20);
+        return self.$00*(self.$11*/*self.$22*/1 - self.$12*/*self.$21*/0) + self.$01*(self.$12*/*self.$20*/0 - self.$10*/*self.$22*/1) + self.$02*(0/*self.$21*/*self.$10 - self.$11*/*self.$20*/0);
     },
     inv: function() {
         var self = this,
             a00 = self.$00, a01 = self.$01, a02 = self.$02,
             a10 = self.$10, a11 = self.$11, a12 = self.$12,
-            //a20 = self.$20, a21 = self.$21, a22 = self.$22,
             det2 = a00*a11 - a01*a10,
             i00 = 0, i01 = 0, i10 = 0, i11 = 0;
 

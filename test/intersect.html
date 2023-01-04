@@ -72,7 +72,6 @@ const drawBoundingBox = (shape, color) => {
 };
 const drawConvexHull = (shape, color) => {
     const hull = shape.getConvexHull();
-    console.log(shape.name, hull);
     plane.add(Polygon(hull).setStyle('stroke', color||'red'));
 };
 

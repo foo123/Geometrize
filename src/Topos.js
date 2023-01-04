@@ -1,4 +1,11 @@
-// 2D geometric Topos ie set of points
+/**[DOC_MD]
+ * ### 2D Topos
+ *
+ * Represents a geometric topos, ie a set of points
+ * ```javascript
+ * const topos = Topos([p1, p2, p3, .., pn]);
+ * ```
+[/DOC_MD]**/
 var Topos = makeClass(Primitive, {
     constructor: function Topos(points) {
         var self = this,

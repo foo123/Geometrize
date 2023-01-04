@@ -1,4 +1,11 @@
-// 2D Line segment class (equivalent to Linear Bezier curve)
+/**[DOC_MD]
+ * ### 2D Line Segment (equivalent to Linear Bezier)
+ *
+ * Represents a line segment between 2 points
+ * ```javascript
+ * const line = Line(p1, p2);
+ * ```
+[/DOC_MD]**/
 var Line = makeClass(Bezier, {
     constructor: function Line(start, end) {
         var self = this,
