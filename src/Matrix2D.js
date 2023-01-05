@@ -1,27 +1,28 @@
 /**[DOC_MD]
- * ### 2D Homogeneous Transformation Matrix
+ * ### Matrix2D 2D Homogeneous Transformation Matrix
  *
  * Represents a homogeneous transformation matrix for 2D transforms
  *
  * ```javascript
- * const m = Matrix.translate(tx, ty).mul(Matrix.rotate(theta).mul(Matrix.scale(sx, sy)));
+ * const m = Matrix2D.translate(tx, ty).mul(Matrix2D.rotate(theta).mul(Matrix2D.scale(sx, sy)));
+ * const invm = m.inv();
  * // p is a point, p2 is a transformed point
  * const p2 = m.transform(p);
  * ```
 [/DOC_MD]**/
-var Matrix = makeClass(null, {
-    constructor: function Matrix(
+var Matrix2D = makeClass(null, {
+    constructor: function Matrix2D(
         m00, m01, m02,
         m10, m11, m12
     ) {
         var self = this;
-        if (m00 instanceof Matrix)
+        if (m00 instanceof Matrix2D)
         {
             return m00;
         }
-        if (!(self instanceof Matrix))
+        if (!(self instanceof Matrix2D))
         {
-            return new Matrix(
+            return new Matrix2D(
             m00, m01, m02,
             m10, m11, m12
             );
@@ -53,13 +54,13 @@ var Matrix = makeClass(null, {
     $12: 0,
     clone: function() {
         var self = this;
-        return new Matrix(
+        return new Matrix2D(
         self.$00, self.$01, self.$02,
         self.$10, self.$11, self.$12
         );
     },
     eq: function(other) {
-        if (other instanceof Matrix)
+        if (other instanceof Matrix2D)
         {
             var self = this;
             return is_almost_equal(self.$00, other.$00) && is_almost_equal(self.$01, other.$01) && is_almost_equal(self.$02, other.$02) && is_almost_equal(self.$10, other.$10) && is_almost_equal(self.$11, other.$11) && is_almost_equal(self.$12, other.$12);
@@ -68,9 +69,9 @@ var Matrix = makeClass(null, {
     },
     add: function(other) {
         var self = this;
-        if (other instanceof Matrix)
+        if (other instanceof Matrix2D)
         {
-            return new Matrix(
+            return new Matrix2D(
                 self.$00 + other.$00, self.$01 + other.$01, self.$02 + other.$02,
                 self.$10 + other.$10, self.$11 + other.$11, self.$12 + other.$12
             );
@@ -78,7 +79,7 @@ var Matrix = makeClass(null, {
         else
         {
             other = Num(other);
-            return new Matrix(
+            return new Matrix2D(
                 self.$00 + other, self.$01 + other, self.$02 + other,
                 self.$10 + other, self.$11 + other, self.$12 + other
             );
@@ -86,9 +87,9 @@ var Matrix = makeClass(null, {
     },
     mul: function(other) {
         var self = this;
-        if (other instanceof Matrix)
+        if (other instanceof Matrix2D)
         {
-            return new Matrix(
+            return new Matrix2D(
                 self.$00*other.$00 + self.$01*other.$10,
                 self.$00*other.$01 + self.$01*other.$11,
                 self.$00*other.$02 + self.$01*other.$12 + self.$02,
@@ -100,7 +101,7 @@ var Matrix = makeClass(null, {
         else
         {
             other = Num(other);
-            return new Matrix(
+            return new Matrix2D(
                 self.$00*other, self.$01*other, self.$02*other,
                 self.$10*other, self.$11*other, self.$12*other
             );
@@ -121,7 +122,7 @@ var Matrix = makeClass(null, {
 
         /*
         var det = self.det();
-        return new Matrix(
+        return new Matrix2D(
         (a11*a22-a12*a21)/det, (a02*a21-a01*a22)/det, (a01*a12-a02*a11)/det,
         (a12*a20-a10*a22)/det, (a00*a22-a02*a20)/det, (a02*a10-a00*a12)/det,
         //(a10*a21-a11*a20)/det, (a01*a20-a00*a21)/det, (a00*a11-a01*a10)/det
@@ -130,7 +131,7 @@ var Matrix = makeClass(null, {
         */
         i00 = a11/det2; i01 = -a01/det2;
         i10 = -a10/det2; i11 = a00/det2;
-        return new Matrix(
+        return new Matrix2D(
         i00, i01, -i00*a02 - i01*a12,
         i10, i11, -i10*a02 - i11*a12
         );
@@ -210,20 +211,20 @@ var Matrix = makeClass(null, {
         return ctx;
     },
     toTex: function() {
-        return Matrix.arrayTex(this.toArray(), 3, 3);
+        return Matrix2D.arrayTex(this.toArray(), 3, 3);
     },
     toString: function() {
-        return Matrix.arrayString(this.toArray(), 3, 3);
+        return Matrix2D.arrayString(this.toArray(), 3, 3);
     }
 }, {
     eye: function() {
-        return new Matrix(
+        return new Matrix2D(
         1,0,0,
         0,1,0
         );
     },
     translate: function(tx, ty) {
-        return new Matrix(
+        return new Matrix2D(
         1, 0, Num(tx),
         0, 1, Num(ty)
         );
@@ -234,7 +235,7 @@ var Matrix = makeClass(null, {
         ox = Num(ox || 0);
         theta = Num(theta);
         var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
-        return new Matrix(
+        return new Matrix2D(
         cos, -sin, ox - cos*ox + sin*oy,
         sin,  cos, oy - cos*oy - sin*ox
         );
@@ -245,31 +246,31 @@ var Matrix = makeClass(null, {
         ox = Num(ox || 0);
         sx = Num(sx);
         sy = Num(sy);
-        return new Matrix(
+        return new Matrix2D(
         sx, 0,  -sx*ox + ox,
         0,  sy, -sy*oy + oy
         );
     },
     reflectX: function() {
-        return new Matrix(
+        return new Matrix2D(
         -1, 0, 0,
         0,  1, 0
         );
     },
     reflectY: function() {
-        return new Matrix(
+        return new Matrix2D(
         1,  0, 0,
         0, -1, 0
         );
     },
     shearX: function(s) {
-        return new Matrix(
+        return new Matrix2D(
         1, Num(s), 0,
         0, 1,      0
         );
     },
     shearY: function(s) {
-        return new Matrix(
+        return new Matrix2D(
         1,      0, 0,
         Num(s), 1, 0
         );
@@ -306,5 +307,5 @@ var Matrix = makeClass(null, {
         return '['+pad(point.x, maxlen)+"]\n["+pad(point.y, maxlen)+"]\n["+pad(1, maxlen)+']';
     }
 });
-var EYE = Matrix.eye();
-Geometrize.Matrix = Matrix;
+var EYE = Matrix2D.eye();
+Geometrize.Matrix2D = Matrix2D;

@@ -1,4 +1,10 @@
-// generic scalar Value class
+/**[DOC_MD]
+ * ### Value class
+ *
+ * Represents a generic scalar value which can change dynamically
+ * (not used directly)
+ * 
+[/DOC_MD]**/
 var Value = makeClass(null, merge(null, {
     constructor: function Value(v) {
         var self = this;

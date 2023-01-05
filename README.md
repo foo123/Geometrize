@@ -4,7 +4,7 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 0.9.8** (72 kB minified)
+**version: 0.9.9** (71 kB minified)
 
 
 [API Reference](/manual.md)
@@ -27,7 +27,7 @@ Examples:
 [See it](https://foo123.github.io/examples/geometrize/)
 
 ```javascript
-const {Plane, CompositeCurve, ParametricCurve, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Matrix} = Geometrize;
+const {Plane, CompositeCurve, ParametricCurve, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Matrix2D} = Geometrize;
 const plane = Plane(document.getElementById('container'), 0, 0, 300, 300);
 const spiral = ParametricCurve((t) => ({x:190 + t*50*Math.cos(t*6*Math.PI), y:80 + t*50*Math.sin(t*6*Math.PI)}));
 const ellipse = Ellipse([40,40], 30, 10, -45);
@@ -40,7 +40,7 @@ const curve = CompositeCurve([
     Arc([40,100], [40,80], 10, 10, 0, 0, 0),
     QBezier([[40,80],[20,100],[60,120]]),
     Line([60,120], [70,100])
-]).transform(Matrix.translate(-20, 0));
+]).transform(Matrix2D.translate(-20, 0));
 const line1 = Line([20,20], [60,60]).setStyle('stroke', 'blue');
 const line2 = Line([50,2], [20,70]).setStyle('stroke', 'green');
 const line3 = Line([60,160], [300,0]).setStyle('stroke', 'orange');

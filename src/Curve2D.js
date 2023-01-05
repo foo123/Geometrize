@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Generic Curve Base Class
+ * ### Curve2D 2D Generic Curve Base Class (subclass of Topos)
  *
  * Represents a generic curve in 2D space
  * (not used directly)
  *
 [/DOC_MD]**/
-var Curve = makeClass(Topos, {
-    constructor: function Curve(points, values) {
+var Curve2D = makeClass(Topos, {
+    constructor: function Curve2D(points, values) {
         var self = this,
             _matrix = null,
             _points = null,
@@ -20,18 +20,18 @@ var Curve = makeClass(Topos, {
         if (null == values) values = {};
 
         _values = values;
-        _matrix = self.hasMatrix() ? Matrix.eye() : null;
+        _matrix = self.hasMatrix() ? Matrix2D.eye() : null;
         _values.matrix = new Value(0);
         _values.matrix.isChanged(self.hasMatrix());
 
         def(self, 'matrix', {
             get: function() {
-                return _matrix ? _matrix : Matrix.eye();
+                return _matrix ? _matrix : Matrix2D.eye();
             },
             set: function(matrix) {
                 if (self.hasMatrix())
                 {
-                    matrix = Matrix(matrix);
+                    matrix = Matrix2D(matrix);
                     var isChanged = !matrix.eq(_matrix);
                     _matrix = matrix;
                     if (isChanged /*&& !self.isChanged()*/)
@@ -150,7 +150,7 @@ var Curve = makeClass(Topos, {
             configurable: true
         });
     },
-    name: 'Curve',
+    name: 'Curve2D',
     dispose: function() {
         var self = this;
         self.values = null;
@@ -238,23 +238,23 @@ var Curve = makeClass(Topos, {
         ];
     },
     toTex: function() {
-        return '\\text{Curve}';
+        return '\\text{Curve2D}';
     },
     toString: function() {
-        return 'Curve()';
+        return 'Curve2D()';
     }
 });
-Geometrize.Curve = Curve;
+Geometrize.Curve2D = Curve2D;
 
 /**[DOC_MD]
- * ### 2D Generic Bezier Curve Base Class
+ * ### Bezier2D 2D Generic Bezier Curve Base Class (subclass of Curve2D)
  *
  * Represents a generic bezier curve in 2D space
  * (not used directly)
  *
 [/DOC_MD]**/
-var Bezier = makeClass(Curve, {
-    constructor: function Bezier(points, values) {
+var Bezier2D = makeClass(Curve2D, {
+    constructor: function Bezier2D(points, values) {
         var self = this;
 
         if (null == points) points = [];
@@ -268,7 +268,7 @@ var Bezier = makeClass(Curve, {
             configurable: false
         });
     },
-    name: 'Bezier',
+    name: 'Bezier2D',
     fto: function(t) {
         var self = this;
         return new self.constructor(de_casteljau(t, self.points, true).points);
@@ -306,10 +306,123 @@ var Bezier = makeClass(Curve, {
         return ''+self.name+'('+self.points.map(Str).join(',')+')';
     }
 });
-Geometrize.Bezier = Bezier;
+Geometrize.Bezier2D = Bezier2D;
 
 /**[DOC_MD]
- * ### 2D Generic Parametric Curve
+ * ### EllipticArc2D 2D Generic Elliptic Arc Base Class (subclass of Curve2D)
+ *
+ * Represents a part of an arbitrary ellipse in 2D space
+ * (not used directly)
+ *
+[/DOC_MD]**/
+var EllipticArc2D = makeClass(Curve2D, {
+    constructor: function EllipticArc2D(points, values) {
+        var self = this;
+
+        self.$super('constructor', [points, values]);
+    },
+    name: 'EllipticArc2D',
+    hasMatrix: function() {
+        return false;
+    },
+    isClosed: function() {
+        return is_almost_equal(stdMath.abs(this.dtheta), TWO_PI);
+    },
+    isConvex: function() {
+        return true;
+    },
+    f: function(t) {
+        var self = this, c = self.center, cs = self.cs;
+        return arc(self.theta + t*self.dtheta, c.x, c.y, self.rX, self.rY, cs[0], cs[1]);
+    },
+    fto: function(t) {
+        var self = this, largeArc = 0, sweep = 1;
+        if (self instanceof Geometrize.Arc)
+        {
+            largeArc = self.largeArc;
+            sweep = self.sweep;
+        }
+        else
+        {
+            largeArc = t*TWO_PI > PI ? 1 : 0;
+            sweep = 1;
+        }
+        return new Geometrize.Arc(self.f(0), self.f(t), self.radiusX, self.radiusY, self.angle, largeArc, sweep);
+    },
+    d: function() {
+        var self = this, p;
+        if (self instanceof Geometrize.Arc)
+        {
+            p = ellipse2arc(self.center.x, self.center.y, self.rY, self.rX, [self.cs[0], -self.cs[1]], -self.theta, -self.dtheta);
+            return new Geometrize.Arc(
+                p.p0,
+                p.p1,
+                -self.angle,
+                p.fa,
+                p.fs
+            );
+        }
+        else if (self instanceof Geometrize.Ellipse)
+        {
+            return new Geometrize.Ellipse(
+                self.center,
+                self.radiusY,
+                self.radiusX,
+                -self.angle
+            );
+        }
+        else //if (self instanceof Geometrize.Circle)
+        {
+            return self.clone();
+        }
+    },
+    hasPoint: function(point) {
+        var self = this, ret = false;
+        if (Geometrize.Arc && (self instanceof Geometrize.Arc))
+        {
+            ret = point_on_arc(point, self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta);
+        }
+        else if (Geometrize.Ellipse && (self instanceof Geometrize.Ellipse))
+        {
+            ret = 2 === point_inside_ellipse(point, self.center, self.rX, self.rY, self.cs);
+        }
+        else if (Geometrize.Circle && (self instanceof Geometrize.Circle))
+        {
+            ret = 2 === point_inside_circle(point, self.center, self.rX);
+        }
+        return ret;
+    },
+    hasInsidePoint: function(point, strict) {
+        var self = this, inside, ret = false;
+        if (Geometrize.Arc && (self instanceof Geometrize.Arc))
+        {
+            return strict ? false : self.hasPoint(point);
+        }
+        else if (Geometrize.Ellipse && (self instanceof Geometrize.Ellipse))
+        {
+            inside = point_inside_ellipse(point, self.center, self.rX, self.rY, self.cs);
+            ret = strict ? 1 === inside : 0 < inside;
+        }
+        else if (Geometrize.Circle && (self instanceof Geometrize.Circle))
+        {
+            inside = point_inside_circle(point, self.center, self.rX);
+            ret = strict ? 1 === inside : 0 < inside;
+        }
+        return ret;
+    },
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var self = this, c = self.center, cs = self.cs, sgn = 1;
+        if (!(self instanceof Geometrize.Arc)) sgn = -1;
+        return cbezier_from_arc(c.x, c.y, self.rX, self.rY, cs[0], cs[1], self.theta, sgn*t*self.dtheta);
+    },
+});
+Geometrize.EllipticArc2D = EllipticArc2D;
+
+/**[DOC_MD]
+ * ### ParametricCurve 2D Generic Parametric Curve (subclass of Curve2D)
  *
  * Represents a generic parametric curve in 2D space
  * ```javascript
@@ -317,13 +430,13 @@ Geometrize.Bezier = Bezier;
  * const spiral = ParametricCurve((t) => ({x: cx + t*r*Math.cos(t*6*Math.PI), y: cy + t*r*Math.sin(t*6*Math.PI)}));
  * ```
 [/DOC_MD]**/
-var ParametricCurve = makeClass(Curve, {
+var ParametricCurve = makeClass(Curve2D, {
     constructor: function ParametricCurve(f) {
-        var self = this, _length = null, _bbox = null;
+        var self = this, _length = null, _bbox = null, _hull = null;
         if (f instanceof ParametricCurve) return f;
         if (!(self instanceof ParametricCurve)) return new ParametricCurve(f);
         self.f = is_function(f) ? f : function(t) {return {x:0, y:0};};
-        self.$super("constructor", [[self.f(0), self.f(1)]]);
+        self.$super("constructor", [[]]);
         def(self, 'length', {
             get: function() {
                 if (null == _length)
@@ -340,21 +453,20 @@ var ParametricCurve = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
-                    _bbox = {
-                        ymin: Infinity,
-                        xmin: Infinity,
-                        ymax: -Infinity,
-                        xmax: -Infinity
-                    };
-                    for (var i=0,p=self._lines,n=p.length; i<n; ++i)
-                    {
-                        _bbox.ymin = stdMath.min(_bbox.ymin, p[i].y);
-                        _bbox.ymax = stdMath.max(_bbox.ymax, p[i].y);
-                        _bbox.xmin = stdMath.min(_bbox.xmin, p[i].x);
-                        _bbox.xmax = stdMath.max(_bbox.xmax, p[i].x);
-                    }
+                    _bbox = bounding_box_from_points(self._lines);
                 }
                 return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    _hull = aligned_bounding_box_from_points(self._lines).map(Point);
+                }
+                return _hull;
             },
             enumerable: false,
             configurable: false
@@ -364,6 +476,7 @@ var ParametricCurve = makeClass(Curve, {
             {
                 _length = null;
                 _bbox = null;
+                _hull = null;
             }
             return self.$super('isChanged', arguments);
         };
@@ -375,9 +488,9 @@ var ParametricCurve = makeClass(Curve, {
     transform: function(matrix) {
         return (new ParametricCurve(this.f)).setMatrix(matrix);
     },
-    fto: function(t1) {
-        var f = this.f, p1 = f(t1);
-        return new ParametricCurve(function(t) {return t >= t1 ? {x:p1.x, y:p1.y} : f(t*t1);});
+    fto: function(tmax) {
+        var f = this.f, pmax = f(tmax);
+        return new ParametricCurve(function(t) {return t >= tmax ? {x:pmax.x, y:pmax.y} : f(t*tmax);});
     },
     isClosed: function() {
         var self = this, p = self._lines;
@@ -442,7 +555,7 @@ var ParametricCurve = makeClass(Curve, {
             i = polyline_polyline_intersection(self._lines, other._lines);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             return other.intersects(self);
         }
@@ -533,7 +646,7 @@ var MZ = /[M]/g,
     PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
 /**[DOC_MD]
- * ### 2D Generic Composite Curve
+ * ### CompositeCurve 2D Generic Composite Curve (subclass of Curve2D)
  *
  * Represents a container of multiple, not necessarily joined curves
  * ```javascript
@@ -541,7 +654,7 @@ var MZ = /[M]/g,
  * const curve = CompositeCurve([Line(p1, p2), QBezier([p3, p4, p5]), Line(p6, p7)]);
  * ```
 [/DOC_MD]**/
-var CompositeCurve = makeClass(Curve, {
+var CompositeCurve = makeClass(Curve2D, {
     constructor: function CompositeCurve(curves) {
         var self = this,
             _curves = null,
@@ -556,14 +669,14 @@ var CompositeCurve = makeClass(Curve, {
 
         if (!(self instanceof CompositeCurve)) return new CompositeCurve(curves);
         if (null == curves) curves = [];
-        Primitive.call(self);
+        Object2D.call(self);
 
         curve_add = function(c) {
-            if (c instanceof Curve) c.onChange(onCurveChange);
+            if (c instanceof Curve2D) c.onChange(onCurveChange);
             return c;
         };
         curve_del = function(c) {
-            if (c instanceof Curve) c.onChange(onCurveChange, false);
+            if (c instanceof Curve2D) c.onChange(onCurveChange, false);
             return c;
         };
         onCurveChange = function onCurveChange(curve) {
@@ -707,7 +820,7 @@ var CompositeCurve = makeClass(Curve, {
                 _bbox = null;
                 _hull = null;
             }
-            return Primitive.prototype.isChanged.apply(self, arguments);
+            return Object2D.prototype.isChanged.apply(self, arguments);
         };
     },
     name: 'CompositeCurve',
@@ -716,13 +829,13 @@ var CompositeCurve = makeClass(Curve, {
         if (self.curves)
         {
             unobserveArray(self.curves, function(c) {
-                if (c instanceof Curve) c.onChange(self.id, false);
+                if (c instanceof Curve2D) c.onChange(self.id, false);
                 return c;
             });
             self.curves = null;
             self.points = null;
         }
-        Primitive.prototype.dispose.call(self);
+        Object2D.prototype.dispose.call(self);
     },
     clone: function() {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.clone();}));
@@ -777,7 +890,7 @@ var CompositeCurve = makeClass(Curve, {
         {
             return self.hasPoint(other) ? [other] : false;
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             for (var ii,i=[],c=self.curves,n=c.length,j=0; j<n; ++j)
             {

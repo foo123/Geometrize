@@ -76,7 +76,7 @@ var Plane = makeClass(null, {
             configurable: false
         });
         self.add = function(o) {
-            if (o instanceof Primitive)
+            if (o instanceof Object2D)
             {
                 if (!HAS.call(svgEl, o.id))
                 {
@@ -131,7 +131,7 @@ var Plane = makeClass(null, {
             return SVG('svg', {
             'xmlns': ['http://www.w3.org/2000/svg', true],
             'viewBox': [Str(x0)+' '+Str(y0)+' '+Str(x1)+' '+Str(y1), true]
-            }, false, objects.map(function(o){return o instanceof Primitive ? o.toSVG() : '';}).join(''));
+            }, false, objects.map(function(o){return o instanceof Object2D ? o.toSVG() : '';}).join(''));
         };
         self.toCanvas = function(canvas) {
             return isBrowser ? renderCanvas(canvas || document.createElement('canvas')) : canvas;
@@ -158,7 +158,7 @@ var Plane = makeClass(null, {
                 }, svg);
             }
             objects.forEach(function(o) {
-                if (o instanceof Primitive)
+                if (o instanceof Object2D)
                 {
                     var el = svgEl[o.id];
                     if (null === el)
@@ -188,7 +188,7 @@ var Plane = makeClass(null, {
                 ctx.clearRect(0, 0, w, h);
                 ctx.translate(-x0, -y0);
                 objects.forEach(function(o) {
-                    if (o instanceof Primitive)
+                    if (o instanceof Object2D)
                     {
                         o.toCanvas(ctx);
                     }

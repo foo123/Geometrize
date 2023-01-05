@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Cubic Bezier
+ * ### CBezier 2D Cubic Bezier (subclass of Bezier2D)
  *
  * Represents a cubic bezier curve defined by its control points
  * ```javascript
  * const cbezier = CBezier([p1, p2, p3, p4]);
  * ```
 [/DOC_MD]**/
-var CBezier = makeClass(Bezier, {
+var CBezier = makeClass(Bezier2D, {
     constructor: function CBezier(points) {
         var self = this,
             _length = null,
@@ -69,21 +69,7 @@ var CBezier = makeClass(Bezier, {
             get: function() {
                 if (null == _hull)
                 {
-                    var p = self._points,
-                        // transform curve to be aligned to x-axis
-                        T = align_curve(p),
-                        m = Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty)),
-                        // compute transformed bounding box
-                        bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
-                        // reverse back to original curve
-                        invm = m.inv()
-                    ;
-                    _hull = [
-                        invm.transform(new Point(bb.xmin, bb.ymin)),
-                        invm.transform(new Point(bb.xmax, bb.ymin)),
-                        invm.transform(new Point(bb.xmax, bb.ymax)),
-                        invm.transform(new Point(bb.xmin, bb.ymax))
-                    ];
+                    _hull = aligned_bounding_box_from_points(self._points, BB).map(Point);
                 }
                 return _hull;
             },
@@ -144,7 +130,7 @@ var CBezier = makeClass(Bezier, {
             i = polyline_cbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             return other.intersects(self);
         }

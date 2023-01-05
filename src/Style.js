@@ -1,5 +1,9 @@
-// 2D Style class
-// eg stroke, fill, width, ..
+/**[DOC_MD]
+ * ### Style class
+ *
+ * Represents the styling (eg stroke, fill, width) of a 2D object
+ * 
+[/DOC_MD]**/
 var Style = makeClass(null, merge(null, {
     constructor: function Style(style) {
         var self = this, styleProps = null, _style = null;

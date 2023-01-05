@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Quadratic Bezier
+ * ### QBezier 2D Quadratic Bezier (subclass of Bezier2D)
  *
  * Represents a quadratic bezier curve defined by its control points
  * ```javascript
  * const qbezier = QBezier([p1, p2, p3]);
  * ```
 [/DOC_MD]**/
-var QBezier = makeClass(Bezier, {
+var QBezier = makeClass(Bezier2D, {
     constructor: function QBezier(points) {
         var self = this,
             _length = null,
@@ -69,21 +69,7 @@ var QBezier = makeClass(Bezier, {
             get: function() {
                 if (null == _hull)
                 {
-                    var p = self._points,
-                        // transform curve to be aligned to x-axis
-                        T = align_curve(p),
-                        m = Matrix.rotate(T.R).mul(Matrix.translate(T.Tx, T.Ty)),
-                        // compute transformed bounding box
-                        bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
-                        // reverse back to original curve
-                        invm = m.inv()
-                    ;
-                    _hull = [
-                        invm.transform(new Point(bb.xmin, bb.ymin)),
-                        invm.transform(new Point(bb.xmax, bb.ymin)),
-                        invm.transform(new Point(bb.xmax, bb.ymax)),
-                        invm.transform(new Point(bb.xmin, bb.ymax))
-                    ];
+                    _hull = aligned_bounding_box_from_points(self._points, BB).map(Point);
                 }
                 return _hull;
             },
@@ -139,7 +125,7 @@ var QBezier = makeClass(Bezier, {
             i = polyline_qbezier_intersection(self._lines, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             return other.intersects(self);
         }

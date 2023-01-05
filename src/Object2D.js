@@ -1,6 +1,12 @@
-// 2D Geometric Primitive base class
-var Primitive = makeClass(null, merge(null, {
-    constructor: function Primitive() {
+/**[DOC_MD]
+ * ### Object2D Base Class
+ *
+ * Represents a generic 2D object
+ * (not used directly)
+ * 
+[/DOC_MD]**/
+var Object2D = makeClass(null, merge(null, {
+    constructor: function Object2D() {
         var self = this, _style = null, onStyleChange;
 
         self.id = uuid(self.name);
@@ -58,7 +64,7 @@ var Primitive = makeClass(null, merge(null, {
         self.isChanged(true);
     },
     id: '',
-    name: 'Primitive',
+    name: 'Object2D',
     clone: function() {
         return this;
     },
@@ -107,10 +113,10 @@ var Primitive = makeClass(null, merge(null, {
     toCanvasPath: function(ctx) {
     },
     toTex: function() {
-        return '\\text{Primitive}';
+        return '\\text{Object2D}';
     },
     toString: function() {
-        return 'Primitive()';
+        return 'Object2D()';
     }
 }, Changeable));
-Geometrize.Primitive = Primitive;
+Geometrize.Object2D = Object2D;

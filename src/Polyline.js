@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Polyline
+ * ### Polyline 2D Polyline (subclass of Curve2D)
  *
  * Represents an assembly of consecutive line segments between given points
  * ```javascript
  * const polyline = Polyline([p1, p2, .., pn]);
  * ```
 [/DOC_MD]**/
-var Polyline = makeClass(Curve, {
+var Polyline = makeClass(Curve2D, {
     constructor: function Polyline(points) {
         var self = this,
             _length = null,
@@ -55,19 +55,7 @@ var Polyline = makeClass(Curve, {
             get: function() {
                 if (null == _bbox)
                 {
-                    _bbox = {
-                        ymin: Infinity,
-                        xmin: Infinity,
-                        ymax: -Infinity,
-                        xmax: -Infinity
-                    };
-                    for (var i=0,p=self._points,n=p.length; i<n; ++i)
-                    {
-                        _bbox.ymin = stdMath.min(_bbox.ymin, p[i].y);
-                        _bbox.ymax = stdMath.max(_bbox.ymax, p[i].y);
-                        _bbox.xmin = stdMath.min(_bbox.xmin, p[i].x);
-                        _bbox.xmax = stdMath.max(_bbox.xmax, p[i].x);
-                    }
+                    _bbox = bounding_box_from_points(self._points);
                 }
                 return _bbox;
             },
@@ -78,7 +66,7 @@ var Polyline = makeClass(Curve, {
             get: function() {
                 if (null == _hull)
                 {
-                    _hull = convex_hull(self._points).map(Point);
+                    _hull = aligned_bounding_box_from_points(self._points).map(Point);
                 }
                 return _hull;
             },
@@ -179,7 +167,7 @@ var Polyline = makeClass(Curve, {
             i = polyline_polyline_intersection(self._points, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             return other.intersects(self);
         }

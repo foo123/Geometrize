@@ -1,13 +1,13 @@
 /**[DOC_MD]
- * ### 2D Point
+ * ### Point 2D Point (subclass of Object2D)
  *
  * Represents a point in 2D space
- * 
+ *
  * ```javascript
  * const p = Point(x, y);
  * ```
 [/DOC_MD]**/
-var Point = makeClass(Primitive, {
+var Point = makeClass(Object2D, {
     constructor: function Point(x, y) {
         var self = this, _x = 0, _y = 0, _n = null;
         if (x instanceof Point)
@@ -142,10 +142,10 @@ var Point = makeClass(Primitive, {
         return angle(this.x, this.y, other.x, other.y);
     },
     between: function(p1, p2) {
-        return !!(p1 instanceof Line ? point_on_line_segment(this, p1.start, p1.end) : point_on_line_segment(this, p1, p2));
+        return point_on_line_segment(this, p1, p2);
     },
     distanceToLine: function(p1, p2) {
-        return p1 instanceof Line ? point_line_distance(this, p1.start, p1.end) : point_line_distance(this, p1, p2);
+        return point_line_distance(this, p1, p2);
     },
     isOn: function(curve) {
         return is_function(curve.hasPoint) ? curve.hasPoint(this) : false;
@@ -158,7 +158,7 @@ var Point = makeClass(Primitive, {
         {
             return this.eq(other) ? [this] : false;
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             return other.intersects(this);
         }

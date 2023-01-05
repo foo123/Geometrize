@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Topos
+ * ### Topos 2D Geometric Topos (subclass of Object2D)
  *
  * Represents a geometric topos, ie a set of points
  * ```javascript
  * const topos = Topos([p1, p2, p3, .., pn]);
  * ```
 [/DOC_MD]**/
-var Topos = makeClass(Primitive, {
+var Topos = makeClass(Object2D, {
     constructor: function Topos(points) {
         var self = this,
             _points = null,
@@ -125,7 +125,7 @@ var Topos = makeClass(Primitive, {
         return this.hasPoint(point);
     },
     intersects: function(other) {
-        if (other instanceof Primitive)
+        if (other instanceof Object2D)
         {
             var p = this.points, n = p.length, j, i = [];
             for (j=0; j<n; ++j)

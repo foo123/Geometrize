@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Circle
+ * ### 2D Circle (subclass of EllipticArc2D)
  *
  * Represents a circle of given center (point) and radius
  * ```javascript
  * const circle = Circle(center, radius);
  * ```
 [/DOC_MD]**/
-var Circle = makeClass(Curve, {
+var Circle = makeClass(EllipticArc2D, {
     constructor: function Circle(center, radius) {
         var self = this,
             _radius = null,
@@ -44,6 +44,70 @@ var Circle = makeClass(Curve, {
                 }
             },
             enumerable: true,
+            configurable: false
+        });
+        def(self, 'radiusX', {
+            get: function() {
+                return self.radius;
+            },
+            set: function(r) {
+                self.radius = r;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'radiusY', {
+            get: function() {
+                return self.radius;
+            },
+            set: function(r) {
+                self.radius = r;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'rX', {
+            get: function() {
+                return self.radius;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'rY', {
+            get: function() {
+                return self.radius;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'angle', {
+            get: function() {
+                return 0;
+            },
+            set: function(angle) {
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'theta', {
+            get: function() {
+                return 0;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'dtheta', {
+            get: function() {
+                return TWO_PI;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'cs', {
+            get: function() {
+                return [1, 0];
+            },
+            enumerable: false,
             configurable: false
         });
         def(self, 'length', {
@@ -113,28 +177,6 @@ var Circle = makeClass(Curve, {
     isClosed: function() {
         return true;
     },
-    isConvex: function() {
-        return true;
-    },
-    hasMatrix: function() {
-        return false;
-    },
-    f: function(t) {
-        var self = this, c = self.center, r = self.radius;
-        return arc(t*TWO_PI, c.x, c.y, r, r, 1, 0);
-    },
-    fto: function(t) {
-        var self = this;
-        return new Arc(self.f(0), self.f(t), self.radius, self.radius, 0, t*TWO_PI > PI, 1);
-    },
-    hasPoint: function(point) {
-        self = this;
-        return 2 === point_inside_circle(point, self.center, self.radius);
-    },
-    hasInsidePoint: function(point, strict) {
-        var self = this, inside = point_inside_circle(point, self.center, self.radius);
-        return strict ? 1 === inside : 0 < inside;
-    },
     intersects: function(other) {
         var self = this;
         if (other instanceof Point)
@@ -146,18 +188,11 @@ var Circle = makeClass(Curve, {
             var i = circle_circle_intersection(self.center, self.radius, other.center, other.radius);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             return other.intersects(self);
         }
         return false;
-    },
-    bezierPoints: function(t) {
-        if (arguments.length) t = clamp(t, 0, 1);
-        else t = 1;
-        if (is_almost_equal(t, 1)) t = 1;
-        var self = this, c = self.center;
-        return cbezier_from_arc(c.x, c.y, self.radius, self.radius, 1, 0, 0, -t*TWO_PI);
     },
     toSVG: function(svg) {
         var self = this, c = self.center, r = self.radius;

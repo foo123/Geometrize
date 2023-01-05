@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Elliptical Arc
+ * ### 2D Elliptical Arc (subclass of EllipticArc2D)
  *
  * Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
  * ```javascript
  * const arc = Arc(start, end, radiusX, radiusY, angle, largeArc, sweep);
  * ```
 [/DOC_MD]**/
-var Arc = makeClass(Curve, {
+var Arc = makeClass(EllipticArc2D, {
     constructor: function Arc(start, end, radiusX, radiusY, angle, largeArc, sweep) {
         var self = this,
             _radiusX = null,
@@ -332,75 +332,6 @@ var Arc = makeClass(Curve, {
             self.largeArc,
             self.sweep
         );
-    },
-    isClosed: function() {
-        return false;
-    },
-    isConvex: function() {
-        return false;
-    },
-    hasMatrix: function() {
-        return false;
-    },
-    f: function(t) {
-        var self = this, c = self.center, cs = self.cs;
-        return arc(self.theta + t*self.dtheta, c.x, c.y, self.rX, self.rY, cs[0], cs[1]);
-    },
-    fto: function(t) {
-        var self = this;
-        return new Arc(self.start, self.f(t), self.radiusX, self.radiusY, self.angle, self.largeArc, self.sweep);
-    },
-    d: function() {
-        var self = this,
-            p = ellipse2arc(self.center.x, self.center.y, self.rY, self.rX, [self.cs[0], -self.cs[1]], -self.theta, -self.dtheta);
-        return new Arc(
-            p.p0,
-            p.p1,
-            -self.angle,
-            p.fa,
-            p.fs
-        );
-    },
-    hasPoint: function(point) {
-        var self = this;
-        return point_on_arc(point, self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta);
-    },
-    hasInsidePoint: function(point, strict) {
-        return strict ? false : this.hasPoint(point);
-    },
-    intersects: function(other) {
-        var self = this, i;
-        if (other instanceof Point)
-        {
-            return self.hasPoint(other) ? [other] : false;
-        }
-        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
-        {
-            i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            return i ? i.map(Point) : false
-        }
-        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
-        {
-            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            return i ? i.map(Point) : false
-        }
-        else if (other instanceof Arc)
-        {
-            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
-            return i ? i.map(Point) : false;
-        }
-        else if (other instanceof Primitive)
-        {
-            return other.intersects(self);
-        }
-        return false;
-    },
-    bezierPoints: function(t) {
-        if (arguments.length) t = clamp(t, 0, 1);
-        else t = 1;
-        if (is_almost_equal(t, 1)) t = 1;
-        var self = this, c = self.center, cs = self.cs;
-        return cbezier_from_arc(c.x, c.y, self.rX, self.rY, cs[0], cs[1], self.theta, t*self.dtheta);
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);

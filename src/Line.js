@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Line Segment (equivalent to Linear Bezier)
+ * ### Line 2D Line Segment (equivalent to Linear Bezier, subclass of Bezier2D)
  *
  * Represents a line segment between 2 points
  * ```javascript
  * const line = Line(p1, p2);
  * ```
 [/DOC_MD]**/
-var Line = makeClass(Bezier, {
+var Line = makeClass(Bezier2D, {
     constructor: function Line(start, end) {
         var self = this,
             _length = null,
@@ -69,19 +69,7 @@ var Line = makeClass(Bezier, {
             get: function() {
                 if (null == _bbox)
                 {
-                    var p = self._points,
-                        p1 = p[0], p2 = p[1],
-                        xmin = stdMath.min(p1.x, p2.x),
-                        xmax = stdMath.max(p1.x, p2.x),
-                        ymin = stdMath.min(p1.y, p2.y),
-                        ymax = stdMath.max(p1.y, p2.y)
-                    ;
-                    _bbox = {
-                        ymin: ymin,
-                        xmin: xmin,
-                        ymax: ymax,
-                        xmax: xmax
-                    };
+                    _bbox = bounding_box_from_points(self._points);
                 }
                 return _bbox;
             },
@@ -158,7 +146,7 @@ var Line = makeClass(Bezier, {
             i = line_cbezier_intersection(p[0], p[1], null, other._points);
             return i ? i.map(Point) : false;
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             return other.intersects(this);
         }

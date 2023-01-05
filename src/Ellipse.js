@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### 2D Ellipse
+ * ### 2D Ellipse (subclass of EllipticArc2D)
  *
  * Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
  * ```javascript
  * const ellipse = Ellipse(center, radiusX, radiusY, angle);
  * ```
 [/DOC_MD]**/
-var Ellipse = makeClass(Curve, {
+var Ellipse = makeClass(EllipticArc2D, {
     constructor: function Ellipse(center, radiusX, radiusY, angle) {
         var self = this,
             _radiusX = null,
@@ -70,6 +70,20 @@ var Ellipse = makeClass(Curve, {
             enumerable: true,
             configurable: false
         });
+        def(self, 'rX', {
+            get: function() {
+                return self.radiusX;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'rY', {
+            get: function() {
+                return self.radiusY;
+            },
+            enumerable: true,
+            configurable: false
+        });
         def(self, 'angle', {
             get: function() {
                 return _angle.val();
@@ -85,6 +99,20 @@ var Ellipse = makeClass(Curve, {
                 }
             },
             enumerable: true,
+            configurable: false
+        });
+        def(self, 'theta', {
+            get: function() {
+                return 0;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'dtheta', {
+            get: function() {
+                return TWO_PI;
+            },
+            enumerable: false,
             configurable: false
         });
         def(self, 'cs', {
@@ -200,37 +228,6 @@ var Ellipse = makeClass(Curve, {
     isClosed: function() {
         return true;
     },
-    isConvex: function() {
-        return true;
-    },
-    hasMatrix: function() {
-        return false;
-    },
-    f: function(t) {
-        var self = this, c = self.center, cs = self.cs;
-        return arc(t*TWO_PI, c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1]);
-    },
-    fto: function(t) {
-        var self = this;
-        return new Arc(self.f(0), self.f(t), self.radiusX, self.radiusY, self.angle, t*TWO_PI > PI, 1);
-    },
-    d: function() {
-        var self = this;
-        return new Ellipse(
-            self.center,
-            self.radiusY,
-            self.radiusX,
-            -self.angle
-        );
-    },
-    hasPoint: function(point) {
-        var self = this;
-        return 2 === point_inside_ellipse(point, self.center, self.radiusX, self.radiusY, self.cs);
-    },
-    hasInsidePoint: function(point, strict) {
-        var self = this, inside = point_inside_ellipse(point, self.center, self.radiusX, self.radiusY, self.cs);
-        return strict ? 1 === inside : 0 < inside;
-    },
     intersects: function(other) {
         var self = this, i;
         if (other instanceof Point)
@@ -247,18 +244,11 @@ var Ellipse = makeClass(Curve, {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
             return i ? i.map(Point) : false
         }
-        else if (other instanceof Primitive)
+        else if (other instanceof Object2D)
         {
             return other.intersects(self);
         }
         return false;
-    },
-    bezierPoints: function(t) {
-        if (arguments.length) t = clamp(t, 0, 1);
-        else t = 1;
-        if (is_almost_equal(t, 1)) t = 1;
-        var self = this, c = self.center, cs = self.cs;
-        return cbezier_from_arc(c.x, c.y, self.radiusX, self.radiusY, cs[0], cs[1], 0, -t*TWO_PI);
     },
     toSVG: function(svg) {
         var self = this,

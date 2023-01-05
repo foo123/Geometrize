@@ -1035,6 +1035,41 @@ function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
         fs: dtheta > 0
     };
 }
+function bounding_box_from_points(p)
+{
+    var _bbox = {
+        ymin: Infinity,
+        xmin: Infinity,
+        ymax: -Infinity,
+        xmax: -Infinity
+    };
+    for (var i=0,n=p.length; i<n; ++i)
+    {
+        _bbox.ymin = stdMath.min(_bbox.ymin, p[i].y);
+        _bbox.ymax = stdMath.max(_bbox.ymax, p[i].y);
+        _bbox.xmin = stdMath.min(_bbox.xmin, p[i].x);
+        _bbox.xmax = stdMath.max(_bbox.xmax, p[i].x);
+    }
+    return _bbox;
+}
+function aligned_bounding_box_from_points(p, BB)
+{
+    BB = BB || bounding_box_from_points;
+    // transform curve to be aligned to x-axis
+    var T = align_curve(p),
+        m = Matrix2D.rotate(T.R).mul(Matrix2D.translate(T.Tx, T.Ty)),
+        // compute transformed bounding box
+        bb = BB(p.map(function(pi) {return m.transform(pi, {x:0, y:0});})),
+        // reverse back to original curve
+        invm = m.inv()
+    ;
+    return [
+    invm.transform({x:bb.xmin, y:bb.ymin}),
+    invm.transform({x:bb.xmax, y:bb.ymin}),
+    invm.transform({x:bb.xmax, y:bb.ymax}),
+    invm.transform({x:bb.xmin, y:bb.ymax})
+    ];
+}
 function align_curve(points)
 {
     return {Tx:-points[0].x, Ty:-points[0].y, R:-stdMath.atan2(points[points.length-1].y - points[0].y, points[points.length-1].x - points[0].x)};

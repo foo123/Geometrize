@@ -51,6 +51,11 @@ function makeSuper(superklass)
 }
 function makeClass(superklass, klass, statik)
 {
+    if (arguments.length < 2)
+    {
+        klass = superklass;
+        superklass = null;
+    }
     var C = HAS.call(klass, 'constructor') ? klass.constructor : function() {}, p;
     if (superklass)
     {
