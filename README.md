@@ -4,7 +4,7 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 0.9.9** (71 kB minified)
+**version: 0.9.10** (73 kB minified)
 
 
 [API Reference](/manual.md)
@@ -27,8 +27,8 @@ Examples:
 [See it](https://foo123.github.io/examples/geometrize/)
 
 ```javascript
-const {Plane, CompositeCurve, ParametricCurve, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Matrix2D} = Geometrize;
-const plane = Plane(document.getElementById('container'), 0, 0, 300, 300);
+const {Scene2D, CompositeCurve, ParametricCurve, Ellipse, Circle, Arc, QBezier, CBezier, Line, Polyline, Polygon, Rect, Matrix2D} = Geometrize;
+const scene = Scene2D(document.getElementById('container'), 0, 0, 300, 300);
 const spiral = ParametricCurve((t) => ({x:190 + t*50*Math.cos(t*6*Math.PI), y:80 + t*50*Math.sin(t*6*Math.PI)}));
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
@@ -48,21 +48,21 @@ const line4 = Line([60,120], [300,-40]).setStyle('stroke', 'cyan');
 
 let intersections = [];
 
-plane.add(spiral);
-plane.add(ellipse);
-plane.add(circle);
-plane.add(arc);
-plane.add(qbezier);
-plane.add(cbezier);
-plane.add(curve);
-plane.add(line1);
-plane.add(line2);
-plane.add(line3);
-plane.add(line4);
+scene.add(spiral);
+scene.add(ellipse);
+scene.add(circle);
+scene.add(arc);
+scene.add(qbezier);
+scene.add(cbezier);
+scene.add(curve);
+scene.add(line1);
+scene.add(line2);
+scene.add(line3);
+scene.add(line4);
 
-intersections = plane.getIntersections();
+intersections = scene.getIntersections();
 intersections.forEach(p => {
-    plane.add(p.setStyle('stroke', 'red').setStyle('stroke-width', 2));
+    scene.add(p.setStyle('stroke', 'red').setStyle('stroke-width', 2));
 });
 ```
 

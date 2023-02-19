@@ -1,12 +1,12 @@
 /**[DOC_MD]
- * ### Object2D Base Class
+ * ### Object3D Base Class
  *
- * Represents a generic 2D object
+ * Represents a generic 3D object
  * (not used directly)
  * 
 [/DOC_MD]**/
-var Object2D = makeClass(null, merge(null, {
-    constructor: function Object2D() {
+var Object3D = makeClass(null, merge(null, {
+    constructor: function Object3D() {
         var self = this, _style = null, onStyleChange;
 
         self.id = uuid(self.name);
@@ -74,7 +74,7 @@ var Object2D = makeClass(null, merge(null, {
         self.isChanged(true);
     },
     id: '',
-    name: 'Object2D',
+    name: 'Object3D',
 /**[DOC_MD]
  * **Methods:**
  *
@@ -93,21 +93,17 @@ var Object2D = makeClass(null, merge(null, {
     },
     setStyle: null,
 /**[DOC_MD]
- * * `getBoundingBox(): Object` get bounding box {xmin,ymin,xmax,ymax} of object
+ * * `getBoundingBox(): Object` get bounding box {xmin,ymin,xmax,ymax,zmin,zmax} of object
 [/DOC_MD]**/
     getBoundingBox: function() {
         return {
+        zmin: -Infinity,
         ymin: -Infinity,
         xmin: -Infinity,
+        zmax: Infinity,
         ymax: Infinity,
         xmax: Infinity
         };
-    },
-/**[DOC_MD]
- * * `getConvexHull(): Point2D[]` get points of convex hull enclosing object
-[/DOC_MD]**/
-    getConvexHull: function() {
-        return [];
     },
 /**[DOC_MD]
  * * `getCenter(): Object` get center {x,y} of object
@@ -116,14 +112,9 @@ var Object2D = makeClass(null, merge(null, {
         var bb = this.getBoundingBox();
         return {
             x: (bb.xmin + bb.xmax)/2,
-            y: (bb.ymin + bb.ymax)/2
+            y: (bb.ymin + bb.ymax)/2,
+            z: (bb.zmin + bb.zmax)/2
         };
-    },
-    hasPoint: function(point) {
-        return false;
-    },
-    hasInsidePoint: function(point, strict) {
-        return false;
     },
     intersects: function(other) {
         return false;
@@ -131,27 +122,17 @@ var Object2D = makeClass(null, merge(null, {
     intersectsSelf: function() {
         return false;
     },
-    toSVG: function(svg) {
-        return arguments.length ? svg : '';
-    },
-    toSVGPath: function(svg) {
-        return arguments.length ? svg : '';
-    },
-    toCanvas: function(ctx) {
-    },
-    toCanvasPath: function(ctx) {
-    },
 /**[DOC_MD]
  * * `toTex(): String` get Tex representation of this object
 [/DOC_MD]**/
     toTex: function() {
-        return '\\text{Object2D}';
+        return '\\text{Object3D}';
     },
 /**[DOC_MD]
  * * `toString(): String` get String representation of this object
 [/DOC_MD]**/
     toString: function() {
-        return 'Object2D('+this.id+')';
+        return 'Object3D('+this.id+')';
     }
 }, Changeable));
-Geometrize.Object2D = Object2D;
+Geometrize.Object3D = Object3D;

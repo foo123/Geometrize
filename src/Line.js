@@ -104,7 +104,7 @@ var Line = makeClass(Bezier2D, {
     },
     intersects: function(other) {
         var self = this, i, p;
-        if (other instanceof Point)
+        if (other instanceof Point2D)
         {
             p = self._points;
             i = point_on_line_segment(other, p[0], p[1]);
@@ -114,37 +114,37 @@ var Line = makeClass(Bezier2D, {
         {
             p = self._points;
             i = line_segments_intersection(p[0], p[1], other._points[0], other._points[1]);
-            return i ? [Point(i)] : false;
+            return i ? [Point2D(i)] : false;
         }
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             p = self._points;
             i = line_circle_intersection(p[0], p[1], other.center, other.radius);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             p = self._points;
             i = line_ellipse_intersection(p[0], p[1], other.center, other.radiusX, other.radiusY, other.cs);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             p = self._points;
             i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             p = self._points;
             i = line_qbezier_intersection(p[0], p[1], null, other._points);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
         {
             p = self._points;
             i = line_cbezier_intersection(p[0], p[1], null, other._points);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (other instanceof Object2D)
         {

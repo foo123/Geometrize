@@ -1,4 +1,15 @@
 
+### Style class
+
+Represents the styling (eg stroke, fill, width) of a 2D or 3D object
+```javascript
+const style = Style({stroke:'red'});
+style['stroke'] = 'green'; // change it
+```
+
+
+
+
 ### Value class
 
 Represents a generic scalar value which can change dynamically
@@ -20,13 +31,6 @@ const p2 = m.transform(p);
 
 
 
-### Style class
-
-Represents the styling (eg stroke, fill, width) of a 2D object
-
-
-
-
 ### Object2D Base Class
 
 Represents a generic 2D object
@@ -35,30 +39,157 @@ Represents a generic 2D object
 
 
 
-### Point 2D Point (subclass of Object2D)
+**Properties:**
+
+
+
+
+* `id: String` unique ID for this object
+
+
+
+* `style: Style` the style applied to this object
+
+
+
+**Methods:**
+
+
+
+
+* `clone(): Object2D` get a copy of this object
+
+
+
+* `transform(matrix): Object2D` get a transformed copy of this object by matrix
+
+
+
+* `getBoundingBox(): Object` get bounding box {xmin,ymin,xmax,ymax} of object
+
+
+
+* `getConvexHull(): Point2D[]` get points of convex hull enclosing object
+
+
+
+* `getCenter(): Object` get center {x,y} of object
+
+
+
+* `toTex(): String` get Tex representation of this object
+
+
+
+* `toString(): String` get String representation of this object
+
+
+
+### Point2D 2D Point (subclass of Object2D)
 
 Represents a point in 2D space
 
 ```javascript
-const p = Point(x, y);
+const p = Point2D(x, y);
+p.x = x+10; // change it
 ```
 
 
 
-### Topos 2D Geometric Topos (subclass of Object2D)
+### Topos2D 2D Geometric Topos (subclass of Object2D)
 
 Represents a geometric topos, ie a set of points
 ```javascript
-const topos = Topos([p1, p2, p3, .., pn]);
+const topos = Topos2D([p1, p2, p3, .., pn]);
 ```
 
 
 
-### Curve2D 2D Generic Curve Base Class (subclass of Topos)
+**Properties:**
+
+
+
+
+* `points: Point2D[]` the points that define this topos
+
+
+
+**Methods:**
+
+
+
+
+* `hasPoint(point): Bool` check if given point belongs to this topos
+
+
+
+* `hasInsidePoint(point, strict): Bool` check if given point belongs to the interior of this topos (where applicable)
+
+
+
+* `intersects(other): Point2D{}` return array of intersection points with other 2d object
+
+
+
+### Curve2D 2D Generic Curve Base Class (subclass of Topos2D)
 
 Represents a generic curve in 2D space
 (not used directly)
 
+
+
+
+**Properties:**
+
+
+
+
+* `matrix: Matrix2D` the transform matrix of the curve
+
+
+
+* `length: Number` the length of the curve
+
+
+
+* `area: Number` the area enclosed by the curve
+
+
+
+**Methods:**
+
+
+
+
+* `isConnected(): Bool` True if curve is a connected curve (eg a line)
+
+
+
+* `isClosed(): Bool` true if curve is a closed curve (eg a circle)
+
+
+
+* `isConvex(): Bool` true if curve is convex (eg a concex polygon)
+
+
+
+* `getPointAt(t): Point2D` get point on curve at position specified by paramater `t` (0 <= t <= 1)
+
+
+
+* `curveUpTo(t): Curve2D` get curve up to point specified by paramater `t` (0 <= t <= 1)
+
+
+
+* `derivative(): Curve2D` get derivative of curve as curve
+
+
+
+* `polylinePoints(): Object{x,y}[]` get polyline points that approximates the curve
+
+
+
+* `bezierPoints(t): Object{x,y}[]` get cubic bezier points that approximates the curve (optionally up to point specified by parameter t)
 
 
 
@@ -95,6 +226,15 @@ Represents a container of multiple, not necessarily joined curves
 // construct a complex curve
 const curve = CompositeCurve([Line(p1, p2), QBezier([p3, p4, p5]), Line(p6, p7)]);
 ```
+
+
+
+**Properties:**
+
+
+
+
+* `curves: Curve2D[]` array of curves that define this composite curve
 
 
 
@@ -178,11 +318,11 @@ container for 2D geometric objects, grouped together
 
 
 
-### 2D Plane
+### 2D Scene
 
 scene container for 2D geometric objects
 
 ```javascript
-const plane = Plane(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
-plane.add(Line([p1, p2]));
+const scene = Scene2D(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
+scene.add(Line([p1, p2]));
 ```

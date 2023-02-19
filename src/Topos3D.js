@@ -1,13 +1,13 @@
 /**[DOC_MD]
- * ### Topos 2D Geometric Topos (subclass of Object2D)
+ * ### Topos3D 3D Geometric Topos (subclass of Object3D)
  *
- * Represents a geometric topos, ie a set of points
+ * Represents a geometric topos, ie a set of 3D points
  * ```javascript
- * const topos = Topos([p1, p2, p3, .., pn]);
+ * const topos = Topos3D([p1, p2, p3, .., pn]);
  * ```
 [/DOC_MD]**/
-var Topos = makeClass(Object2D, {
-    constructor: function Topos(points) {
+var Topos3D = makeClass(Object3D, {
+    constructor: function Topos3D(points) {
         var self = this,
             _points = null,
             onPointChange,
@@ -15,14 +15,14 @@ var Topos = makeClass(Object2D, {
             point_add,
             point_del
         ;
-        if (points instanceof Topos) return points;
-        if (!(self instanceof Topos)) return new Topos(points);
+        if (points instanceof Topos3D) return points;
+        if (!(self instanceof Topos3D)) return new Topos3D(points);
         if (null == points) points = [];
 
         self.$super('constructor');
 
         point_add = function(p) {
-            p = Point(p);
+            p = Point3D(p);
             p.onChange(onPointChange);
             return p;
         };
@@ -31,7 +31,7 @@ var Topos = makeClass(Object2D, {
             return p;
         };
         onPointChange = function onPointChange(point) {
-            if (is_array(_points) && (-1 !== _points.indexOf(point)))
+            if (is_array(_points))
             {
                 //if (!self.isChanged())
                 {
@@ -53,6 +53,13 @@ var Topos = makeClass(Object2D, {
         _points = observeArray(points, point_add, point_del, p_eq);
         _points.onChange(onArrayChange);
 
+/**[DOC_MD]
+ * **Properties:**
+ *
+[/DOC_MD]**/
+/**[DOC_MD]
+ * * `points: Point3D[]` the points that define this topos
+[/DOC_MD]**/
         def(self, 'points', {
             get: function() {
                 return _points;
@@ -85,7 +92,7 @@ var Topos = makeClass(Object2D, {
             configurable: true
         });
     },
-    name: 'Topos',
+    name: 'Topos3D',
     dispose: function() {
         var self = this;
         if (self.points)
@@ -107,10 +114,10 @@ var Topos = makeClass(Object2D, {
         return self.$super('isChanged', arguments);
     },
     clone: function() {
-        return new Topos(this.points.map(function(p) {return p.clone();}));
+        return new Topos3D(this.points.map(function(p) {return p.clone();}));
     },
     transform: function(matrix) {
-        return new Topos(this.points.map(function(p) {return matrix.transform(p);}));
+        return new Topos3D(this.points.map(function(p) {return matrix.transform(p);}));
     },
     hasPoint: function(point) {
         var p = this.points, n = p.length, j;
@@ -125,7 +132,7 @@ var Topos = makeClass(Object2D, {
         return this.hasPoint(point);
     },
     intersects: function(other) {
-        if (other instanceof Object2D)
+        if (other instanceof Object3D)
         {
             var p = this.points, n = p.length, j, i = [];
             for (j=0; j<n; ++j)
@@ -137,31 +144,11 @@ var Topos = makeClass(Object2D, {
         }
         return false;
     },
-    toSVG: function(svg) {
-        return this.toSVGPath(arguments.length ? svg : false);
-    },
-    toSVGPath: function(svg) {
-        var self = this, path = self.points.map(function(p) {return p.toSVGPath();}).join(' ');
-        return arguments.length ? SVG('path', {
-            'id': [self.id, false],
-            'd': [path, self.isChanged()],
-            'style': [self.style.toSVG(), self.style.isChanged()]
-        }, svg) : path;
-    },
-    toCanvas: function(ctx) {
-        this.style.toCanvas(ctx)
-        this.toCanvasPath(ctx);
-    },
-    toCanvasPath: function(ctx) {
-        this.points.forEach(function(p) {
-            p.toCanvasPath(ctx);
-        });
-    },
     toTex: function() {
-        return '\\text{Topos}';
+        return '\\text{Topos3D}';
     },
     toString: function() {
-        return 'Topos()';
+        return 'Topos3D()';
     }
 });
-Geometrize.Topos = Topos;
+Geometrize.Topos3D = Topos3D;

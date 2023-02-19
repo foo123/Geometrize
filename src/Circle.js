@@ -170,7 +170,7 @@ var Circle = makeClass(EllipticArc2D, {
             c = self.center,
             r = self.radius,
             ct = c.transform(matrix),
-            pt = new Point(c.x+r, c.y+r).transform(matrix)
+            pt = new Point2D(c.x+r, c.y+r).transform(matrix)
         ;
         return new Circle(ct, dist(ct, pt));
     },
@@ -179,14 +179,14 @@ var Circle = makeClass(EllipticArc2D, {
     },
     intersects: function(other) {
         var self = this;
-        if (other instanceof Point)
+        if (other instanceof Point2D)
         {
             return self.hasPoint(other) ? [other] : false;
         }
         else if (other instanceof Circle)
         {
             var i = circle_circle_intersection(self.center, self.radius, other.center, other.radius);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (other instanceof Object2D)
         {

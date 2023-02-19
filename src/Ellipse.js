@@ -181,10 +181,10 @@ var Ellipse = makeClass(EllipticArc2D, {
                 {
                     var c = self.center, rx = _radiusX.val(), ry = _radiusY.val();
                     _hull = [
-                        new Point(toarc(-1, -1, c.x, c.y, rx, ry, _cos, _sin)),
-                        new Point(toarc(1, -1, c.x, c.y, rx, ry, _cos, _sin)),
-                        new Point(toarc(1, 1, c.x, c.y, rx, ry, _cos, _sin)),
-                        new Point(toarc(-1, 1, c.x, c.y, rx, ry, _cos, _sin))
+                        new Point2D(toarc(-1, -1, c.x, c.y, rx, ry, _cos, _sin)),
+                        new Point2D(toarc(1, -1, c.x, c.y, rx, ry, _cos, _sin)),
+                        new Point2D(toarc(1, 1, c.x, c.y, rx, ry, _cos, _sin)),
+                        new Point2D(toarc(-1, 1, c.x, c.y, rx, ry, _cos, _sin))
                     ];
                 }
                 return _hull;
@@ -219,7 +219,7 @@ var Ellipse = makeClass(EllipticArc2D, {
             s = matrix.getScale()
         ;
         return new Ellipse(
-            new Point(c.x + t.x, c.y + t.y),
+            new Point2D(c.x + t.x, c.y + t.y),
             rX * s.x,
             rY * s.y,
             a + r
@@ -230,19 +230,19 @@ var Ellipse = makeClass(EllipticArc2D, {
     },
     intersects: function(other) {
         var self = this, i;
-        if (other instanceof Point)
+        if (other instanceof Point2D)
         {
             return self.hasPoint(other) ? [other] : false;
         }
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            return i ? i.map(Point) : false
+            return i ? i.map(Point2D) : false
         }
         else if (other instanceof Ellipse)
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            return i ? i.map(Point) : false
+            return i ? i.map(Point2D) : false
         }
         else if (other instanceof Object2D)
         {

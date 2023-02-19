@@ -197,9 +197,8 @@ var Arc = makeClass(EllipticArc2D, {
             enumerable: true,
             configurable: false
         });
-        BB = function BB(o1, o2, cx, cy, rx, ry, theta, dtheta, angle, sweep) {
+        BB = function BB(o1, o2, cx, cy, rx, ry, theta, dtheta, angle, otherArc, sweep, _cos, _sin) {
             var theta2 = theta + dtheta,
-                otherArc = false,
                 tan = stdMath.tan(rad(angle)),
                 p1, p2, p3, p4, t,
                 xmin, xmax, ymin, ymax,
@@ -216,31 +215,27 @@ var Arc = makeClass(EllipticArc2D, {
                 t = theta;
                 theta = theta2;
                 theta2 = t;
-                otherArc = true;
+                otherArc = !otherArc;
             }
             // find min/max from zeroes of directional derivative along x and y
             // first get of whole ellipse
             // along x axis
             t = stdMath.atan2(-ry*tan, rx);
-            if (t < 0) t += TWO_PI;
             p1 = arc(t, cx, cy, rx, ry, _cos, _sin);
-            t += PI;
-            p2 = arc(t, cx, cy, rx, ry, _cos, _sin);
+            p2 = arc(t + PI, cx, cy, rx, ry, _cos, _sin);
             // along y axis
             t = stdMath.atan2(ry, rx*tan);
-            if (t < 0) t += TWO_PI;
             p3 = arc(t, cx, cy, rx, ry, _cos, _sin);
-            t += PI;
-            p4 = arc(t, cx, cy, rx, ry, _cos, _sin);
-            if (p2.x < p1.x)
-            {
-                xmin = p2;
-                xmax = p1;
-            }
-            else
+            p4 = arc(t + PI, cx, cy, rx, ry, _cos, _sin);
+            if (p1.x < p2.x)
             {
                 xmin = p1;
                 xmax = p2;
+            }
+            else
+            {
+                xmin = p2;
+                xmax = p1;
             }
             if (p3.y < p4.y)
             {
@@ -253,31 +248,23 @@ var Arc = makeClass(EllipticArc2D, {
                 ymax = p3;
             }
             // refine bounding box by elliminating points not on the arc
-            txmin = vector_angle(1, 0, xmin.x - cx, xmin.y - cy);
-            txmax = vector_angle(1, 0, xmax.x - cx, xmax.y - cy);
-            tymin = vector_angle(1, 0, ymin.x - cx, ymin.y - cy);
-            tymax = vector_angle(1, 0, ymax.x - cx, ymax.y - cy);
-            if (txmin < 0) txmin += TWO_PI;
-            if (txmin > TWO_PI) txmin -= TWO_PI;
-            if (txmax < 0) txmax += TWO_PI;
-            if (txmax > TWO_PI) txmax -= TWO_PI;
-            if (tymin < 0) tymin += TWO_PI;
-            if (tymin > TWO_PI) tymin -= TWO_PI;
-            if (tymax < 0) tymax += TWO_PI;
-            if (tymax > TWO_PI) tymax -= TWO_PI;
-            if ((!otherArc && (theta > txmin || theta2 < txmin)) || (otherArc && !(theta > txmin || theta2 < txmin)))
+            txmin = vector_angle(1, 0, (xmin.x - cx)/rx, (xmin.y - cy)/ry);
+            txmax = vector_angle(1, 0, (xmax.x - cx)/rx, (xmax.y - cy)/ry);
+            tymin = vector_angle(1, 0, (ymin.x - cx)/rx, (ymin.y - cy)/ry);
+            tymax = vector_angle(1, 0, (ymax.x - cx)/rx, (ymax.y - cy)/ry);
+             if ((!otherArc && (cmod(theta) > cmod(txmin) || cmod(theta2) < cmod(txmin))) || (otherArc && !(cmod(theta) > cmod(txmin) || cmod(theta2) < cmod(txmin))))
             {
                 xmin = o1.x < o2.x ? o1 : o2;
             }
-            if ((!otherArc && (theta > txmax || theta2 < txmax)) || (otherArc && !(theta > txmax || theta2 < txmax)))
+            if ((!otherArc && (cmod(theta) > cmod(txmax) || cmod(theta2) < cmod(txmax))) || (otherArc && !(cmod(theta) > cmod(txmax) || cmod(theta2) < cmod(txmax))))
             {
                 xmax = o1.x > o2.x ? o1 : o2;
             }
-            if ((!otherArc && (theta > tymin || theta2 < tymin)) || (otherArc && !(theta > tymin || theta2 < tymin)))
+            if ((!otherArc && (cmod(theta) > cmod(tymin) || cmod(theta2) < cmod(tymin))) || (otherArc && !(cmod(theta) > cmod(tymin) || cmod(theta2) < cmod(tymin))))
             {
                 ymin = o1.y < o2.y ? o1 : o2;
             }
-            if ((!otherArc && (theta > tymax || theta2 < tymax)) || (otherArc && !(theta > tymax || theta2 < tymax)))
+            if ((!otherArc && (cmod(theta) > cmod(tymax) || cmod(theta2) < cmod(tymax))) || (otherArc && !(cmod(theta) > cmod(tymax) || cmod(theta2) < cmod(tymax))))
             {
                 ymax = o1.y > o2.y ? o1 : o2;
             }
@@ -292,9 +279,48 @@ var Arc = makeClass(EllipticArc2D, {
             get: function() {
                 if (null == _bbox)
                 {
-                    _bbox = BB(self.start, self.end, self.center.x, self.center.y, self.rX, self.rY, self.theta, self.dtheta, self.angle, self.sweep);
+                    _bbox = BB(self.start, self.end, self.center.x, self.center.y, self.rX, self.rY, self.theta, self.dtheta, self.angle, self.largeArc, self.sweep, _cos, _sin);
                 }
                 return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    var c = self.center,
+                        rx = self.rX,
+                        ry = self.rY,
+                        theta = self.theta,
+                        dtheta = self.dtheta,
+                        p0 = self.start,
+                        p1 = self.end,
+                        p;
+                    if (stdMath.abs(dtheta) + QTR_PI < TWO_PI)
+                    {
+                        // not complete ellipse, refine the covering
+                        p = BB(rot(null, p0, _cos, -_sin, c.x, c.y), rot(null, p1, _cos, -_sin, c.x, c.y), c.x, c.y, rx, ry, theta, dtheta, 0, self.largeArc, self.sweep, 1, 0);
+                        p = [
+                            {x:p.xmin, y:p.ymin},
+                            {x:p.xmax, y:p.ymin},
+                            {x:p.xmax, y:p.ymax},
+                            {x:p.xmin, y:p.ymax}
+                        ].map(function(pi) {return rot(pi, pi, _cos, _sin, c.x, c.y);});
+                    }
+                    else
+                    {
+                        p = [
+                            toarc(-1, -1, c.x, c.y, rx, ry, _cos, _sin),
+                            toarc(1, -1, c.x, c.y, rx, ry, _cos, _sin),
+                            toarc(1, 1, c.x, c.y, rx, ry, _cos, _sin),
+                            toarc(-1, 1, c.x, c.y, rx, ry, _cos, _sin)
+                        ];
+                    }
+                    _hull = p.map(Point2D);
+                }
+                return _hull;
             },
             enumerable: false,
             configurable: false

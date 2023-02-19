@@ -1,11 +1,11 @@
 /**[DOC_MD]
- * ### Curve2D 2D Generic Curve Base Class (subclass of Topos)
+ * ### Curve2D 2D Generic Curve Base Class (subclass of Topos2D)
  *
  * Represents a generic curve in 2D space
  * (not used directly)
  *
 [/DOC_MD]**/
-var Curve2D = makeClass(Topos, {
+var Curve2D = makeClass(Topos2D, {
     constructor: function Curve2D(points, values) {
         var self = this,
             _matrix = null,
@@ -24,6 +24,13 @@ var Curve2D = makeClass(Topos, {
         _values.matrix = new Value(0);
         _values.matrix.isChanged(self.hasMatrix());
 
+/**[DOC_MD]
+ * **Properties:**
+ *
+[/DOC_MD]**/
+/**[DOC_MD]
+ * * `matrix: Matrix2D` the transform matrix of the curve
+[/DOC_MD]**/
         def(self, 'matrix', {
             get: function() {
                 return _matrix ? _matrix : Matrix2D.eye();
@@ -103,6 +110,9 @@ var Curve2D = makeClass(Topos, {
             enumerable: false,
             configurable: true
         });
+/**[DOC_MD]
+ * * `length: Number` the length of the curve
+[/DOC_MD]**/
         def(self, 'length', {
             get: function() {
                 return 0;
@@ -110,6 +120,9 @@ var Curve2D = makeClass(Topos, {
             enumerable: true,
             configurable: true
         });
+/**[DOC_MD]
+ * * `area: Number` the area enclosed by the curve
+[/DOC_MD]**/
         def(self, 'area', {
             get: function() {
                 return 0;
@@ -138,10 +151,10 @@ var Curve2D = makeClass(Topos, {
                 {
                     _bbox = bb;
                     _hull = [
-                        new Point(bb.xmin, bb.ymin),
-                        new Point(bb.xmax, bb.ymin),
-                        new Point(bb.xmax, bb.ymax),
-                        new Point(bb.xmin, bb.ymax)
+                        new Point2D(bb.xmin, bb.ymin),
+                        new Point2D(bb.xmax, bb.ymin),
+                        new Point2D(bb.xmax, bb.ymax),
+                        new Point2D(bb.xmin, bb.ymax)
                     ];
                 }
                 return _hull;
@@ -170,12 +183,25 @@ var Curve2D = makeClass(Topos, {
         }
         return self.$super('isChanged', arguments);
     },
+/**[DOC_MD]
+ * **Methods:**
+ *
+[/DOC_MD]**/
+/**[DOC_MD]
+ * * `isConnected(): Bool` True if curve is a connected curve (eg a line)
+[/DOC_MD]**/
     isConnected: function() {
         return true;
     },
+/**[DOC_MD]
+ * * `isClosed(): Bool` true if curve is a closed curve (eg a circle)
+[/DOC_MD]**/
     isClosed: function() {
         return false;
     },
+/**[DOC_MD]
+ * * `isConvex(): Bool` true if curve is convex (eg a concex polygon)
+[/DOC_MD]**/
     isConvex: function() {
         return false;
     },
@@ -195,13 +221,19 @@ var Curve2D = makeClass(Topos, {
         // override
         return this.clone();
     },
+/**[DOC_MD]
+ * * `getPointAt(t): Point2D` get point on curve at position specified by paramater `t` (0 <= t <= 1)
+[/DOC_MD]**/
     getPointAt: function(t) {
         // 0 <= t <= 1
         t = Num(t);
         if (0 > t || 1 < t) return null;
         var p = this.f(t);
-        return null == p ? null : Point(p);
+        return null == p ? null : Point2D(p);
     },
+/**[DOC_MD]
+ * * `curveUpTo(t): Curve2D` get curve up to point specified by paramater `t` (0 <= t <= 1)
+[/DOC_MD]**/
     curveUpTo: function(t) {
         var self = this;
         // 0 <= t <= 1
@@ -220,15 +252,24 @@ var Curve2D = makeClass(Topos, {
     getConvexHull: function() {
         return this._hull.map(function(p) {return p.clone();});
     },
+/**[DOC_MD]
+ * * `derivative(): Curve2D` get derivative of curve as curve
+[/DOC_MD]**/
     derivative: function() {
         var self = this, d = self.d();
         if (self.hasMatrix()) d.setMatrix(self.matrix.clone());
         d.setStyle(self.style.toObj());
         return d;
     },
+/**[DOC_MD]
+ * * `polylinePoints(): Object{x,y}[]` get polyline points that approximates the curve
+[/DOC_MD]**/
     polylinePoints: function() {
         return this._lines.slice();
     },
+/**[DOC_MD]
+ * * `bezierPoints(t): Object{x,y}[]` get cubic bezier points that approximates the curve (optionally up to point specified by parameter t)
+[/DOC_MD]**/
     bezierPoints: function(t) {
         return [
         {x:0, y:0},
@@ -464,7 +505,7 @@ var ParametricCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _hull)
                 {
-                    _hull = aligned_bounding_box_from_points(self._lines).map(Point);
+                    _hull = aligned_bounding_box_from_points(self._lines).map(Point2D);
                 }
                 return _hull;
             },
@@ -506,54 +547,54 @@ var ParametricCurve = makeClass(Curve2D, {
     },
     intersects: function(other) {
         var self = this, i;
-        if (other instanceof Point)
+        if (other instanceof Point2D)
         {
             return self.hasPoint(other) ? [other] : false;
         }
         else if (Geometrize.Line && (other instanceof Geometrize.Line))
         {
             i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             i = polyline_qbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
         {
             i = polyline_cbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Polyline && (other instanceof Geometrize.Polyline))
         {
             i = polyline_polyline_intersection(self._lines, other._points);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Polygon && (other instanceof Geometrize.Polygon))
         {
             i = polyline_polyline_intersection(self._lines, other._lines);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (other instanceof ParametricCurve)
         {
             i = polyline_polyline_intersection(self._lines, other._lines);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (other instanceof Object2D)
         {
@@ -581,7 +622,7 @@ var ParametricCurve = makeClass(Curve2D, {
                 }
             }
         }
-        return i ? i.map(Point) : false;
+        return i ? i.map(Point2D) : false;
     },
     bezierPoints: function(t) {
         if (arguments.length) t = clamp(t, 0, 1);
@@ -722,6 +763,13 @@ var CompositeCurve = makeClass(Curve2D, {
             enumerable: true,
             configurable: false
         });
+/**[DOC_MD]
+ * **Properties:**
+ *
+[/DOC_MD]**/
+/**[DOC_MD]
+ * * `curves: Curve2D[]` array of curves that define this composite curve
+[/DOC_MD]**/
         def(self, 'curves', {
             get: function() {
                 return _curves;
@@ -886,7 +934,7 @@ var CompositeCurve = makeClass(Curve2D, {
     },
     intersects: function(other) {
         var self = this;
-        if (other instanceof Point)
+        if (other instanceof Point2D)
         {
             return self.hasPoint(other) ? [other] : false;
         }
@@ -897,7 +945,7 @@ var CompositeCurve = makeClass(Curve2D, {
                 ii = c[j].intersects(other);
                 if (ii) i.push.apply(i, ii);
             }
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         return false;
     },
@@ -923,7 +971,7 @@ var CompositeCurve = makeClass(Curve2D, {
                 }
             }
         }
-        return i ? i.map(Point) : false;
+        return i ? i.map(Point2D) : false;
     },
     polylinePoints: function() {
         return this.curves.reduce(function(lines, curve) {

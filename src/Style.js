@@ -1,7 +1,11 @@
 /**[DOC_MD]
  * ### Style class
  *
- * Represents the styling (eg stroke, fill, width) of a 2D object
+ * Represents the styling (eg stroke, fill, width) of a 2D or 3D object
+ * ```javascript
+ * const style = Style({stroke:'red'});
+ * style['stroke'] = 'green'; // change it
+ * ```
  * 
 [/DOC_MD]**/
 var Style = makeClass(null, merge(null, {

@@ -4,6 +4,10 @@ function p_eq(p1, p2)
 {
     return is_almost_equal(p1.x, p2.x) && is_almost_equal(p1.y, p2.y);
 }
+function p_eq3(p1, p2)
+{
+    return is_almost_equal(p1.x, p2.x) && is_almost_equal(p1.y, p2.y) && is_almost_equal(p1.z, p2.z);
+}
 function point_line_distance(p0, p1, p2)
 {
     var x1 = p1.x, y1 = p1.y,
@@ -50,8 +54,7 @@ function point_on_arc(p, center, rx, ry, cs, theta, dtheta)
         y0 = p.y - center.y,
         x = cos*x0 + sin*y0,
         y = -sin*x0 + cos*y0,
-        t = stdMath.atan2(y/ry, x/rx);
-    if (t < 0) t += TWO_PI;
+        t = cmod(stdMath.atan2(y/ry, x/rx));
     t = (t - theta)/dtheta;
     return (t >= 0) && (t <= 1);
 }
@@ -572,15 +575,7 @@ function is_convex(points)
         new_x = newpoint.x;
         new_y = newpoint.y;
         new_direction = stdMath.atan2(new_y - old_y, new_x - old_x);
-        angle = new_direction - old_direction;
-        if (angle <= -PI)
-        {
-            angle += TWO_PI
-        }
-        else if (angle > PI)
-        {
-            angle -= TWO_PI
-        }
+        angle = fold(new_direction - old_direction, -PI, PI, TWO_PI);
         if (0 === ndx)
         {
             if (0 === angle) return false;
@@ -1017,7 +1012,7 @@ function arc2ellipse(x1, y1, x2, y2, fa, fs, rx, ry, cs)
     ;
 
     // Step 4: compute θ and dθ
-    var theta = vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry),
+    var theta = cmod(vector_angle(1, 0, (x - _cx)/rx, (y - _cy)/ry)),
         dtheta = vector_angle((x - _cx)/rx, (y - _cy)/ry, (-x - _cx)/rx, (-y - _cy)/ry);
     dtheta -= stdMath.floor(dtheta/TWO_PI)*TWO_PI; // % 360
 
@@ -1034,6 +1029,26 @@ function ellipse2arc(cx, cy, rx, ry, cs, theta, dtheta)
         fa: abs(dtheta) > PI,
         fs: dtheta > 0
     };
+}
+function rot(rp, p, cos, sin, cx, cy)
+{
+    var x = p.x, y = p.y;
+    rp = rp || {x:0, y:0};
+    cx = cx || 0;
+    cy = cy || 0;
+    rp.x = cos*(x - cx) - sin*(y - cy) + cx;
+    rp.y = sin*(x - cx) + cos*(y - cy) + cy;
+    return rp;
+}
+function tra(tp, p, tx, ty)
+{
+    var x = p.x, y = p.y;
+    tp = tp || {x:0, y:0};
+    tx = tx || 0;
+    ty = ty || 0;
+    tp.x = x + tx;
+    tp.y = y + ty;
+    return tp;
 }
 function bounding_box_from_points(p)
 {
@@ -1078,8 +1093,8 @@ function align_curve(points)
 var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
     return stdMath.hypot(dx, dy);
 } :*/ function hypot(dx, dy) {
-    dx = abs(dx);
-    dy = abs(dy)
+    dx = stdMath.abs(dx);
+    dy = stdMath.abs(dy);
     var r = 0;
     if (is_strictly_equal(dx, 0))
     {
@@ -1089,26 +1104,61 @@ var hypot = /*stdMath.hypot ? function hypot(dx, dy) {
     {
         return dx;
     }
-    else if (dx < dy)
-    {
-        r = dy/dx;
-        return dx*sqrt(1 + r*r);
-    }
     else if (dx > dy)
     {
+        r = dy/dx;
+        return dx*stdMath.sqrt(1 + r*r);
+    }
+    else if (dx < dy)
+    {
         r = dx/dy;
-        return dy*sqrt(1 + r*r);
+        return dy*stdMath.sqrt(1 + r*r);
     }
     return dx*sqrt2;
 };
+function hypot3(dx, dy, dz)
+{
+    dx = stdMath.abs(dx);
+    dy = stdMath.abs(dy);
+    dz = stdMath.abs(dz);
+    var r = 0, t = 0, m = stdMath.max(dx, dy, dz);
+    if (is_strictly_equal(m, 0))
+    {
+        return 0;
+    }
+    else if (dx === m)
+    {
+        r = dy/dx; t = dz/dx;
+        return dx*stdMath.sqrt(1 + r*r + t*t);
+    }
+    else if (dy === m)
+    {
+        r = dx/dy; t = dz/dy;
+        return dy*stdMath.sqrt(1 + r*r + t*t);
+    }
+    else //if (dz === m)
+    {
+        r = dx/dz; t = dy/dz;
+        return dz*stdMath.sqrt(1 + r*r + t*t);
+    }
+}
 function dist(p1, p2)
 {
     return hypot(p1.x - p2.x, p1.y - p2.y);
+}
+function dist3(p1, p2)
+{
+    return hypot3(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
 }
 function dist2(p1, p2)
 {
     var dx = p1.x - p2.x, dy = p1.y - p2.y;
     return dx*dx + dy*dy;
+}
+function dist23(p1, p2)
+{
+    var dx = p1.x - p2.x, dy = p1.y - p2.y, dz = p1.z - p2.z;
+    return dx*dx + dy*dy + dz*dz;
 }
 function dotp(x1, y1, x2, y2)
 {
@@ -1117,6 +1167,18 @@ function dotp(x1, y1, x2, y2)
 function crossp(x1, y1, x2, y2)
 {
     return x1*y2 - y1*x2;
+}
+function dotp3(x1, y1, z1, x2, y2, z2)
+{
+    return x1*x2 + y1*y2 + z1*z2;
+}
+function crossp3(x1, y1, z1, x2, y2, z2)
+{
+    return {
+        x: y1*z2 - y2*z1,
+        y: z1*x2 - x1*z2,
+        z: x1*y2 - x2*y1
+    };
 }
 function angle(x1, y1, x2, y2)
 {
@@ -1140,6 +1202,23 @@ function dir(p1, p2, p3)
 function clamp(x, xmin, xmax)
 {
     return stdMath.min(stdMath.max(x, xmin), xmax);
+}
+function fold(x, xmin, xmax, xm)
+{
+    if (x < xmin) x += xm;
+    if (x > xmax) x -= xm;
+    return x;
+}
+function mod(x, m)
+{
+    x -= m*stdMath.floor(x/m);
+    if (0 > x) x += m;
+    if (m < x) x -= m;
+    return x;
+}
+function cmod(x)
+{
+    return mod(x, TWO_PI);
 }
 function deg(rad)
 {

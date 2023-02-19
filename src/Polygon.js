@@ -84,7 +84,7 @@ var Polygon = makeClass(Curve2D, {
             get: function() {
                 if (null == _hull)
                 {
-                    _hull = aligned_bounding_box_from_points(self._points).map(Point);
+                    _hull = aligned_bounding_box_from_points(self._points).map(Point2D);
                 }
                 return _hull;
             },
@@ -144,44 +144,44 @@ var Polygon = makeClass(Curve2D, {
     },
     intersects: function(other) {
         var self = this, i;
-        if (other instanceof Point)
+        if (other instanceof Point2D)
         {
             return self.hasPoint(other) ? [other] : false;
         }
         else if (Geometrize.Line && (other instanceof Geometrize.Line))
         {
             i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
         {
             i = polyline_qbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
         {
             i = polyline_cbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if ((Geometrize.Polyline && (other instanceof Geometrize.Polyline)) || (other instanceof Polygon))
         {
             i = polyline_polyline_intersection(self._lines, other._lines);
-            return i ? i.map(Point) : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (other instanceof Object2D)
         {
@@ -209,7 +209,7 @@ var Polygon = makeClass(Curve2D, {
                 }
             }
         }
-        return i ? i.map(Point) : false;
+        return i ? i.map(Point2D) : false;
     },
     bezierPoints: function(t) {
         if (arguments.length) t = clamp(t, 0, 1);
@@ -267,16 +267,16 @@ var Rect = makeClass(Polygon, {
         var self = this, topLeft, bottomRight;
         if (top instanceof Rect) return top;
         if (!(self instanceof Rect)) return new Rect(top, width, height);
-        topLeft = Point(top);
+        topLeft = Point2D(top);
         if (is_numeric(width) && is_numeric(height))
         {
-            bottomRight = new Point(topLeft.x + Num(width), topLeft.y + Num(height));
+            bottomRight = new Point2D(topLeft.x + Num(width), topLeft.y + Num(height));
         }
         else
         {
-            bottomRight = Point(width);
+            bottomRight = Point2D(width);
         }
-        self.$super('constructor', [[topLeft, new Point(bottomRight.x, topLeft.y), bottomRight, new Point(topLeft.x, bottomRight.y)]]);
+        self.$super('constructor', [[topLeft, new Point2D(bottomRight.x, topLeft.y), bottomRight, new Point2D(topLeft.x, bottomRight.y)]]);
 
         def(self, 'topLeft', {
             get: function() {

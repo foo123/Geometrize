@@ -72,44 +72,54 @@ var Matrix2D = makeClass(null, {
         if (other instanceof Matrix2D)
         {
             return new Matrix2D(
-                self.$00 + other.$00, self.$01 + other.$01, self.$02 + other.$02,
-                self.$10 + other.$10, self.$11 + other.$11, self.$12 + other.$12
+            self.$00 + other.$00, self.$01 + other.$01, self.$02 + other.$02,
+            self.$10 + other.$10, self.$11 + other.$11, self.$12 + other.$12
             );
         }
         else
         {
             other = Num(other);
             return new Matrix2D(
-                self.$00 + other, self.$01 + other, self.$02 + other,
-                self.$10 + other, self.$11 + other, self.$12 + other
+            self.$00 + other, self.$01 + other, self.$02 + other,
+            self.$10 + other, self.$11 + other, self.$12 + other
             );
         }
     },
     mul: function(other) {
-        var self = this;
+        var self = this,
+        a00 = self.$00, a01 = self.$01, a02 = self.$02,
+        a10 = self.$10, a11 = self.$11, a12 = self.$12,
+        a20 = 0, a21 = 0, a22 = 1;
         if (other instanceof Matrix2D)
         {
+            var b00 = other.$00, b01 = other.$01, b02 = other.$02,
+            b10 = other.$10, b11 = other.$11, b12 = other.$12,
+            b20 = 0, b21 = 0, b22 = 1;
             return new Matrix2D(
-                self.$00*other.$00 + self.$01*other.$10,
-                self.$00*other.$01 + self.$01*other.$11,
-                self.$00*other.$02 + self.$01*other.$12 + self.$02,
-                self.$10*other.$00 + self.$11*other.$10,
-                self.$10*other.$01 + self.$11*other.$11,
-                self.$10*other.$02 + self.$11*other.$12 + self.$12
+            a00*b00 + a01*b10,
+            a00*b01 + a01*b11,
+            a00*b02 + a01*b12 + a02,
+            a10*b00 + a11*b10,
+            a10*b01 + a11*b11,
+            a10*b02 + a11*b12 + a12
             );
         }
         else
         {
             other = Num(other);
             return new Matrix2D(
-                self.$00*other, self.$01*other, self.$02*other,
-                self.$10*other, self.$11*other, self.$12*other
+            a00*other, a01*other, a02*other,
+            a10*other, a11*other, a12*other
             );
         }
     },
     det: function() {
-        var self = this;
-        return self.$00*(self.$11*/*self.$22*/1 - self.$12*/*self.$21*/0) + self.$01*(self.$12*/*self.$20*/0 - self.$10*/*self.$22*/1) + self.$02*(0/*self.$21*/*self.$10 - self.$11*/*self.$20*/0);
+        var self = this,
+        a00 = self.$00, a01 = self.$01, a02 = self.$02,
+        a10 = self.$10, a11 = self.$11, a12 = self.$12,
+        a20 = 0, a21 = 0, a22 = 1;
+        //return a00*(a11*a22 - a12*a21) + a01*(a12*a20 - a10*a22) + a02*(a21*a10 - a11*a20);
+        return a00*a11 - a01*a10;
     },
     inv: function() {
         var self = this,
@@ -147,7 +157,7 @@ var Matrix2D = makeClass(null, {
         }
         else
         {
-            newpoint = new Point(nx, ny);
+            newpoint = new Point2D(nx, ny);
         }
         return newpoint;
     },
@@ -233,7 +243,7 @@ var Matrix2D = makeClass(null, {
         // (ox,oy) is rotation origin, default (0,0)
         oy = Num(oy || 0);
         ox = Num(ox || 0);
-        theta = Num(theta);
+        theta = Num(theta || 0);
         var cos = stdMath.cos(theta), sin = stdMath.sin(theta);
         return new Matrix2D(
         cos, -sin, ox - cos*ox + sin*oy,

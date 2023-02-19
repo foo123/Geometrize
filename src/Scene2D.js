@@ -1,15 +1,15 @@
 /**[DOC_MD]
- * ### 2D Plane
+ * ### 2D Scene
  *
  * scene container for 2D geometric objects
  *
  * ```javascript
- * const plane = Plane(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
- * plane.add(Line([p1, p2]));
+ * const scene = Scene2D(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
+ * scene.add(Line([p1, p2]));
  * ```
 [/DOC_MD]**/
-var Plane = makeClass(null, {
-    constructor: function Plane(dom, x0, y0, x1, y1) {
+var Scene2D = makeClass(null, {
+    constructor: function Scene2D(dom, x0, y0, x1, y1) {
         var self = this,
             svg = null,
             svgEl = null,
@@ -18,7 +18,7 @@ var Plane = makeClass(null, {
             isChanged = true,
             renderSVG, renderCanvas, raf;
 
-        if (!(self instanceof Plane)) return new Plane(dom, x0, y0, x1, y1);
+        if (!(self instanceof Scene2D)) return new Scene2D(dom, x0, y0, x1, y1);
 
         x0 = Num(x0);
         y0 = Num(y0);
@@ -206,4 +206,4 @@ var Plane = makeClass(null, {
     toCanvas: null,
     toIMG: null
 });
-Geometrize.Plane = Plane;
+Geometrize.Scene2D = Scene2D;

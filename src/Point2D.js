@@ -1,22 +1,23 @@
 /**[DOC_MD]
- * ### Point 2D Point (subclass of Object2D)
+ * ### Point2D 2D Point (subclass of Object2D)
  *
  * Represents a point in 2D space
  *
  * ```javascript
- * const p = Point(x, y);
+ * const p = Point2D(x, y);
+ * p.x = x+10; // change it
  * ```
 [/DOC_MD]**/
-var Point = makeClass(Object2D, {
-    constructor: function Point(x, y) {
+var Point2D = makeClass(Object2D, {
+    constructor: function Point2D(x, y) {
         var self = this, _x = 0, _y = 0, _n = null;
-        if (x instanceof Point)
+        if (x instanceof Point2D)
         {
             return x;
         }
-        if (!(self instanceof Point))
+        if (!(self instanceof Point2D))
         {
-            return new Point(x, y);
+            return new Point2D(x, y);
         }
         self.$super('constructor');
         if (is_array(x))
@@ -92,9 +93,9 @@ var Point = makeClass(Object2D, {
             self.$super('dispose');
         };
     },
-    name: 'Point',
+    name: 'Point2D',
     clone: function() {
-        return new Point(this.x, this.y);
+        return new Point2D(this.x, this.y);
     },
     transform: function(matrix) {
         return matrix.transform(this);
@@ -110,7 +111,7 @@ var Point = makeClass(Object2D, {
     },
     eq: function(other) {
         var self = this;
-        if (other instanceof Point)
+        if (other instanceof Point2D)
         {
             return p_eq(self, other);
         }
@@ -126,11 +127,11 @@ var Point = makeClass(Object2D, {
     },
     add: function(other) {
         var self = this;
-        return other instanceof Point ? new Point(self.x+other.x, self.y+other.y) : new Point(self.x+Num(other), self.y+Num(other));
+        return other instanceof Point2D ? new Point2D(self.x+other.x, self.y+other.y) : new Point2D(self.x+Num(other), self.y+Num(other));
     },
     mul: function(other) {
         other = Num(other);
-        return new Point(this.x*other, this.y*other);
+        return new Point2D(this.x*other, this.y*other);
     },
     dot: function(other) {
         return dotp(this.x, this.y, other.x, other.y);
@@ -154,7 +155,7 @@ var Point = makeClass(Object2D, {
         return is_function(closedCurve.hasInsidePoint) ? closedCurve.hasInsidePoint(this, strict) : false;
     },
     intersects: function(other) {
-        if (other instanceof Point)
+        if (other instanceof Point2D)
         {
             return this.eq(other) ? [this] : false;
         }
@@ -213,7 +214,7 @@ var Point = makeClass(Object2D, {
     },
     toString: function() {
         var self = this;
-        return 'Point('+Str(self.x)+','+Str(self.y)+')';
+        return 'Point2D('+Str(self.x)+','+Str(self.y)+')';
     }
 });
-Geometrize.Point = Point;
+Geometrize.Point2D = Point2D;
