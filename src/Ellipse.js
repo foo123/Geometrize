@@ -4,6 +4,8 @@
  * Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
  * ```javascript
  * const ellipse = Ellipse(center, radiusX, radiusY, angle);
+ * ellipse.center.x += 10; // change it
+ * ellipse.radiusX = 12; // change it
  * ```
 [/DOC_MD]**/
 var Ellipse = makeClass(EllipticArc2D, {

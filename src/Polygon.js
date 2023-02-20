@@ -4,6 +4,8 @@
  * Represents a polygon (a closed polyline) defined by its vertices
  * ```javascript
  * const polygon = Polygon([p1, p2, .., pn]);
+ * polygon.vertices[0].x += 10; // change it
+ * polygon.vertices[2].x = 20; // change it
  * ```
 [/DOC_MD]**/
 var Polygon = makeClass(Curve2D, {

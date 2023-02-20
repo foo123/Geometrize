@@ -113,19 +113,12 @@ var Topos2D = makeClass(Object2D, {
         }
         return self.$super('isChanged', arguments);
     },
-/**[DOC_MD]
- * **Methods:**
- *
-[/DOC_MD]**/
     clone: function() {
         return new Topos2D(this.points.map(function(p) {return p.clone();}));
     },
     transform: function(matrix) {
         return new Topos2D(this.points.map(function(p) {return matrix.transform(p);}));
     },
-/**[DOC_MD]
- * * `hasPoint(point): Bool` check if given point belongs to this topos
-[/DOC_MD]**/
     hasPoint: function(point) {
         var p = this.points, n = p.length, j;
         for (j=0; j<n; ++j)
@@ -135,15 +128,9 @@ var Topos2D = makeClass(Object2D, {
         }
         return false;
     },
-/**[DOC_MD]
- * * `hasInsidePoint(point, strict): Bool` check if given point belongs to the interior of this topos (where applicable)
-[/DOC_MD]**/
     hasInsidePoint: function(point, strict) {
         return this.hasPoint(point);
     },
-/**[DOC_MD]
- * * `intersects(other): Point2D{}` return array of intersection points with other 2d object
-[/DOC_MD]**/
     intersects: function(other) {
         if (other instanceof Object2D)
         {

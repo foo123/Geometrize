@@ -86,14 +86,14 @@ var Object2D = makeClass(null, merge(null, {
         return this;
     },
 /**[DOC_MD]
- * * `transform(matrix): Object2D` get a transformed copy of this object by matrix
+ * * `transform(matrix2d): Object2D` get a transformed copy of this object by matrix2d
 [/DOC_MD]**/
     transform: function() {
         return this;
     },
     setStyle: null,
 /**[DOC_MD]
- * * `getBoundingBox(): Object` get bounding box {xmin,ymin,xmax,ymax} of object
+ * * `getBoundingBox(): Object{xmin,ymin,xmax,ymax}` get bounding box of object
 [/DOC_MD]**/
     getBoundingBox: function() {
         return {
@@ -110,7 +110,7 @@ var Object2D = makeClass(null, merge(null, {
         return [];
     },
 /**[DOC_MD]
- * * `getCenter(): Object` get center {x,y} of object
+ * * `getCenter(): Object{x,y}` get center of object
 [/DOC_MD]**/
     getCenter: function() {
         var bb = this.getBoundingBox();
@@ -119,15 +119,27 @@ var Object2D = makeClass(null, merge(null, {
             y: (bb.ymin + bb.ymax)/2
         };
     },
+/**[DOC_MD]
+ * * `hasPoint(point): Bool` check if given point is part of the boundary this object
+[/DOC_MD]**/
     hasPoint: function(point) {
         return false;
     },
+/**[DOC_MD]
+ * * `hasInsidePoint(point, strict): Bool` check if given point is part of the interior of this object (where applicable)
+[/DOC_MD]**/
     hasInsidePoint: function(point, strict) {
         return false;
     },
+/**[DOC_MD]
+ * * `intersects(other): Point2D[]|Bool` return array of intersection points with other 2d object or false
+[/DOC_MD]**/
     intersects: function(other) {
         return false;
     },
+/**[DOC_MD]
+ * * `intersects(other): Point2D[]|Bool` return array of intersection points of object with itself or false
+[/DOC_MD]**/
     intersectsSelf: function() {
         return false;
     },

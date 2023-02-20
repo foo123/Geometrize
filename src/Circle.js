@@ -4,6 +4,8 @@
  * Represents a circle of given center (point) and radius
  * ```javascript
  * const circle = Circle(center, radius);
+ * circle.center.x += 10; // change it
+ * circle.radius = 12; // change it
  * ```
 [/DOC_MD]**/
 var Circle = makeClass(EllipticArc2D, {

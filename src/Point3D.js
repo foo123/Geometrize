@@ -5,7 +5,9 @@
  *
  * ```javascript
  * const p = Point3D(x, y, z);
- * p.x = x+10; // change it
+ * p.x += 10; // change it
+ * p.y += 5; // change it
+ * p.z = 20; // change it
  * ```
 [/DOC_MD]**/
 var Point3D = makeClass(Object3D, {

@@ -54,6 +54,11 @@ const spiral = ParametricCurve((t) => ({x:190 + t*50*Math.cos(t*6*Math.PI), y:80
 const ellipse = Ellipse([40,40], 30, 10, -45);
 const circle = Circle([30,30], 20);
 const arc = Arc([100,100], [170,90], 30, 10, 30, 0, 1);
+/*const e = Ellipse([100,40], 30, 10, 30);
+const arc2 = Arc(e.getPointAt(0.1), e.getPointAt(0.4), 30, 10, 30, 0, 0);
+const arc3 = Arc(e.getPointAt(0.1), e.getPointAt(0.4), 30, 10, 30, 0, 1).transform(Matrix2D.translate(-100, 0));
+const arc4 = Arc(e.getPointAt(0.1), e.getPointAt(0.4), 30, 10, 30, 1, 0).transform(Matrix2D.translate(100, 0));
+const arc5 = Arc(e.getPointAt(0.1), e.getPointAt(0.4), 30, 10, 30, 1, 1).transform(Matrix2D.translate(0, 60));*/
 const qbezier = QBezier([[80,110], [120,40], [160,120]]);
 const cbezier = CBezier([[40,80], [120,40], [140,200], [160,90]]);
 const curve = CompositeCurve([
@@ -82,6 +87,10 @@ scene.add(spiral);
 scene.add(ellipse);
 scene.add(circle);
 scene.add(arc);
+/*scene.add(arc2);
+scene.add(arc3);
+scene.add(arc4);
+scene.add(arc5);*/
 scene.add(qbezier);
 scene.add(cbezier);
 scene.add(curve);
@@ -111,6 +120,10 @@ document.getElementById('boxes').addEventListener('click', () => {
     drawBoundingBox(qbezier, 'cyan');
     drawBoundingBox(cbezier, 'magenta');
     drawBoundingBox(curve, 'yellow');
+    /*drawBoundingBox(arc2, 'yellow');
+    drawBoundingBox(arc3, 'orange');
+    drawBoundingBox(arc4, 'red');
+    drawBoundingBox(arc5, 'cyan');*/
 }, false);
 
 document.getElementById('hulls').addEventListener('click', () => {
@@ -121,6 +134,10 @@ document.getElementById('hulls').addEventListener('click', () => {
     drawConvexHull(qbezier, 'cyan');
     drawConvexHull(cbezier, 'magenta');
     drawConvexHull(curve, 'yellow');
+    /*drawConvexHull(arc2, 'yellow');
+    drawConvexHull(arc3, 'orange');
+    drawConvexHull(arc4, 'red');
+    drawConvexHull(arc5, 'cyan');*/
 }, false);
 
 document.getElementById('image').addEventListener('click', () => {

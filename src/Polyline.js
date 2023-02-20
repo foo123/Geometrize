@@ -4,6 +4,8 @@
  * Represents an assembly of consecutive line segments between given points
  * ```javascript
  * const polyline = Polyline([p1, p2, .., pn]);
+ * polyline.points[0].x += 10; // change it
+ * polyline.points[2].x = 20; // change it
  * ```
 [/DOC_MD]**/
 var Polyline = makeClass(Curve2D, {

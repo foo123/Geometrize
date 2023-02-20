@@ -4,6 +4,9 @@
  * Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
  * ```javascript
  * const arc = Arc(start, end, radiusX, radiusY, angle, largeArc, sweep);
+ * arc.start.x += 10; // change it
+ * arc.radiusX = 12; // change it
+ * arc.largeArc = false; // change it
  * ```
 [/DOC_MD]**/
 var Arc = makeClass(EllipticArc2D, {
@@ -199,24 +202,12 @@ var Arc = makeClass(EllipticArc2D, {
         });
         BB = function BB(o1, o2, cx, cy, rx, ry, theta, dtheta, angle, otherArc, sweep, _cos, _sin) {
             var theta2 = theta + dtheta,
+                mtheta, mtheta2,
                 tan = stdMath.tan(rad(angle)),
                 p1, p2, p3, p4, t,
                 xmin, xmax, ymin, ymax,
                 txmin, txmax, tymin, tymax
             ;
-            if (!sweep)
-            {
-                t = theta;
-                theta = theta2;
-                theta2 = t;
-            }
-            if (theta > theta2)
-            {
-                t = theta;
-                theta = theta2;
-                theta2 = t;
-                otherArc = !otherArc;
-            }
             // find min/max from zeroes of directional derivative along x and y
             // first get of whole ellipse
             // along x axis
@@ -248,23 +239,47 @@ var Arc = makeClass(EllipticArc2D, {
                 ymax = p3;
             }
             // refine bounding box by elliminating points not on the arc
-            txmin = vector_angle(1, 0, (xmin.x - cx)/rx, (xmin.y - cy)/ry);
-            txmax = vector_angle(1, 0, (xmax.x - cx)/rx, (xmax.y - cy)/ry);
-            tymin = vector_angle(1, 0, (ymin.x - cx)/rx, (ymin.y - cy)/ry);
-            tymax = vector_angle(1, 0, (ymax.x - cx)/rx, (ymax.y - cy)/ry);
-             if ((!otherArc && (cmod(theta) > cmod(txmin) || cmod(theta2) < cmod(txmin))) || (otherArc && !(cmod(theta) > cmod(txmin) || cmod(theta2) < cmod(txmin))))
+            if (!sweep && otherArc)
+            {
+                t = theta;
+                theta = theta2;
+                theta2 = t;
+            }
+            mtheta = cmod(theta);
+            mtheta2 = cmod(theta2);
+            if (theta > theta2)
+            {
+                /*t = theta;
+                theta = theta2;
+                theta2 = t;*/
+                if (mtheta > mtheta2)
+                {
+                    t = mtheta;
+                    mtheta = mtheta2;
+                    mtheta2 = t;
+                }
+                else
+                {
+                    otherArc = !otherArc;
+                }
+            }
+            txmin = cmod(vector_angle(1, 0, (xmin.x - cx)/rx, (xmin.y - cy)/ry));
+            txmax = cmod(vector_angle(1, 0, (xmax.x - cx)/rx, (xmax.y - cy)/ry));
+            tymin = cmod(vector_angle(1, 0, (ymin.x - cx)/rx, (ymin.y - cy)/ry));
+            tymax = cmod(vector_angle(1, 0, (ymax.x - cx)/rx, (ymax.y - cy)/ry));
+             if ((!otherArc && (mtheta > txmin || mtheta2 < txmin)) || (otherArc && !(mtheta > txmin || mtheta2 < txmin)))
             {
                 xmin = o1.x < o2.x ? o1 : o2;
             }
-            if ((!otherArc && (cmod(theta) > cmod(txmax) || cmod(theta2) < cmod(txmax))) || (otherArc && !(cmod(theta) > cmod(txmax) || cmod(theta2) < cmod(txmax))))
+            if ((!otherArc && (mtheta > txmax || mtheta2 < txmax)) || (otherArc && !(mtheta > txmax || mtheta2 < txmax)))
             {
                 xmax = o1.x > o2.x ? o1 : o2;
             }
-            if ((!otherArc && (cmod(theta) > cmod(tymin) || cmod(theta2) < cmod(tymin))) || (otherArc && !(cmod(theta) > cmod(tymin) || cmod(theta2) < cmod(tymin))))
+            if ((!otherArc && (mtheta > tymin || mtheta2 < tymin)) || (otherArc && !(mtheta > tymin || mtheta2 < tymin)))
             {
                 ymin = o1.y < o2.y ? o1 : o2;
             }
-            if ((!otherArc && (cmod(theta) > cmod(tymax) || cmod(theta2) < cmod(tymax))) || (otherArc && !(cmod(theta) > cmod(tymax) || cmod(theta2) < cmod(tymax))))
+            if ((!otherArc && (mtheta > tymax || mtheta2 < tymax)) || (otherArc && !(mtheta > tymax || mtheta2 < tymax)))
             {
                 ymax = o1.y > o2.y ? o1 : o2;
             }

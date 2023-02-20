@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.10 (2023-02-19 19:31:38)
+*   @version 0.9.10 (2023-02-20 11:14:57)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.10 (2023-02-19 19:31:38)
+*   @version 0.9.10 (2023-02-20 11:14:57)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -686,14 +686,14 @@ var Object2D = makeClass(null, merge(null, {
         return this;
     },
 /**[DOC_MD]
- * * `transform(matrix): Object2D` get a transformed copy of this object by matrix
+ * * `transform(matrix2d): Object2D` get a transformed copy of this object by matrix2d
 [/DOC_MD]**/
     transform: function() {
         return this;
     },
     setStyle: null,
 /**[DOC_MD]
- * * `getBoundingBox(): Object` get bounding box {xmin,ymin,xmax,ymax} of object
+ * * `getBoundingBox(): Object{xmin,ymin,xmax,ymax}` get bounding box of object
 [/DOC_MD]**/
     getBoundingBox: function() {
         return {
@@ -710,7 +710,7 @@ var Object2D = makeClass(null, merge(null, {
         return [];
     },
 /**[DOC_MD]
- * * `getCenter(): Object` get center {x,y} of object
+ * * `getCenter(): Object{x,y}` get center of object
 [/DOC_MD]**/
     getCenter: function() {
         var bb = this.getBoundingBox();
@@ -719,15 +719,27 @@ var Object2D = makeClass(null, merge(null, {
             y: (bb.ymin + bb.ymax)/2
         };
     },
+/**[DOC_MD]
+ * * `hasPoint(point): Bool` check if given point is part of the boundary this object
+[/DOC_MD]**/
     hasPoint: function(point) {
         return false;
     },
+/**[DOC_MD]
+ * * `hasInsidePoint(point, strict): Bool` check if given point is part of the interior of this object (where applicable)
+[/DOC_MD]**/
     hasInsidePoint: function(point, strict) {
         return false;
     },
+/**[DOC_MD]
+ * * `intersects(other): Point2D[]|Bool` return array of intersection points with other 2d object or false
+[/DOC_MD]**/
     intersects: function(other) {
         return false;
     },
+/**[DOC_MD]
+ * * `intersects(other): Point2D[]|Bool` return array of intersection points of object with itself or false
+[/DOC_MD]**/
     intersectsSelf: function() {
         return false;
     },
@@ -762,7 +774,8 @@ Geometrize.Object2D = Object2D;
  *
  * ```javascript
  * const p = Point2D(x, y);
- * p.x = x+10; // change it
+ * p.x += 10; // change it
+ * p.y = 5; // change it
  * ```
 [/DOC_MD]**/
 var Point2D = makeClass(Object2D, {
@@ -1090,19 +1103,12 @@ var Topos2D = makeClass(Object2D, {
         }
         return self.$super('isChanged', arguments);
     },
-/**[DOC_MD]
- * **Methods:**
- *
-[/DOC_MD]**/
     clone: function() {
         return new Topos2D(this.points.map(function(p) {return p.clone();}));
     },
     transform: function(matrix) {
         return new Topos2D(this.points.map(function(p) {return matrix.transform(p);}));
     },
-/**[DOC_MD]
- * * `hasPoint(point): Bool` check if given point belongs to this topos
-[/DOC_MD]**/
     hasPoint: function(point) {
         var p = this.points, n = p.length, j;
         for (j=0; j<n; ++j)
@@ -1112,15 +1118,9 @@ var Topos2D = makeClass(Object2D, {
         }
         return false;
     },
-/**[DOC_MD]
- * * `hasInsidePoint(point, strict): Bool` check if given point belongs to the interior of this topos (where applicable)
-[/DOC_MD]**/
     hasInsidePoint: function(point, strict) {
         return this.hasPoint(point);
     },
-/**[DOC_MD]
- * * `intersects(other): Point2D{}` return array of intersection points with other 2d object
-[/DOC_MD]**/
     intersects: function(other) {
         if (other instanceof Object2D)
         {
@@ -1352,7 +1352,7 @@ var Curve2D = makeClass(Topos2D, {
  *
 [/DOC_MD]**/
 /**[DOC_MD]
- * * `isConnected(): Bool` True if curve is a connected curve (eg a line)
+ * * `isConnected(): Bool` true if curve is a connected curve (eg a line)
 [/DOC_MD]**/
     isConnected: function() {
         return true;
@@ -1364,7 +1364,7 @@ var Curve2D = makeClass(Topos2D, {
         return false;
     },
 /**[DOC_MD]
- * * `isConvex(): Bool` true if curve is convex (eg a concex polygon)
+ * * `isConvex(): Bool` true if curve is convex (eg a convex polygon)
 [/DOC_MD]**/
     isConvex: function() {
         return false;
@@ -1386,7 +1386,7 @@ var Curve2D = makeClass(Topos2D, {
         return this.clone();
     },
 /**[DOC_MD]
- * * `getPointAt(t): Point2D` get point on curve at position specified by paramater `t` (0 <= t <= 1)
+ * * `getPointAt(t: Number): Point2D` get point on curve at position specified by parameter `t (0 <= t <= 1)`
 [/DOC_MD]**/
     getPointAt: function(t) {
         // 0 <= t <= 1
@@ -1396,7 +1396,7 @@ var Curve2D = makeClass(Topos2D, {
         return null == p ? null : Point2D(p);
     },
 /**[DOC_MD]
- * * `curveUpTo(t): Curve2D` get curve up to point specified by paramater `t` (0 <= t <= 1)
+ * * `curveUpTo(t: Number): Curve2D` get curve up to point specified by parameter `t (0 <= t <= 1)`
 [/DOC_MD]**/
     curveUpTo: function(t) {
         var self = this;
@@ -1426,13 +1426,13 @@ var Curve2D = makeClass(Topos2D, {
         return d;
     },
 /**[DOC_MD]
- * * `polylinePoints(): Object{x,y}[]` get polyline points that approximates the curve
+ * * `polylinePoints(): Object{x,y}[]` get points of polyline that approximates the curve
 [/DOC_MD]**/
     polylinePoints: function() {
         return this._lines.slice();
     },
 /**[DOC_MD]
- * * `bezierPoints(t): Object{x,y}[]` get cubic bezier points that approximates the curve (optionally up to point specified by parameter t)
+ * * `bezierPoints(t: Number = 1): Object{x,y}[]` get points of cubic bezier curves that approximate the curve (optionally up to point specified by parameter `t`)
 [/DOC_MD]**/
     bezierPoints: function(t) {
         return [
@@ -2256,7 +2256,9 @@ Geometrize.CompositeCurve = CompositeCurve;
  *
  * Represents a line segment between 2 points
  * ```javascript
- * const line = Line(p1, p2);
+ * const line = Line(start, end);
+ * line.start.x += 10; // change it
+ * line.end.y = 20; // change it
  * ```
 [/DOC_MD]**/
 var Line = makeClass(Bezier2D, {
@@ -2463,6 +2465,8 @@ Geometrize.Line = Line;
  * Represents an assembly of consecutive line segments between given points
  * ```javascript
  * const polyline = Polyline([p1, p2, .., pn]);
+ * polyline.points[0].x += 10; // change it
+ * polyline.points[2].x = 20; // change it
  * ```
 [/DOC_MD]**/
 var Polyline = makeClass(Curve2D, {
@@ -2723,6 +2727,9 @@ Geometrize.Polyline = Polyline;
  * Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
  * ```javascript
  * const arc = Arc(start, end, radiusX, radiusY, angle, largeArc, sweep);
+ * arc.start.x += 10; // change it
+ * arc.radiusX = 12; // change it
+ * arc.largeArc = false; // change it
  * ```
 [/DOC_MD]**/
 var Arc = makeClass(EllipticArc2D, {
@@ -2918,24 +2925,12 @@ var Arc = makeClass(EllipticArc2D, {
         });
         BB = function BB(o1, o2, cx, cy, rx, ry, theta, dtheta, angle, otherArc, sweep, _cos, _sin) {
             var theta2 = theta + dtheta,
+                mtheta, mtheta2,
                 tan = stdMath.tan(rad(angle)),
                 p1, p2, p3, p4, t,
                 xmin, xmax, ymin, ymax,
                 txmin, txmax, tymin, tymax
             ;
-            if (!sweep)
-            {
-                t = theta;
-                theta = theta2;
-                theta2 = t;
-            }
-            if (theta > theta2)
-            {
-                t = theta;
-                theta = theta2;
-                theta2 = t;
-                otherArc = !otherArc;
-            }
             // find min/max from zeroes of directional derivative along x and y
             // first get of whole ellipse
             // along x axis
@@ -2967,23 +2962,47 @@ var Arc = makeClass(EllipticArc2D, {
                 ymax = p3;
             }
             // refine bounding box by elliminating points not on the arc
-            txmin = vector_angle(1, 0, (xmin.x - cx)/rx, (xmin.y - cy)/ry);
-            txmax = vector_angle(1, 0, (xmax.x - cx)/rx, (xmax.y - cy)/ry);
-            tymin = vector_angle(1, 0, (ymin.x - cx)/rx, (ymin.y - cy)/ry);
-            tymax = vector_angle(1, 0, (ymax.x - cx)/rx, (ymax.y - cy)/ry);
-             if ((!otherArc && (cmod(theta) > cmod(txmin) || cmod(theta2) < cmod(txmin))) || (otherArc && !(cmod(theta) > cmod(txmin) || cmod(theta2) < cmod(txmin))))
+            if (!sweep && otherArc)
+            {
+                t = theta;
+                theta = theta2;
+                theta2 = t;
+            }
+            mtheta = cmod(theta);
+            mtheta2 = cmod(theta2);
+            if (theta > theta2)
+            {
+                /*t = theta;
+                theta = theta2;
+                theta2 = t;*/
+                if (mtheta > mtheta2)
+                {
+                    t = mtheta;
+                    mtheta = mtheta2;
+                    mtheta2 = t;
+                }
+                else
+                {
+                    otherArc = !otherArc;
+                }
+            }
+            txmin = cmod(vector_angle(1, 0, (xmin.x - cx)/rx, (xmin.y - cy)/ry));
+            txmax = cmod(vector_angle(1, 0, (xmax.x - cx)/rx, (xmax.y - cy)/ry));
+            tymin = cmod(vector_angle(1, 0, (ymin.x - cx)/rx, (ymin.y - cy)/ry));
+            tymax = cmod(vector_angle(1, 0, (ymax.x - cx)/rx, (ymax.y - cy)/ry));
+             if ((!otherArc && (mtheta > txmin || mtheta2 < txmin)) || (otherArc && !(mtheta > txmin || mtheta2 < txmin)))
             {
                 xmin = o1.x < o2.x ? o1 : o2;
             }
-            if ((!otherArc && (cmod(theta) > cmod(txmax) || cmod(theta2) < cmod(txmax))) || (otherArc && !(cmod(theta) > cmod(txmax) || cmod(theta2) < cmod(txmax))))
+            if ((!otherArc && (mtheta > txmax || mtheta2 < txmax)) || (otherArc && !(mtheta > txmax || mtheta2 < txmax)))
             {
                 xmax = o1.x > o2.x ? o1 : o2;
             }
-            if ((!otherArc && (cmod(theta) > cmod(tymin) || cmod(theta2) < cmod(tymin))) || (otherArc && !(cmod(theta) > cmod(tymin) || cmod(theta2) < cmod(tymin))))
+            if ((!otherArc && (mtheta > tymin || mtheta2 < tymin)) || (otherArc && !(mtheta > tymin || mtheta2 < tymin)))
             {
                 ymin = o1.y < o2.y ? o1 : o2;
             }
-            if ((!otherArc && (cmod(theta) > cmod(tymax) || cmod(theta2) < cmod(tymax))) || (otherArc && !(cmod(theta) > cmod(tymax) || cmod(theta2) < cmod(tymax))))
+            if ((!otherArc && (mtheta > tymax || mtheta2 < tymax)) || (otherArc && !(mtheta > tymax || mtheta2 < tymax)))
             {
                 ymax = o1.y > o2.y ? o1 : o2;
             }
@@ -3123,6 +3142,8 @@ Geometrize.Arc = Arc;
  * Represents a quadratic bezier curve defined by its control points
  * ```javascript
  * const qbezier = QBezier([p1, p2, p3]);
+ * qbezier.points[0].x += 10; // change it
+ * qbezier.points[1].x = 20; // change it
  * ```
 [/DOC_MD]**/
 var QBezier = makeClass(Bezier2D, {
@@ -3288,6 +3309,8 @@ Geometrize.QBezier = QBezier;
  * Represents a cubic bezier curve defined by its control points
  * ```javascript
  * const cbezier = CBezier([p1, p2, p3, p4]);
+ * cbezier.points[0].x += 10; // change it
+ * cbezier.points[2].x = 20; // change it
  * ```
 [/DOC_MD]**/
 var CBezier = makeClass(Bezier2D, {
@@ -3458,6 +3481,8 @@ Geometrize.CBezier = CBezier;
  * Represents a polygon (a closed polyline) defined by its vertices
  * ```javascript
  * const polygon = Polygon([p1, p2, .., pn]);
+ * polygon.vertices[0].x += 10; // change it
+ * polygon.vertices[2].x = 20; // change it
  * ```
 [/DOC_MD]**/
 var Polygon = makeClass(Curve2D, {
@@ -3781,6 +3806,8 @@ Geometrize.Rect = Rect;
  * Represents a circle of given center (point) and radius
  * ```javascript
  * const circle = Circle(center, radius);
+ * circle.center.x += 10; // change it
+ * circle.radius = 12; // change it
  * ```
 [/DOC_MD]**/
 var Circle = makeClass(EllipticArc2D, {
@@ -4019,6 +4046,8 @@ Geometrize.Circle = Circle;
  * Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
  * ```javascript
  * const ellipse = Ellipse(center, radiusX, radiusY, angle);
+ * ellipse.center.x += 10; // change it
+ * ellipse.radiusX = 12; // change it
  * ```
 [/DOC_MD]**/
 var Ellipse = makeClass(EllipticArc2D, {
@@ -4331,7 +4360,13 @@ Geometrize.Shape2D = Shape2D;
  *
  * ```javascript
  * const scene = Scene2D(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
- * scene.add(Line([p1, p2]));
+ * const line = Line([p1, p2]);
+ * scene.add(line); // add object
+ * scene.remove(line); // remove object
+ * scene.x0 = 20; // change viewport
+ * scene.x1 = 100; // change viewport
+ * scene.y0 = 10; // change viewport
+ * scene.y1 = 200; // change viewport
  * ```
 [/DOC_MD]**/
 var Scene2D = makeClass(null, {
@@ -5110,7 +5145,7 @@ function is_convex(points)
         new_x = newpoint.x;
         new_y = newpoint.y;
         new_direction = stdMath.atan2(new_y - old_y, new_x - old_x);
-        angle = fold(new_direction - old_direction, -PI, PI, TWO_PI);
+        angle = mod(new_direction - old_direction, TWO_PI, -PI, PI);
         if (0 === ndx)
         {
             if (0 === angle) return false;
@@ -5738,22 +5773,16 @@ function clamp(x, xmin, xmax)
 {
     return stdMath.min(stdMath.max(x, xmin), xmax);
 }
-function fold(x, xmin, xmax, xm)
-{
-    if (x < xmin) x += xm;
-    if (x > xmax) x -= xm;
-    return x;
-}
-function mod(x, m)
+function mod(x, m, xmin, xmax)
 {
     x -= m*stdMath.floor(x/m);
-    if (0 > x) x += m;
-    if (m < x) x -= m;
+    if (xmin > x) x += m;
+    if (xmax < x) x -= m;
     return x;
 }
 function cmod(x)
 {
-    return mod(x, TWO_PI);
+    return mod(x, TWO_PI, 0, TWO_PI);
 }
 function deg(rad)
 {

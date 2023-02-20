@@ -4,6 +4,8 @@
  * Represents a quadratic bezier curve defined by its control points
  * ```javascript
  * const qbezier = QBezier([p1, p2, p3]);
+ * qbezier.points[0].x += 10; // change it
+ * qbezier.points[1].x = 20; // change it
  * ```
 [/DOC_MD]**/
 var QBezier = makeClass(Bezier2D, {

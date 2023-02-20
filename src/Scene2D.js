@@ -5,7 +5,13 @@
  *
  * ```javascript
  * const scene = Scene2D(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
- * scene.add(Line([p1, p2]));
+ * const line = Line([p1, p2]);
+ * scene.add(line); // add object
+ * scene.remove(line); // remove object
+ * scene.x0 = 20; // change viewport
+ * scene.x1 = 100; // change viewport
+ * scene.y0 = 10; // change viewport
+ * scene.y1 = 200; // change viewport
  * ```
 [/DOC_MD]**/
 var Scene2D = makeClass(null, {

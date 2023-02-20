@@ -80,20 +80,20 @@ var Object3D = makeClass(null, merge(null, {
  *
 [/DOC_MD]**/
 /**[DOC_MD]
- * * `clone(): Object2D` get a copy of this object
+ * * `clone(): Object3D` get a copy of this object
 [/DOC_MD]**/
     clone: function() {
         return this;
     },
 /**[DOC_MD]
- * * `transform(matrix): Object2D` get a transformed copy of this object by matrix
+ * * `transform(matrix3d): Object3D` get a transformed copy of this object by matrix3d
 [/DOC_MD]**/
     transform: function() {
         return this;
     },
     setStyle: null,
 /**[DOC_MD]
- * * `getBoundingBox(): Object` get bounding box {xmin,ymin,xmax,ymax,zmin,zmax} of object
+ * * `getBoundingBox(): Object{xmin,ymin,zmin,xmax,ymax,zmax}` get bounding box of object
 [/DOC_MD]**/
     getBoundingBox: function() {
         return {
@@ -106,7 +106,7 @@ var Object3D = makeClass(null, merge(null, {
         };
     },
 /**[DOC_MD]
- * * `getCenter(): Object` get center {x,y} of object
+ * * `getCenter(): Object{x,y,z}` get center of object
 [/DOC_MD]**/
     getCenter: function() {
         var bb = this.getBoundingBox();

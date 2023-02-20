@@ -188,7 +188,7 @@ var Curve2D = makeClass(Topos2D, {
  *
 [/DOC_MD]**/
 /**[DOC_MD]
- * * `isConnected(): Bool` True if curve is a connected curve (eg a line)
+ * * `isConnected(): Bool` true if curve is a connected curve (eg a line)
 [/DOC_MD]**/
     isConnected: function() {
         return true;
@@ -200,7 +200,7 @@ var Curve2D = makeClass(Topos2D, {
         return false;
     },
 /**[DOC_MD]
- * * `isConvex(): Bool` true if curve is convex (eg a concex polygon)
+ * * `isConvex(): Bool` true if curve is convex (eg a convex polygon)
 [/DOC_MD]**/
     isConvex: function() {
         return false;
@@ -222,7 +222,7 @@ var Curve2D = makeClass(Topos2D, {
         return this.clone();
     },
 /**[DOC_MD]
- * * `getPointAt(t): Point2D` get point on curve at position specified by paramater `t` (0 <= t <= 1)
+ * * `getPointAt(t: Number): Point2D` get point on curve at position specified by parameter `t (0 <= t <= 1)`
 [/DOC_MD]**/
     getPointAt: function(t) {
         // 0 <= t <= 1
@@ -232,7 +232,7 @@ var Curve2D = makeClass(Topos2D, {
         return null == p ? null : Point2D(p);
     },
 /**[DOC_MD]
- * * `curveUpTo(t): Curve2D` get curve up to point specified by paramater `t` (0 <= t <= 1)
+ * * `curveUpTo(t: Number): Curve2D` get curve up to point specified by parameter `t (0 <= t <= 1)`
 [/DOC_MD]**/
     curveUpTo: function(t) {
         var self = this;
@@ -262,13 +262,13 @@ var Curve2D = makeClass(Topos2D, {
         return d;
     },
 /**[DOC_MD]
- * * `polylinePoints(): Object{x,y}[]` get polyline points that approximates the curve
+ * * `polylinePoints(): Object{x,y}[]` get points of polyline that approximates the curve
 [/DOC_MD]**/
     polylinePoints: function() {
         return this._lines.slice();
     },
 /**[DOC_MD]
- * * `bezierPoints(t): Object{x,y}[]` get cubic bezier points that approximates the curve (optionally up to point specified by parameter t)
+ * * `bezierPoints(t: Number = 1): Object{x,y}[]` get points of cubic bezier curves that approximate the curve (optionally up to point specified by parameter `t`)
 [/DOC_MD]**/
     bezierPoints: function(t) {
         return [

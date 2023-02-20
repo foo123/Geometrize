@@ -5,7 +5,8 @@
  *
  * ```javascript
  * const p = Point2D(x, y);
- * p.x = x+10; // change it
+ * p.x += 10; // change it
+ * p.y = 5; // change it
  * ```
 [/DOC_MD]**/
 var Point2D = makeClass(Object2D, {

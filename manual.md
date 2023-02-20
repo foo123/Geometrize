@@ -61,11 +61,11 @@ Represents a generic 2D object
 
 
 
-* `transform(matrix): Object2D` get a transformed copy of this object by matrix
+* `transform(matrix2d): Object2D` get a transformed copy of this object by matrix2d
 
 
 
-* `getBoundingBox(): Object` get bounding box {xmin,ymin,xmax,ymax} of object
+* `getBoundingBox(): Object{xmin,ymin,xmax,ymax}` get bounding box of object
 
 
 
@@ -73,7 +73,23 @@ Represents a generic 2D object
 
 
 
-* `getCenter(): Object` get center {x,y} of object
+* `getCenter(): Object{x,y}` get center of object
+
+
+
+* `hasPoint(point): Bool` check if given point is part of the boundary this object
+
+
+
+* `hasInsidePoint(point, strict): Bool` check if given point is part of the interior of this object (where applicable)
+
+
+
+* `intersects(other): Point2D[]|Bool` return array of intersection points with other 2d object or false
+
+
+
+* `intersects(other): Point2D[]|Bool` return array of intersection points of object with itself or false
 
 
 
@@ -91,7 +107,8 @@ Represents a point in 2D space
 
 ```javascript
 const p = Point2D(x, y);
-p.x = x+10; // change it
+p.x += 10; // change it
+p.y = 5; // change it
 ```
 
 
@@ -111,23 +128,6 @@ const topos = Topos2D([p1, p2, p3, .., pn]);
 
 
 * `points: Point2D[]` the points that define this topos
-
-
-
-**Methods:**
-
-
-
-
-* `hasPoint(point): Bool` check if given point belongs to this topos
-
-
-
-* `hasInsidePoint(point, strict): Bool` check if given point belongs to the interior of this topos (where applicable)
-
-
-
-* `intersects(other): Point2D{}` return array of intersection points with other 2d object
 
 
 
@@ -161,7 +161,7 @@ Represents a generic curve in 2D space
 
 
 
-* `isConnected(): Bool` True if curve is a connected curve (eg a line)
+* `isConnected(): Bool` true if curve is a connected curve (eg a line)
 
 
 
@@ -169,15 +169,15 @@ Represents a generic curve in 2D space
 
 
 
-* `isConvex(): Bool` true if curve is convex (eg a concex polygon)
+* `isConvex(): Bool` true if curve is convex (eg a convex polygon)
 
 
 
-* `getPointAt(t): Point2D` get point on curve at position specified by paramater `t` (0 <= t <= 1)
+* `getPointAt(t: Number): Point2D` get point on curve at position specified by parameter `t (0 <= t <= 1)`
 
 
 
-* `curveUpTo(t): Curve2D` get curve up to point specified by paramater `t` (0 <= t <= 1)
+* `curveUpTo(t: Number): Curve2D` get curve up to point specified by parameter `t (0 <= t <= 1)`
 
 
 
@@ -185,11 +185,11 @@ Represents a generic curve in 2D space
 
 
 
-* `polylinePoints(): Object{x,y}[]` get polyline points that approximates the curve
+* `polylinePoints(): Object{x,y}[]` get points of polyline that approximates the curve
 
 
 
-* `bezierPoints(t): Object{x,y}[]` get cubic bezier points that approximates the curve (optionally up to point specified by parameter t)
+* `bezierPoints(t: Number = 1): Object{x,y}[]` get points of cubic bezier curves that approximate the curve (optionally up to point specified by parameter `t`)
 
 
 
@@ -242,7 +242,9 @@ const curve = CompositeCurve([Line(p1, p2), QBezier([p3, p4, p5]), Line(p6, p7)]
 
 Represents a line segment between 2 points
 ```javascript
-const line = Line(p1, p2);
+const line = Line(start, end);
+line.start.x += 10; // change it
+line.end.y = 20; // change it
 ```
 
 
@@ -252,6 +254,8 @@ const line = Line(p1, p2);
 Represents an assembly of consecutive line segments between given points
 ```javascript
 const polyline = Polyline([p1, p2, .., pn]);
+polyline.points[0].x += 10; // change it
+polyline.points[2].x = 20; // change it
 ```
 
 
@@ -261,6 +265,9 @@ const polyline = Polyline([p1, p2, .., pn]);
 Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
 ```javascript
 const arc = Arc(start, end, radiusX, radiusY, angle, largeArc, sweep);
+arc.start.x += 10; // change it
+arc.radiusX = 12; // change it
+arc.largeArc = false; // change it
 ```
 
 
@@ -270,6 +277,8 @@ const arc = Arc(start, end, radiusX, radiusY, angle, largeArc, sweep);
 Represents a quadratic bezier curve defined by its control points
 ```javascript
 const qbezier = QBezier([p1, p2, p3]);
+qbezier.points[0].x += 10; // change it
+qbezier.points[1].x = 20; // change it
 ```
 
 
@@ -279,6 +288,8 @@ const qbezier = QBezier([p1, p2, p3]);
 Represents a cubic bezier curve defined by its control points
 ```javascript
 const cbezier = CBezier([p1, p2, p3, p4]);
+cbezier.points[0].x += 10; // change it
+cbezier.points[2].x = 20; // change it
 ```
 
 
@@ -288,6 +299,8 @@ const cbezier = CBezier([p1, p2, p3, p4]);
 Represents a polygon (a closed polyline) defined by its vertices
 ```javascript
 const polygon = Polygon([p1, p2, .., pn]);
+polygon.vertices[0].x += 10; // change it
+polygon.vertices[2].x = 20; // change it
 ```
 
 
@@ -297,6 +310,8 @@ const polygon = Polygon([p1, p2, .., pn]);
 Represents a circle of given center (point) and radius
 ```javascript
 const circle = Circle(center, radius);
+circle.center.x += 10; // change it
+circle.radius = 12; // change it
 ```
 
 
@@ -306,6 +321,8 @@ const circle = Circle(center, radius);
 Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
 ```javascript
 const ellipse = Ellipse(center, radiusX, radiusY, angle);
+ellipse.center.x += 10; // change it
+ellipse.radiusX = 12; // change it
 ```
 
 
@@ -324,5 +341,11 @@ scene container for 2D geometric objects
 
 ```javascript
 const scene = Scene2D(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
-scene.add(Line([p1, p2]));
+const line = Line([p1, p2]);
+scene.add(line); // add object
+scene.remove(line); // remove object
+scene.x0 = 20; // change viewport
+scene.x1 = 100; // change viewport
+scene.y0 = 10; // change viewport
+scene.y1 = 200; // change viewport
 ```

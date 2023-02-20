@@ -575,7 +575,7 @@ function is_convex(points)
         new_x = newpoint.x;
         new_y = newpoint.y;
         new_direction = stdMath.atan2(new_y - old_y, new_x - old_x);
-        angle = fold(new_direction - old_direction, -PI, PI, TWO_PI);
+        angle = mod(new_direction - old_direction, TWO_PI, -PI, PI);
         if (0 === ndx)
         {
             if (0 === angle) return false;
@@ -1203,22 +1203,16 @@ function clamp(x, xmin, xmax)
 {
     return stdMath.min(stdMath.max(x, xmin), xmax);
 }
-function fold(x, xmin, xmax, xm)
-{
-    if (x < xmin) x += xm;
-    if (x > xmax) x -= xm;
-    return x;
-}
-function mod(x, m)
+function mod(x, m, xmin, xmax)
 {
     x -= m*stdMath.floor(x/m);
-    if (0 > x) x += m;
-    if (m < x) x -= m;
+    if (xmin > x) x += m;
+    if (xmax < x) x -= m;
     return x;
 }
 function cmod(x)
 {
-    return mod(x, TWO_PI);
+    return mod(x, TWO_PI, 0, TWO_PI);
 }
 function deg(rad)
 {

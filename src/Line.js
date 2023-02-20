@@ -3,7 +3,9 @@
  *
  * Represents a line segment between 2 points
  * ```javascript
- * const line = Line(p1, p2);
+ * const line = Line(start, end);
+ * line.start.x += 10; // change it
+ * line.end.y = 20; // change it
  * ```
 [/DOC_MD]**/
 var Line = makeClass(Bezier2D, {
