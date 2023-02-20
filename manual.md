@@ -89,7 +89,7 @@ Represents a generic 2D object
 
 
 
-* `intersects(other): Point2D[]|Bool` return array of intersection points of object with itself or false
+* `intersectsSelf(): Point2D[]|Bool` return array of intersection points of object with itself or false
 
 
 

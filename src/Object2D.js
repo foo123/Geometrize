@@ -138,7 +138,7 @@ var Object2D = makeClass(null, merge(null, {
         return false;
     },
 /**[DOC_MD]
- * * `intersects(other): Point2D[]|Bool` return array of intersection points of object with itself or false
+ * * `intersectsSelf(): Point2D[]|Bool` return array of intersection points of object with itself or false
 [/DOC_MD]**/
     intersectsSelf: function() {
         return false;

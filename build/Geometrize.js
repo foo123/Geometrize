@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.10 (2023-02-20 11:14:57)
+*   @version 0.9.10 (2023-02-20 11:19:38)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.10 (2023-02-20 11:14:57)
+*   @version 0.9.10 (2023-02-20 11:19:38)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -738,7 +738,7 @@ var Object2D = makeClass(null, merge(null, {
         return false;
     },
 /**[DOC_MD]
- * * `intersects(other): Point2D[]|Bool` return array of intersection points of object with itself or false
+ * * `intersectsSelf(): Point2D[]|Bool` return array of intersection points of object with itself or false
 [/DOC_MD]**/
     intersectsSelf: function() {
         return false;
