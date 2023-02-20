@@ -388,6 +388,11 @@ function circle_circle_intersection(c1, r1, c2, r2)
     ;
     return is_strictly_equal(h, 0) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
+function ellipse_ellipse_intersection(c1, rx1, ry1, cs1, c2, rx2, ry2, cs2)
+{
+    var q1 = ellipse2quadratic(c1, rx1, ry1, cs1), q2 = ellipse2quadratic(c2, rx2, ry2, cs2);
+    return solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+}
 function polyline_line_intersection(polyline_points, p1, p2)
 {
     var i = [], j, p, n = polyline_points.length-1;
@@ -637,6 +642,53 @@ function solve_cubic(a, b, c, d)
         ];
     }
 }
+function solve_quartic(e, a, b, c, d)
+{
+    if (is_strictly_equal(e, 0)) return solve_cubic(a, b, c, d);
+    a /= e; b /= e; c /= e; d /= e;
+    // v^2 + (-2 b^3 + 9 a b c - 27 c^2 - 27 a^2 d + 72 b d)v + (b^2 - 3 a c + 12 d)^3 = 0
+    var v, v1, v2, u, ur, D1, D2, p;
+    v = solve_quadratic(1, -2*pow(b, 3) + 9*a*b*c - 27*c*c - 27*a*a*d + 72*b*d, pow(b*b - 3*a*c + 12*d, 3));
+    if (!v) return false;
+    // u = \frac{a^2}{4} +\frac{-2b+v_1^{1/3}+v_2^{1/3}}{3}
+    v1 = v[0];
+    v2 = v[1] || v1;
+    u = a*a/4 + (-2*b + sign(v1)*pow(abs(v1), 1/3) + sign(v2)*pow(abs(v2), 1/3))/3;
+    if (0 >= u) return false;
+    ur = sqrt(u);
+    // x_{1,2} = -\tfrac{1}{4}a+\tfrac{1}{2}\sqrt{u}\pm\tfrac{1}{4}\sqrt{3a^2-8b-4u+\frac{-a^3+4ab-8c}{\sqrt{u}}}
+    // x_{3,4} = -\tfrac{1}{4}a-\tfrac{1}{2}\sqrt{u}\pm\tfrac{1}{4}\sqrt{3a^2-8b-4u-\frac{-a^3+4ab-8c}{\sqrt{u}}}
+    D1 = 3*a*a - 8*b - 4*u + (-pow(a, 3) + 4*a*b - 8*c)/ur;
+    D2 = 3*a*a - 8*b - 4*u - (-pow(a, 3) + 4*a*b - 8*c)/ur;
+    p = [];
+    if (0 <= D1)
+    {
+        if (is_strictly_equal(D1, 0))
+        {
+            p.push(ur/2 - a/4);
+        }
+        else
+        {
+            D1 = sqrt(D1)/4;
+            p.push(ur/2 - a/4 + D1);
+            p.push(ur/2 - a/4 - D1);
+        }
+    }
+    if (0 <= D2)
+    {
+        if (is_strictly_equal(D2, 0))
+        {
+            p.push(-ur/2 - a/4);
+        }
+        else
+        {
+            D2 = sqrt(D2)/4;
+            p.push(-ur/2 - a/4 + D2);
+            p.push(-ur/2 - a/4 - D2);
+        }
+    }
+    return p.length ? p : false;
+}
 function solve_linear_linear_system(a, b, c, k, l, m)
 {
     /*
@@ -681,9 +733,53 @@ function solve_linear_quadratic_system(m, n, k, a, b, c, d, e, f)
         return [{x:-(k + n*((-m*D - F)/R))/m, y:(-m*D - F)/R},{x:-(k + n*((m*D - F)/R))/m, y:(m*D - F)/R}];
     }
 }
+function solve_quadratic_quadratic_system(a1, b1, c1, d1, e1, f1, a2, b2, c2, d2, e2, f2)
+{
+    /*
+    a1 x^2 + b1 y^2 + c1 xy + d1 x + e1 y + f1 = 0
+    a2 x^2 + b2 y^2 + c2 xy + d2 x + e2 y + f2 = 0
+    */
+    var q, x, y, n, p, i, j;
+    q = quadratics2quartic(a1, b1, c1, d1, e1, f1, a2, b2, c2, d2, e2, f2);
+    x = solve_quartic(q[0], q[1], q[2], q[3], q[4]);
+    if (!x) return false;
+    p = new Array(8);
+    j = 0;
+    for (i=0,n=x.length; i<n; ++i)
+    {
+        y = solve_quadratic(b1, c1*x[i] + e1, x[i]*(a1*x[i] + d1) + f1);
+        if (y)
+        {
+            p[j++] = {x:x[i], y:y[0]};
+            if (1 < y.length) p[j++] = {x:x[i], y:y[1]};
+        }
+    }
+    p.length = j;
+    return p.length ? p : false;
+}
 function line2linear(p1, p2)
 {
     return [p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y];
+}
+function quadratics2quartic(a_1, b_1, c_1, d_1, e_1, f_1, a_2, b_2, c_2, d_2, e_2, f_2)
+{
+/*
+Eliminate[{a_1x^2+b_1y^2+c_1xy+d_1x+e_1y+f_1 == 0, a_2x^2+b_2y^2+c_2xy+d_2x+e_2y+f_2 == 0}, y]
+f_1 (2 a_1 b_2^2 x^2 - 2 a_2 b_1 b_2 x^2 - b_2 c_2 e_1 x - b_2 c_1 e_2 x + 2 b_1 c_2 e_2 x + b_1 c_2^2 x^2 - b_2 c_1 c_2 x^2 + 2 b_2^2 d_1 x - 2 b_1 b_2 d_2 x + b_1 e_2^2 - b_2 e_1 e_2 - 2 b_1 b_2 f_2) + b_2^2 f_1^2 = -2 a_2 b_2 c_1 e_1 x^3 + a_2 b_1 c_2 e_1 x^3 + a_1 b_2 c_2 e_1 x^3 + a_2 b_1 c_1 e_2 x^3 + a_1 b_2 c_1 e_2 x^3 - 2 a_1 b_1 c_2 e_2 x^3 - a_2 b_2 c_1^2 x^4 - a_1 b_1 c_2^2 x^4 + a_2 b_1 c_1 c_2 x^4 + a_1 b_2 c_1 c_2 x^4 - 2 a_1 b_2^2 d_1 x^3 + 2 a_2 b_1 b_2 d_1 x^3 - 2 a_2 b_1^2 d_2 x^3 + 2 a_1 b_1 b_2 d_2 x^3 - a_2 b_2 e_1^2 x^2 - a_1 b_1 e_2^2 x^2 + a_2 b_1 e_1 e_2 x^2 + a_1 b_2 e_1 e_2 x^2 - 2 a_2 b_1^2 f_2 x^2 + 2 a_1 b_1 b_2 f_2 x^2 - a_2^2 b_1^2 x^4 - a_1^2 b_2^2 x^4 + 2 a_1 a_2 b_1 b_2 x^4 + b_2 c_2 d_1 e_1 x^2 - 2 b_2 c_1 d_2 e_1 x^2 + b_1 c_2 d_2 e_1 x^2 + b_2 c_1 d_1 e_2 x^2 - 2 b_1 c_2 d_1 e_2 x^2 + b_1 c_1 d_2 e_2 x^2 - b_1 c_2^2 d_1 x^3 + b_2 c_1 c_2 d_1 x^3 - b_2 c_1^2 d_2 x^3 + b_1 c_1 c_2 d_2 x^3 - 2 b_2 c_1 e_1 f_2 x + b_1 c_2 e_1 f_2 x + b_1 c_1 e_2 f_2 x - b_2 c_1^2 f_2 x^2 + b_1 c_1 c_2 f_2 x^2 - b_2 d_2 e_1^2 x - b_1 d_1 e_2^2 x + b_2 d_1 e_1 e_2 x + b_1 d_2 e_1 e_2 x + 2 b_1 b_2 d_1 f_2 x - 2 b_1^2 d_2 f_2 x - b_2^2 d_1^2 x^2 - b_1^2 d_2^2 x^2 + 2 b_1 b_2 d_1 d_2 x^2 - b_2 e_1^2 f_2 + b_1 e_1 e_2 f_2 - b_1^2 f_2^2
+*/
+/*
+https://live.sympy.org/
+e = -2*a_2*b_2*c_1*e_1*x**3 + a_2*b_1*c_2*e_1*x**3 + a_1*b_2*c_2*e_1*x**3 + a_2*b_1*c_1*e_2*x**3 + a_1*b_2*c_1*e_2*x**3 - 2*a_1*b_1*c_2*e_2*x**3 - a_2*b_2*c_1**2*x**4 - a_1*b_1*c_2**2*x**4 + a_2*b_1*c_1*c_2*x**4 + a_1*b_2*c_1*c_2*x**4 - 2*a_1*b_2**2*d_1*x**3 + 2*a_2*b_1*b_2*d_1*x**3 - 2*a_2*b_1**2*d_2*x**3 + 2*a_1*b_1*b_2*d_2*x**3 - a_2*b_2*e_1**2*x**2 - a_1*b_1*e_2**2*x**2 + a_2*b_1*e_1*e_2*x**2 + a_1*b_2*e_1*e_2*x**2 - 2*a_2*b_1**2*f_2*x**2 + 2*a_1*b_1*b_2*f_2*x**2 - a_2**2*b_1**2*x**4 - a_1**2*b_2**2*x**4 + 2*a_1*a_2*b_1*b_2*x**4 + b_2*c_2*d_1*e_1*x**2 - 2*b_2*c_1*d_2*e_1*x**2 + b_1*c_2*d_2*e_1*x**2 + b_2*c_1*d_1*e_2*x**2 - 2*b_1*c_2*d_1*e_2*x**2 + b_1*c_1*d_2*e_2*x**2 - b_1*c_2**2*d_1*x**3 + b_2*c_1*c_2*d_1*x**3 - b_2*c_1**2*d_2*x**3 + b_1*c_1*c_2*d_2*x**3 - 2*b_2*c_1*e_1*f_2*x + b_1*c_2*e_1*f_2*x + b_1*c_1*e_2*f_2*x - b_2*c_1**2*f_2*x**2 + b_1*c_1*c_2*f_2*x**2 - b_2*d_2*e_1**2*x - b_1*d_1*e_2**2*x + b_2*d_1*e_1*e_2*x + b_1*d_2*e_1*e_2*x + 2*b_1*b_2*d_1*f_2*x - 2*b_1**2*d_2*f_2*x - b_2**2*d_1**2*x**2 - b_1**2*d_2**2*x**2 + 2*b_1*b_2*d_1*d_2*x**2 - b_2*e_1**2*f_2 + b_1*e_1*e_2*f_2 - b_1**2*f_2**2 - (f_1*(2*a_1*b_2**2*x**2 - 2*a_2*b_1*b_2*x**2 - b_2*c_2*e_1*x - b_2*c_1*e_2*x + 2*b_1*c_2*e_2*x + b_1*c_2**2*x**2 - b_2*c_1*c_2*x**2 + 2*b_2**2*d_1*x - 2*b_1*b_2*d_2*x + b_1*e_2**2 - b_2*e_1*e_2 - 2*b_1*b_2*f_2) + b_2**2*f_1**2)
+collect(expand(e), x)
+-b_1**2*f_2**2 + 2*b_1*b_2*f_1*f_2 + b_1*e_1*e_2*f_2 - b_1*e_2**2*f_1 - b_2**2*f_1**2 - b_2*e_1**2*f_2 + b_2*e_1*e_2*f_1 + x**4*(-a_1**2*b_2**2 + 2*a_1*a_2*b_1*b_2 - a_1*b_1*c_2**2 + a_1*b_2*c_1*c_2 - a_2**2*b_1**2 + a_2*b_1*c_1*c_2 - a_2*b_2*c_1**2) + x**3*(2*a_1*b_1*b_2*d_2 - 2*a_1*b_1*c_2*e_2 - 2*a_1*b_2**2*d_1 + a_1*b_2*c_1*e_2 + a_1*b_2*c_2*e_1 - 2*a_2*b_1**2*d_2 + 2*a_2*b_1*b_2*d_1 + a_2*b_1*c_1*e_2 + a_2*b_1*c_2*e_1 - 2*a_2*b_2*c_1*e_1 + b_1*c_1*c_2*d_2 - b_1*c_2**2*d_1 - b_2*c_1**2*d_2 + b_2*c_1*c_2*d_1) + x**2*(2*a_1*b_1*b_2*f_2 - a_1*b_1*e_2**2 - 2*a_1*b_2**2*f_1 + a_1*b_2*e_1*e_2 - 2*a_2*b_1**2*f_2 + 2*a_2*b_1*b_2*f_1 + a_2*b_1*e_1*e_2 - a_2*b_2*e_1**2 - b_1**2*d_2**2 + 2*b_1*b_2*d_1*d_2 + b_1*c_1*c_2*f_2 + b_1*c_1*d_2*e_2 - b_1*c_2**2*f_1 - 2*b_1*c_2*d_1*e_2 + b_1*c_2*d_2*e_1 - b_2**2*d_1**2 - b_2*c_1**2*f_2 + b_2*c_1*c_2*f_1 + b_2*c_1*d_1*e_2 - 2*b_2*c_1*d_2*e_1 + b_2*c_2*d_1*e_1) + x*(-2*b_1**2*d_2*f_2 + 2*b_1*b_2*d_1*f_2 + 2*b_1*b_2*d_2*f_1 + b_1*c_1*e_2*f_2 + b_1*c_2*e_1*f_2 - 2*b_1*c_2*e_2*f_1 - b_1*d_1*e_2**2 + b_1*d_2*e_1*e_2 - 2*b_2**2*d_1*f_1 - 2*b_2*c_1*e_1*f_2 + b_2*c_1*e_2*f_1 + b_2*c_2*e_1*f_1 + b_2*d_1*e_1*e_2 - b_2*d_2*e_1**2)
+*/
+    return [
+    -pow(a_1,2)*pow(b_2,2) + 2*a_1*a_2*b_1*b_2 - a_1*b_1*pow(c_2,2) + a_1*b_2*c_1*c_2 - pow(a_2,2)*pow(b_1,2) + a_2*b_1*c_1*c_2 - a_2*b_2*pow(c_1,2),
+    2*a_1*b_1*b_2*d_2 - 2*a_1*b_1*c_2*e_2 - 2*a_1*pow(b_2,2)*d_1 + a_1*b_2*c_1*e_2 + a_1*b_2*c_2*e_1 - 2*a_2*pow(b_1,2)*d_2 + 2*a_2*b_1*b_2*d_1 + a_2*b_1*c_1*e_2 + a_2*b_1*c_2*e_1 - 2*a_2*b_2*c_1*e_1 + b_1*c_1*c_2*d_2 - b_1*pow(c_2,2)*d_1 - b_2*pow(c_1,2)*d_2 + b_2*c_1*c_2*d_1,
+    2*a_1*b_1*b_2*f_2 - a_1*b_1*pow(e_2,2) - 2*a_1*pow(b_2,2)*f_1 + a_1*b_2*e_1*e_2 - 2*a_2*pow(b_1,2)*f_2 + 2*a_2*b_1*b_2*f_1 + a_2*b_1*e_1*e_2 - a_2*b_2*pow(e_1,2) - pow(b_1,2)*d_2**2 + 2*b_1*b_2*d_1*d_2 + b_1*c_1*c_2*f_2 + b_1*c_1*d_2*e_2 - b_1*pow(c_2,2)*f_1 - 2*b_1*c_2*d_1*e_2 + b_1*c_2*d_2*e_1 - pow(b_2,2)*pow(d_1,2) - b_2*pow(c_1,2)*f_2 + b_2*c_1*c_2*f_1 + b_2*c_1*d_1*e_2 - 2*b_2*c_1*d_2*e_1 + b_2*c_2*d_1*e_1,
+    -2*pow(b_1,2)*d_2*f_2 + 2*b_1*b_2*d_1*f_2 + 2*b_1*b_2*d_2*f_1 + b_1*c_1*e_2*f_2 + b_1*c_2*e_1*f_2 - 2*b_1*c_2*e_2*f_1 - b_1*d_1*pow(e_2,2) + b_1*d_2*e_1*e_2 - 2*pow(b_2,2)*d_1*f_1 - 2*b_2*c_1*e_1*f_2 + b_2*c_1*e_2*f_1 + b_2*c_2*e_1*f_1 + b_2*d_1*e_1*e_2 - b_2*d_2*pow(e_1,2),
+    -pow(b_1,2)*pow(f_2,2) + 2*b_1*b_2*f_1*f_2 + b_1*e_1*e_2*f_2 - b_1*pow(e_2,2)*f_1 - pow(b_2,2)*pow(f_1,2) - b_2*pow(e_1,2)*f_2 + b_2*e_1*e_2*f_1
+    ];
 }
 function circle2quadratic(center, radius)
 {
