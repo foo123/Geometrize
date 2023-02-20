@@ -143,12 +143,6 @@ var Topos3D = makeClass(Object3D, {
             return i.length ? i : false;
         }
         return false;
-    },
-    toTex: function() {
-        return '\\text{Topos3D}';
-    },
-    toString: function() {
-        return 'Topos3D()';
     }
 });
 Geometrize.Topos3D = Topos3D;

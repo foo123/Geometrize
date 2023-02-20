@@ -1265,7 +1265,7 @@ function merge(keys, a, b)
     }
     return a;
 }
-function SVG(tag, atts, svg, childNodes)
+function SVG(tag, atts, svg, childNodes, contentHandler)
 {
     var setAnyway = false;
     atts = atts || EMPTY_OBJ;
@@ -1288,6 +1288,14 @@ function SVG(tag, atts, svg, childNodes)
                     svg.appendChild(childNodes[i]);
                 }
             }
+            else if (is_function(contentHandler))
+            {
+                contentHandler(svg);
+            }
+        }
+        else if (is_function(contentHandler))
+        {
+            contentHandler(svg);
         }
         Object.keys(atts).forEach(function(a) {
             if (setAnyway || atts[a][1]) svg.setAttribute(a, atts[a][0]);

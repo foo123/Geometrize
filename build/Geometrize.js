@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.10 (2023-02-20 11:19:38)
+*   @version 1.0.0 (2023-02-20 20:33:09)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 0.9.10 (2023-02-20 11:19:38)
+*   @version 1.0.0 (2023-02-20 20:33:09)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "0.9.10", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "1.0.0", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -494,9 +494,9 @@ var Matrix2D = makeClass(null, {
         var self = this;
         return 'matrix('+Str(self.$00)+','+Str(self.$10)+','+Str(self.$01)+','+Str(self.$11)+','+Str(self.$02)+','+Str(self.$12)+')';
     },
-    toCanvas: function(ctx) {
+    toCanvas: function(ctx, reset) {
         var self = this;
-        ctx.transform(self.$00, self.$10, self.$01, self.$11, self.$02, self.$12);
+        ctx[true === reset ? 'setTransform' : 'transform'](self.$00, self.$10, self.$01, self.$11, self.$02, self.$12);
         return ctx;
     },
     toTex: function() {
@@ -607,7 +607,7 @@ Geometrize.Matrix2D = Matrix2D;
 [/DOC_MD]**/
 var Object2D = makeClass(null, merge(null, {
     constructor: function Object2D() {
-        var self = this, _style = null, onStyleChange;
+        var self = this, _style = null, _matrix = null, onStyleChange;
 
         self.id = uuid(self.name);
 
@@ -623,13 +623,45 @@ var Object2D = makeClass(null, merge(null, {
         };
         _style = new Style();
         _style.onChange(onStyleChange);
+        _matrix = self.hasMatrix() ? Matrix2D.eye() : null;
 /**[DOC_MD]
  * **Properties:**
  *
 [/DOC_MD]**/
 /**[DOC_MD]
  * * `id: String` unique ID for this object
+ * * `name: String` class/type name of object, eg "Object2D"
 [/DOC_MD]**/
+/**[DOC_MD]
+ * * `matrix: Matrix2D` the transform matrix of the object (if it applies)
+[/DOC_MD]**/
+        def(self, 'matrix', {
+            get: function() {
+                return _matrix;
+            },
+            set: function(matrix) {
+                if (self.hasMatrix())
+                {
+                    matrix = Matrix2D(matrix);
+                    var isChanged = !matrix.eq(_matrix);
+                    _matrix = matrix;
+                    if (isChanged /*&& !self.isChanged()*/)
+                    {
+                        self.isChanged(true);
+                        self.triggerChange();
+                    }
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
+        self.setMatrix = function(m) {
+            if (arguments.length)
+            {
+                self.matrix = m;
+            }
+            return self;
+        };
 /**[DOC_MD]
  * * `style: Style` the style applied to this object
 [/DOC_MD]**/
@@ -686,11 +718,22 @@ var Object2D = makeClass(null, merge(null, {
         return this;
     },
 /**[DOC_MD]
- * * `transform(matrix2d): Object2D` get a transformed copy of this object by matrix2d
+ * * `transform(matrix2d: Matrix2D): Object2D` get a transformed copy of this object by matrix2d
 [/DOC_MD]**/
     transform: function() {
         return this;
     },
+    hasMatrix: function() {
+        return false;
+    },
+/**[DOC_MD]
+ * * `setMatrix(matrix2D): self` set matrix for object
+[/DOC_MD]**/
+    setMatrix: null,
+/**[DOC_MD]
+ * * `setStyle(style): self` set style for object
+ * * `setStyle(prop, value): self` set style property/value for object
+[/DOC_MD]**/
     setStyle: null,
 /**[DOC_MD]
  * * `getBoundingBox(): Object{xmin,ymin,xmax,ymax}` get bounding box of object
@@ -743,12 +786,21 @@ var Object2D = makeClass(null, merge(null, {
     intersectsSelf: function() {
         return false;
     },
+/**[DOC_MD]
+ * * `toSVG(): String` render object as SVG string
+[/DOC_MD]**/
     toSVG: function(svg) {
         return arguments.length ? svg : '';
     },
+/**[DOC_MD]
+ * * `toSVGPath(): String` render object as SVG path string
+[/DOC_MD]**/
     toSVGPath: function(svg) {
         return arguments.length ? svg : '';
     },
+/**[DOC_MD]
+ * * `toCanvas(ctx): void` render object in canvas context
+[/DOC_MD]**/
     toCanvas: function(ctx) {
     },
     toCanvasPath: function(ctx) {
@@ -757,13 +809,13 @@ var Object2D = makeClass(null, merge(null, {
  * * `toTex(): String` get Tex representation of this object
 [/DOC_MD]**/
     toTex: function() {
-        return '\\text{Object2D}';
+        return '\\text{'+this.name+'}';
     },
 /**[DOC_MD]
  * * `toString(): String` get String representation of this object
 [/DOC_MD]**/
     toString: function() {
-        return 'Object2D('+this.id+')';
+        return this.name+'('+this.id+')';
     }
 }, Changeable));
 Geometrize.Object2D = Object2D;
@@ -1153,12 +1205,6 @@ var Topos2D = makeClass(Object2D, {
         this.points.forEach(function(p) {
             p.toCanvasPath(ctx);
         });
-    },
-    toTex: function() {
-        return '\\text{Topos2D}';
-    },
-    toString: function() {
-        return 'Topos2D()';
     }
 });
 Geometrize.Topos2D = Topos2D;
@@ -1192,9 +1238,6 @@ var Curve2D = makeClass(Topos2D, {
  * **Properties:**
  *
 [/DOC_MD]**/
-/**[DOC_MD]
- * * `matrix: Matrix2D` the transform matrix of the curve
-[/DOC_MD]**/
         def(self, 'matrix', {
             get: function() {
                 return _matrix ? _matrix : Matrix2D.eye();
@@ -1216,13 +1259,6 @@ var Curve2D = makeClass(Topos2D, {
             enumerable: true,
             configurable: true
         });
-        self.setMatrix = function(m) {
-            if (arguments.length)
-            {
-                self.matrix = m;
-            }
-            return self;
-        };
         def(self, '_points', {
             get: function() {
                 if (null == _points)
@@ -1347,6 +1383,9 @@ var Curve2D = makeClass(Topos2D, {
         }
         return self.$super('isChanged', arguments);
     },
+    hasMatrix: function() {
+        return true;
+    },
 /**[DOC_MD]
  * **Methods:**
  *
@@ -1369,10 +1408,6 @@ var Curve2D = makeClass(Topos2D, {
     isConvex: function() {
         return false;
     },
-    hasMatrix: function() {
-        return true;
-    },
-    setMatrix: null,
     f: function(t) {
         // override
         return {x:0, y:0};
@@ -1441,12 +1476,6 @@ var Curve2D = makeClass(Topos2D, {
         {x:0, y:0},
         {x:0, y:0}
         ];
-    },
-    toTex: function() {
-        return '\\text{Curve2D}';
-    },
-    toString: function() {
-        return 'Curve2D()';
     }
 });
 Geometrize.Curve2D = Curve2D;
@@ -1836,12 +1865,6 @@ var ParametricCurve = makeClass(Curve2D, {
         ctx.moveTo(p[0].x, p[0].y);
         for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
         if (self.isClosed()) ctx.closePath();
-    },
-    toTex: function() {
-        return '\\text{ParametricCurve('+this.id+')}';
-    },
-    toString: function() {
-        return 'ParametricCurve('+this.id+')';
     }
 });
 Geometrize.ParametricCurve = ParametricCurve;
@@ -1903,9 +1926,6 @@ var CompositeCurve = makeClass(Curve2D, {
             }
         };
         onArrayChange.id = self.id;
-
-        _curves = observeArray(curves, curve_add, curve_del);
-        _curves.onChange(onArrayChange);
 
         def(self, 'points', {
             get: function() {
@@ -1969,8 +1989,9 @@ var CompositeCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _length)
                 {
+                    var m = self.matrix;
                     _length = _curves.reduce(function(l, curve) {
-                        l += curve.length;
+                        l += curve.transform(m).length;
                         return l;
                     }, 0);
                 }
@@ -1990,8 +2011,9 @@ var CompositeCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _bbox)
                 {
+                    var m = self.matrix;
                     _bbox = _curves.reduce(function(_bbox, curve) {
-                        var bb = curve.getBoundingBox();
+                        var bb = curve.transform(m).getBoundingBox();
                         _bbox.ymin = stdMath.min(_bbox.ymin, bb.ymin);
                         _bbox.xmin = stdMath.min(_bbox.xmin, bb.xmin);
                         _bbox.ymax = stdMath.max(_bbox.ymax, bb.ymax);
@@ -2013,8 +2035,9 @@ var CompositeCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _hull)
                 {
+                    var m = self.matrix;
                     _hull = convex_hull(_curves.reduce(function(hulls, curve) {
-                        hulls.push.apply(hulls, curve._hull);
+                        hulls.push.apply(hulls, curve.transform(m)._hull);
                         return hulls;
                     }, []));
                 }
@@ -2028,12 +2051,16 @@ var CompositeCurve = makeClass(Curve2D, {
             {
                 _points = null;
                 _length = null;
-                _area = null;
                 _bbox = null;
                 _hull = null;
             }
+            else if (false === isChanged)
+            {
+                _curves.forEach(function(c) {c.isChanged(false);});
+            }
             return Object2D.prototype.isChanged.apply(self, arguments);
         };
+        self.curves = curves;
     },
     name: 'CompositeCurve',
     dispose: function() {
@@ -4348,25 +4375,313 @@ Geometrize.Ellipse = Ellipse;
  * ### Shape2D 2D generic Shape
  *
  * container for 2D geometric objects, grouped together
- * (not implemented yet)
+ * ```javascript
+ * // construct a complex shape
+ * const shape = Shape2D([Line(p1, p2), Line(p6, p7), Shape2D([Line(p3, p4), Line(p5, p6)])]);
+ * ```
+[/DOC_MD]**/
+var Shape2D = makeClass(Object2D, {
+    constructor: function Shape2D(objects) {
+        var self = this, _svgs = null, _objects = null, _bbox = null, _hull = null,
+            obj_add, obj_del, onObjectChange, onArrayChange;
+
+        if (!(self instanceof Shape2D)) return new Shape2D(objects);
+
+        if (null == objects) objects = [];
+        Object2D.call(self);
+
+        obj_add = function(o) {
+            if (o instanceof Object2D) o.onChange(onObjectChange);
+            return o;
+        };
+        obj_del = function(o) {
+            if (o instanceof Object2D)
+            {
+                o.onChange(onObjectChange, false);
+                if (_svgs)
+                {
+                    var el = _svgs[o.id];
+                    if (el)
+                    {
+                        if (el.parentNode) el.parentNode.removeChild(el);
+                        delete _svgs[o.id];
+                    }
+                }
+            }
+            return o;
+        };
+        onObjectChange = function onObjectChange(obj) {
+            if (is_array(_object) && (-1 !== _objects.indexOf(obj)))
+            {
+                //if (!self.isChanged())
+                {
+                    self.isChanged(true);
+                    self.triggerChange();
+                }
+            }
+        };
+        onObjectChange.id = self.id;
+        onArrayChange = function onArrayChange(changed) {
+            //if (!self.isChanged())
+            {
+                self.isChanged(true);
+                self.triggerChange();
+            }
+        };
+        onArrayChange.id = self.id;
+
+        def(self, '_svgs', {
+            get: function() {
+                if (null == _svgs) _svgs = {};
+                return _svgs;
+            },
+            set: function(svgs) {
+                if (null == svgs) _svgs = null;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_bbox', {
+            get: function() {
+                if (null == _bbox)
+                {
+                    var m = self.matrix;
+                    _bbox = _objects.reduce(function(_bbox, obj) {
+                        var bb = obj.transform(m).getBoundingBox();
+                        _bbox.ymin = stdMath.min(_bbox.ymin, bb.ymin);
+                        _bbox.xmin = stdMath.min(_bbox.xmin, bb.xmin);
+                        _bbox.ymax = stdMath.max(_bbox.ymax, bb.ymax);
+                        _bbox.xmax = stdMath.max(_bbox.xmax, bb.xmax);
+                        return _bbox;
+                    }, {
+                        ymin: Infinity,
+                        xmin: Infinity,
+                        ymax: -Infinity,
+                        xmax: -Infinity
+                    });
+                }
+                return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    var m = self.matrix;
+                    _hull = convex_hull(_objects.reduce(function(hulls, obj) {
+                        hulls.push.apply(hulls, obj.transform(m)._hull);
+                        return hulls;
+                    }, []));
+                }
+                return _hull;
+            },
+            enumerable: false,
+            configurable: false
+        });
+/**[DOC_MD]
+ * **Properties:**
  *
 [/DOC_MD]**/
-var Shape2D = makeClass(Object2D, {});
+/**[DOC_MD]
+ * * `objects: Object2D[]` array of objects that are part of this shape
+[/DOC_MD]**/
+        def(self, 'objects', {
+            get: function() {
+                return _objects;
+            },
+            set: function(objects) {
+                if (_objects !== objects)
+                {
+                    if (is_array(_objects))
+                    {
+                        unobserveArray(_objects, obj_del);
+                    }
+
+                    if (is_array(objects))
+                    {
+                        _objects = observeArray(objects, obj_add, obj_del);
+                        _objects.onChange(onArrayChange);
+                        //if (!self.isChanged())
+                        {
+                            self.isChanged(true);
+                            self.triggerChange();
+                        }
+                    }
+                    else if (null == objects)
+                    {
+                        _objects = null;
+                    }
+                }
+            },
+            enumerable: true,
+            configurable: false
+        });
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
+            {
+                _bbox = null;
+                _hull = null;
+            }
+            else if (false === isChanged)
+            {
+                _objects.forEach(function(o) {o.isChanged(false);});
+            }
+            return Object2D.prototype.isChanged.apply(self, arguments);
+        };
+        self.objects = objects;
+    },
+    name: 'Shape2D',
+    dispose: function() {
+        var self = this;
+        if (self.objects)
+        {
+            unobserveArray(self.objects, function(o) {
+                if (o instanceof Object2D) o.onChange(self.id, false);
+                return o;
+            });
+            self.objects = null;
+            self._svgs = null;
+        }
+        Object2D.prototype.dispose.call(self);
+    },
+    clone: function() {
+        return new Shape2D(this.objects.map(function(obj) {return obj.clone();}));
+    },
+    hasMatrix: function() {
+        return true;
+    },
+    transform: function(matrix) {
+        return new Shape2D(this.objects.map(function(obj) {return obj.transform(matrix);}));
+    },
+    getBoundingBox: function() {
+        var bb = this._bbox;
+        return {
+        ymin: bb.ymin,
+        xmin: bb.xmin,
+        ymax: bb.ymax,
+        xmax: bb.xmax
+        };
+    },
+    getConvexHull: function() {
+        return this._hull.map(function(p) {return p.clone();});
+    },
+    hasPoint: function(point) {
+        for (var o=this.objects, n=o.length, i=0; i<n; ++i)
+        {
+            if (o[i].hasPoint(point))
+                return true;
+        }
+        return false;
+    },
+    intersects: function(other) {
+        var self = this;
+        if (other instanceof Point2D)
+        {
+            return self.hasPoint(other) ? [other] : false;
+        }
+        else if (other instanceof Object2D)
+        {
+            for (var ii,i=[],o=self.objects,n=o.length,j=0; j<n; ++j)
+            {
+                ii = o[j].intersects(other);
+                if (ii) i.push.apply(i, ii);
+            }
+            return i ? i.map(Point2D) : false;
+        }
+        return false;
+    },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], o = self.objects,
+            n = o.length, j, k;
+        for (j=0; j<n; ++j)
+        {
+            ii = o[j].intersectsSelf();
+            if (ii) i.push.apply(i, ii);
+            for (k=j+1; k<n; ++k)
+            {
+                ii = o[j].intersects(o[k]);
+                if (ii) i.push.apply(i, ii);
+            }
+        }
+        return i ? i.map(Point2D) : false;
+    },
+    toSVG: function(svg) {
+        var self = this;
+        return arguments.length ? SVG('g', {
+            'id': [self.id, false],
+            'transform': [self.matrix.toSVG(), self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, svg, null, function(g) {
+            var svgs = self._svgs;
+            self.objects.forEach(function(o) {
+                if (o instanceof Object2D)
+                {
+                    if (o.isChanged())
+                    {
+                        var el = svgs[o.id];
+                        if (!el)
+                        {
+                            g.appendChild(el = o.toSVG(null));
+                            svgs[o.id] = el;
+                        }
+                        else
+                        {
+                            o.toSVG(el);
+                        }
+                    }
+                }
+            });
+        }) : SVG('g', {
+            'id': [self.id, false],
+            'transform': [self.matrix.toSVG(), true],
+            'style': [self.style.toSVG(), true]
+        }, false, self.objects.map(function(o) {return o.toSVG();}).join(''));
+    },
+    toSVGPath: function(svg) {
+        var self = this, objects = self.objects,
+            path = objects.map(function(o) {return o.toSVGPath();}).join(' ');
+        return arguments.length ? SVG('path', {
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'transform': [self.matrix.toSVG(), self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var self = this, t = ctx.getTransform();
+        self.matrix.toCanvas(ctx);
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        ctx.setTransform(t);
+    },
+    toCanvasPath: function(ctx) {
+        var objects = this.objects, n = objects.length, i;
+        if (!n) return;
+        ctx.beginPath();
+        for (i=0; i<n; ++i) objects[i].toCanvas(ctx);
+    }
+});
 Geometrize.Shape2D = Shape2D;
 /**[DOC_MD]
- * ### 2D Scene
+ * ### Scene2D
  *
  * scene container for 2D geometric objects
  *
  * ```javascript
  * const scene = Scene2D(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
- * const line = Line([p1, p2]);
- * scene.add(line); // add object
- * scene.remove(line); // remove object
  * scene.x0 = 20; // change viewport
  * scene.x1 = 100; // change viewport
  * scene.y0 = 10; // change viewport
  * scene.y1 = 200; // change viewport
+ * const line = Line([p1, p2]);
+ * scene.add(line); // add object
+ * scene.remove(line); // remove object
+ * scene.getIntersections(); // return array of points of intersection of all objects in the scene
+ * self.toSVG(); // render and return scene as SVG string
+ * self.toCanvas(); // render and return scene as canvas
+ * self.toIMG(); // render and return scene as base64 encoded PNG image
  * ```
 [/DOC_MD]**/
 var Scene2D = makeClass(null, {
@@ -5835,7 +6150,7 @@ function merge(keys, a, b)
     }
     return a;
 }
-function SVG(tag, atts, svg, childNodes)
+function SVG(tag, atts, svg, childNodes, contentHandler)
 {
     var setAnyway = false;
     atts = atts || EMPTY_OBJ;
@@ -5858,6 +6173,14 @@ function SVG(tag, atts, svg, childNodes)
                     svg.appendChild(childNodes[i]);
                 }
             }
+            else if (is_function(contentHandler))
+            {
+                contentHandler(svg);
+            }
+        }
+        else if (is_function(contentHandler))
+        {
+            contentHandler(svg);
         }
         Object.keys(atts).forEach(function(a) {
             if (setAnyway || atts[a][1]) svg.setAttribute(a, atts[a][0]);

@@ -215,9 +215,9 @@ var Matrix2D = makeClass(null, {
         var self = this;
         return 'matrix('+Str(self.$00)+','+Str(self.$10)+','+Str(self.$01)+','+Str(self.$11)+','+Str(self.$02)+','+Str(self.$12)+')';
     },
-    toCanvas: function(ctx) {
+    toCanvas: function(ctx, reset) {
         var self = this;
-        ctx.transform(self.$00, self.$10, self.$01, self.$11, self.$02, self.$12);
+        ctx[true === reset ? 'setTransform' : 'transform'](self.$00, self.$10, self.$01, self.$11, self.$02, self.$12);
         return ctx;
     },
     toTex: function() {

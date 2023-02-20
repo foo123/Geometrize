@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### 3D Scene
+ * ### Scene3D
  *
  * scene container for 3D geometric objects
  *

@@ -28,9 +28,6 @@ var Curve2D = makeClass(Topos2D, {
  * **Properties:**
  *
 [/DOC_MD]**/
-/**[DOC_MD]
- * * `matrix: Matrix2D` the transform matrix of the curve
-[/DOC_MD]**/
         def(self, 'matrix', {
             get: function() {
                 return _matrix ? _matrix : Matrix2D.eye();
@@ -52,13 +49,6 @@ var Curve2D = makeClass(Topos2D, {
             enumerable: true,
             configurable: true
         });
-        self.setMatrix = function(m) {
-            if (arguments.length)
-            {
-                self.matrix = m;
-            }
-            return self;
-        };
         def(self, '_points', {
             get: function() {
                 if (null == _points)
@@ -183,6 +173,9 @@ var Curve2D = makeClass(Topos2D, {
         }
         return self.$super('isChanged', arguments);
     },
+    hasMatrix: function() {
+        return true;
+    },
 /**[DOC_MD]
  * **Methods:**
  *
@@ -205,10 +198,6 @@ var Curve2D = makeClass(Topos2D, {
     isConvex: function() {
         return false;
     },
-    hasMatrix: function() {
-        return true;
-    },
-    setMatrix: null,
     f: function(t) {
         // override
         return {x:0, y:0};
@@ -277,12 +266,6 @@ var Curve2D = makeClass(Topos2D, {
         {x:0, y:0},
         {x:0, y:0}
         ];
-    },
-    toTex: function() {
-        return '\\text{Curve2D}';
-    },
-    toString: function() {
-        return 'Curve2D()';
     }
 });
 Geometrize.Curve2D = Curve2D;
@@ -672,12 +655,6 @@ var ParametricCurve = makeClass(Curve2D, {
         ctx.moveTo(p[0].x, p[0].y);
         for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
         if (self.isClosed()) ctx.closePath();
-    },
-    toTex: function() {
-        return '\\text{ParametricCurve('+this.id+')}';
-    },
-    toString: function() {
-        return 'ParametricCurve('+this.id+')';
     }
 });
 Geometrize.ParametricCurve = ParametricCurve;
@@ -739,9 +716,6 @@ var CompositeCurve = makeClass(Curve2D, {
             }
         };
         onArrayChange.id = self.id;
-
-        _curves = observeArray(curves, curve_add, curve_del);
-        _curves.onChange(onArrayChange);
 
         def(self, 'points', {
             get: function() {
@@ -805,8 +779,9 @@ var CompositeCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _length)
                 {
+                    var m = self.matrix;
                     _length = _curves.reduce(function(l, curve) {
-                        l += curve.length;
+                        l += curve.transform(m).length;
                         return l;
                     }, 0);
                 }
@@ -826,8 +801,9 @@ var CompositeCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _bbox)
                 {
+                    var m = self.matrix;
                     _bbox = _curves.reduce(function(_bbox, curve) {
-                        var bb = curve.getBoundingBox();
+                        var bb = curve.transform(m).getBoundingBox();
                         _bbox.ymin = stdMath.min(_bbox.ymin, bb.ymin);
                         _bbox.xmin = stdMath.min(_bbox.xmin, bb.xmin);
                         _bbox.ymax = stdMath.max(_bbox.ymax, bb.ymax);
@@ -849,8 +825,9 @@ var CompositeCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _hull)
                 {
+                    var m = self.matrix;
                     _hull = convex_hull(_curves.reduce(function(hulls, curve) {
-                        hulls.push.apply(hulls, curve._hull);
+                        hulls.push.apply(hulls, curve.transform(m)._hull);
                         return hulls;
                     }, []));
                 }
@@ -864,12 +841,16 @@ var CompositeCurve = makeClass(Curve2D, {
             {
                 _points = null;
                 _length = null;
-                _area = null;
                 _bbox = null;
                 _hull = null;
             }
+            else if (false === isChanged)
+            {
+                _curves.forEach(function(c) {c.isChanged(false);});
+            }
             return Object2D.prototype.isChanged.apply(self, arguments);
         };
+        self.curves = curves;
     },
     name: 'CompositeCurve',
     dispose: function() {

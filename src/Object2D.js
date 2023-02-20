@@ -7,7 +7,7 @@
 [/DOC_MD]**/
 var Object2D = makeClass(null, merge(null, {
     constructor: function Object2D() {
-        var self = this, _style = null, onStyleChange;
+        var self = this, _style = null, _matrix = null, onStyleChange;
 
         self.id = uuid(self.name);
 
@@ -23,13 +23,45 @@ var Object2D = makeClass(null, merge(null, {
         };
         _style = new Style();
         _style.onChange(onStyleChange);
+        _matrix = self.hasMatrix() ? Matrix2D.eye() : null;
 /**[DOC_MD]
  * **Properties:**
  *
 [/DOC_MD]**/
 /**[DOC_MD]
  * * `id: String` unique ID for this object
+ * * `name: String` class/type name of object, eg "Object2D"
 [/DOC_MD]**/
+/**[DOC_MD]
+ * * `matrix: Matrix2D` the transform matrix of the object (if it applies)
+[/DOC_MD]**/
+        def(self, 'matrix', {
+            get: function() {
+                return _matrix;
+            },
+            set: function(matrix) {
+                if (self.hasMatrix())
+                {
+                    matrix = Matrix2D(matrix);
+                    var isChanged = !matrix.eq(_matrix);
+                    _matrix = matrix;
+                    if (isChanged /*&& !self.isChanged()*/)
+                    {
+                        self.isChanged(true);
+                        self.triggerChange();
+                    }
+                }
+            },
+            enumerable: true,
+            configurable: true
+        });
+        self.setMatrix = function(m) {
+            if (arguments.length)
+            {
+                self.matrix = m;
+            }
+            return self;
+        };
 /**[DOC_MD]
  * * `style: Style` the style applied to this object
 [/DOC_MD]**/
@@ -86,11 +118,22 @@ var Object2D = makeClass(null, merge(null, {
         return this;
     },
 /**[DOC_MD]
- * * `transform(matrix2d): Object2D` get a transformed copy of this object by matrix2d
+ * * `transform(matrix2d: Matrix2D): Object2D` get a transformed copy of this object by matrix2d
 [/DOC_MD]**/
     transform: function() {
         return this;
     },
+    hasMatrix: function() {
+        return false;
+    },
+/**[DOC_MD]
+ * * `setMatrix(matrix2D): self` set matrix for object
+[/DOC_MD]**/
+    setMatrix: null,
+/**[DOC_MD]
+ * * `setStyle(style): self` set style for object
+ * * `setStyle(prop, value): self` set style property/value for object
+[/DOC_MD]**/
     setStyle: null,
 /**[DOC_MD]
  * * `getBoundingBox(): Object{xmin,ymin,xmax,ymax}` get bounding box of object
@@ -143,12 +186,21 @@ var Object2D = makeClass(null, merge(null, {
     intersectsSelf: function() {
         return false;
     },
+/**[DOC_MD]
+ * * `toSVG(): String` render object as SVG string
+[/DOC_MD]**/
     toSVG: function(svg) {
         return arguments.length ? svg : '';
     },
+/**[DOC_MD]
+ * * `toSVGPath(): String` render object as SVG path string
+[/DOC_MD]**/
     toSVGPath: function(svg) {
         return arguments.length ? svg : '';
     },
+/**[DOC_MD]
+ * * `toCanvas(ctx): void` render object in canvas context
+[/DOC_MD]**/
     toCanvas: function(ctx) {
     },
     toCanvasPath: function(ctx) {
@@ -157,13 +209,13 @@ var Object2D = makeClass(null, merge(null, {
  * * `toTex(): String` get Tex representation of this object
 [/DOC_MD]**/
     toTex: function() {
-        return '\\text{Object2D}';
+        return '\\text{'+this.name+'}';
     },
 /**[DOC_MD]
  * * `toString(): String` get String representation of this object
 [/DOC_MD]**/
     toString: function() {
-        return 'Object2D('+this.id+')';
+        return this.name+'('+this.id+')';
     }
 }, Changeable));
 Geometrize.Object2D = Object2D;

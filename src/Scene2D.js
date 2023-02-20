@@ -1,17 +1,21 @@
 /**[DOC_MD]
- * ### 2D Scene
+ * ### Scene2D
  *
  * scene container for 2D geometric objects
  *
  * ```javascript
  * const scene = Scene2D(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
- * const line = Line([p1, p2]);
- * scene.add(line); // add object
- * scene.remove(line); // remove object
  * scene.x0 = 20; // change viewport
  * scene.x1 = 100; // change viewport
  * scene.y0 = 10; // change viewport
  * scene.y1 = 200; // change viewport
+ * const line = Line([p1, p2]);
+ * scene.add(line); // add object
+ * scene.remove(line); // remove object
+ * scene.getIntersections(); // return array of points of intersection of all objects in the scene
+ * self.toSVG(); // render and return scene as SVG string
+ * self.toCanvas(); // render and return scene as canvas
+ * self.toIMG(); // render and return scene as base64 encoded PNG image
  * ```
 [/DOC_MD]**/
 var Scene2D = makeClass(null, {

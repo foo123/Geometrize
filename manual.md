@@ -45,6 +45,11 @@ Represents a generic 2D object
 
 
 * `id: String` unique ID for this object
+* `name: String` class/type name of object, eg "Object2D"
+
+
+
+* `matrix: Matrix2D` the transform matrix of the object (if it applies)
 
 
 
@@ -61,7 +66,16 @@ Represents a generic 2D object
 
 
 
-* `transform(matrix2d): Object2D` get a transformed copy of this object by matrix2d
+* `transform(matrix2d: Matrix2D): Object2D` get a transformed copy of this object by matrix2d
+
+
+
+* `setMatrix(matrix2D): self` set matrix for object
+
+
+
+* `setStyle(style): self` set style for object
+* `setStyle(prop, value): self` set style property/value for object
 
 
 
@@ -90,6 +104,18 @@ Represents a generic 2D object
 
 
 * `intersectsSelf(): Point2D[]|Bool` return array of intersection points of object with itself or false
+
+
+
+* `toSVG(): String` render object as SVG string
+
+
+
+* `toSVGPath(): String` render object as SVG path string
+
+
+
+* `toCanvas(ctx): void` render object in canvas context
 
 
 
@@ -141,10 +167,6 @@ Represents a generic curve in 2D space
 
 **Properties:**
 
-
-
-
-* `matrix: Matrix2D` the transform matrix of the curve
 
 
 
@@ -330,22 +352,37 @@ ellipse.radiusX = 12; // change it
 ### Shape2D 2D generic Shape
 
 container for 2D geometric objects, grouped together
-(not implemented yet)
+```javascript
+// construct a complex shape
+const shape = Shape2D([Line(p1, p2), Line(p6, p7), Shape2D([Line(p3, p4), Line(p5, p6)])]);
+```
+
+
+
+**Properties:**
 
 
 
 
-### 2D Scene
+* `objects: Object2D[]` array of objects that are part of this shape
+
+
+
+### Scene2D
 
 scene container for 2D geometric objects
 
 ```javascript
 const scene = Scene2D(containerEl, viewBoxMinX, viewBoxMinY, viewBoxMaxX, viewBoxMaxY);
-const line = Line([p1, p2]);
-scene.add(line); // add object
-scene.remove(line); // remove object
 scene.x0 = 20; // change viewport
 scene.x1 = 100; // change viewport
 scene.y0 = 10; // change viewport
 scene.y1 = 200; // change viewport
+const line = Line([p1, p2]);
+scene.add(line); // add object
+scene.remove(line); // remove object
+scene.getIntersections(); // return array of points of intersection of all objects in the scene
+self.toSVG(); // render and return scene as SVG string
+self.toCanvas(); // render and return scene as canvas
+self.toIMG(); // render and return scene as base64 encoded PNG image
 ```

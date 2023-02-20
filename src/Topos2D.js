@@ -163,12 +163,6 @@ var Topos2D = makeClass(Object2D, {
         this.points.forEach(function(p) {
             p.toCanvasPath(ctx);
         });
-    },
-    toTex: function() {
-        return '\\text{Topos2D}';
-    },
-    toString: function() {
-        return 'Topos2D()';
     }
 });
 Geometrize.Topos2D = Topos2D;
