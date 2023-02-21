@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### 2D Circle (subclass of EllipticArc2D)
+ * ### Circle (subclass of EllipticArc2D)
  *
  * Represents a circle of given center (point) and radius
  * ```javascript

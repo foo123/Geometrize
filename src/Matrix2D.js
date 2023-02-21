@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Matrix2D 2D Homogeneous Transformation Matrix
+ * ### Matrix2D, 2D Homogeneous Transformation Matrix
  *
  * Represents a homogeneous transformation matrix for 2D transforms
  *

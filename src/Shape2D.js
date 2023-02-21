@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Shape2D 2D generic Shape
+ * ### Shape2D (subclass of Object2D)
  *
  * container for 2D geometric objects, grouped together
  * ```javascript

@@ -1,7 +1,7 @@
 /**[DOC_MD]
- * ### CBezier 2D Cubic Bezier (subclass of Bezier2D)
+ * ### CBezier (subclass of Bezier2D)
  *
- * Represents a cubic bezier curve defined by its control points
+ * Represents a cubic Bezier curve defined by its control points
  * ```javascript
  * const cbezier = CBezier([p1, p2, p3, p4]);
  * cbezier.points[0].x += 10; // change it

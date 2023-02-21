@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Point3D 3D Point (subclass of Object3D)
+ * ### Point3D (subclass of Object3D)
  *
  * Represents a point in 3D space
  *

@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Object3D Base Class
+ * ### Object3D, Base Class
  *
  * Represents a generic 3D object
  * (not used directly)

@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Polygon 2D Polygon (subclass of Curve2D)
+ * ### Polygon (subclass of Curve2D)
  *
  * Represents a polygon (a closed polyline) defined by its vertices
  * ```javascript

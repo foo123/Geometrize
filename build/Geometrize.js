@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.0 (2023-02-21 01:06:11)
+*   @version 1.0.0 (2023-02-21 13:04:23)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.0 (2023-02-21 01:06:11)
+*   @version 1.0.0 (2023-02-21 13:04:23)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -136,7 +136,7 @@ var Changeable = {
     }
 };
 /**[DOC_MD]
- * ### Style class
+ * ### Style
  *
  * Represents the styling (eg stroke, fill, width) of a 2D or 3D object
  * ```javascript
@@ -227,7 +227,7 @@ var Style = makeClass(null, merge(null, {
 });
 Geometrize.Style = Style;
 /**[DOC_MD]
- * ### Value class
+ * ### Value
  *
  * Represents a generic scalar value which can change dynamically
  * (not used directly)
@@ -278,7 +278,7 @@ var Value = makeClass(null, merge(null, {
     valueOf: null,
     toString: null
 }, Changeable));/**[DOC_MD]
- * ### Matrix2D 2D Homogeneous Transformation Matrix
+ * ### Matrix2D, 2D Homogeneous Transformation Matrix
  *
  * Represents a homogeneous transformation matrix for 2D transforms
  *
@@ -599,7 +599,7 @@ var Matrix2D = makeClass(null, {
 var EYE = Matrix2D.eye();
 Geometrize.Matrix2D = Matrix2D;
 /**[DOC_MD]
- * ### Object2D Base Class
+ * ### Object2D, Base Class
  *
  * Represents a generic 2D object
  * (not used directly)
@@ -820,7 +820,7 @@ var Object2D = makeClass(null, merge(null, {
 }, Changeable));
 Geometrize.Object2D = Object2D;
 /**[DOC_MD]
- * ### Point2D 2D Point (subclass of Object2D)
+ * ### Point2D (subclass of Object2D)
  *
  * Represents a point in 2D space
  *
@@ -1041,7 +1041,7 @@ var Point2D = makeClass(Object2D, {
 });
 Geometrize.Point2D = Point2D;
 /**[DOC_MD]
- * ### Topos2D 2D Geometric Topos (subclass of Object2D)
+ * ### Topos2D (subclass of Object2D)
  *
  * Represents a geometric topos, ie a set of points
  * ```javascript
@@ -1209,7 +1209,7 @@ var Topos2D = makeClass(Object2D, {
 });
 Geometrize.Topos2D = Topos2D;
 /**[DOC_MD]
- * ### Curve2D 2D Generic Curve Base Class (subclass of Topos2D)
+ * ### Curve2D (subclass of Topos2D)
  *
  * Represents a generic curve in 2D space
  * (not used directly)
@@ -1481,9 +1481,9 @@ var Curve2D = makeClass(Topos2D, {
 Geometrize.Curve2D = Curve2D;
 
 /**[DOC_MD]
- * ### Bezier2D 2D Generic Bezier Curve Base Class (subclass of Curve2D)
+ * ### Bezier2D (subclass of Curve2D)
  *
- * Represents a generic bezier curve in 2D space
+ * Represents a generic Bezier curve in 2D space
  * (not used directly)
  *
 [/DOC_MD]**/
@@ -1543,7 +1543,7 @@ var Bezier2D = makeClass(Curve2D, {
 Geometrize.Bezier2D = Bezier2D;
 
 /**[DOC_MD]
- * ### EllipticArc2D 2D Generic Elliptic Arc Base Class (subclass of Curve2D)
+ * ### EllipticArc2D (subclass of Curve2D)
  *
  * Represents a part of an arbitrary ellipse in 2D space
  * (not used directly)
@@ -1656,7 +1656,7 @@ var EllipticArc2D = makeClass(Curve2D, {
 Geometrize.EllipticArc2D = EllipticArc2D;
 
 /**[DOC_MD]
- * ### ParametricCurve 2D Generic Parametric Curve (subclass of Curve2D)
+ * ### ParametricCurve (subclass of Curve2D)
  *
  * Represents a generic parametric curve in 2D space
  * ```javascript
@@ -1874,7 +1874,7 @@ var MZ = /[M]/g,
     PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
 /**[DOC_MD]
- * ### CompositeCurve 2D Generic Composite Curve (subclass of Curve2D)
+ * ### CompositeCurve (subclass of Curve2D)
  *
  * Represents a container of multiple, not necessarily joined curves
  * ```javascript
@@ -2279,7 +2279,7 @@ var CompositeCurve = makeClass(Curve2D, {
 });
 Geometrize.CompositeCurve = CompositeCurve;
 /**[DOC_MD]
- * ### Line 2D Line Segment (equivalent to Linear Bezier, subclass of Bezier2D)
+ * ### Line (equivalent to Linear Bezier, subclass of Bezier2D)
  *
  * Represents a line segment between 2 points
  * ```javascript
@@ -2487,7 +2487,350 @@ var Line = makeClass(Bezier2D, {
 Geometrize.Line = Line;
 
 /**[DOC_MD]
- * ### Polyline 2D Polyline (subclass of Curve2D)
+ * ### QBezier (subclass of Bezier2D)
+ *
+ * Represents a quadratic Bezier curve defined by its control points
+ * ```javascript
+ * const qbezier = QBezier([p1, p2, p3]);
+ * qbezier.points[0].x += 10; // change it
+ * qbezier.points[1].x = 20; // change it
+ * ```
+[/DOC_MD]**/
+var QBezier = makeClass(Bezier2D, {
+    constructor: function QBezier(points) {
+        var self = this,
+            _length = null,
+            _bbox = null,
+            _hull = null,
+            BB = null
+        ;
+
+        if (points instanceof QBezier) return points;
+        if (!(self instanceof QBezier)) return new QBezier(points);
+
+        self.$super('constructor', [points]);
+
+        def(self, 'length', {
+            get: function() {
+                if (null == _length)
+                {
+                    // approximate
+                    _length = polyline_length(self._lines);
+                }
+                return _length;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        BB = function BB(p) {
+            // find min/max from zeroes of directional derivative along x and y
+            var tx = solve_linear(p[0].x - 2*p[1].x + p[2].x, p[1].x - p[0].x),
+                px = false === tx ? [p[1]] : tx.map(function(t) {
+                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
+                }),
+                ty = solve_linear(p[0].y - 2*p[1].y + p[2].y, p[1].y - p[0].y),
+                py = false === ty ? [p[1]] : ty.map(function(t) {
+                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
+                }),
+                xmin = stdMath.min.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
+                xmax = stdMath.max.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
+                ymin = stdMath.min.apply(stdMath, py.concat([p[0], p[2]]).map(y)),
+                ymax = stdMath.max.apply(stdMath, py.concat([p[0], p[2]]).map(y))
+            ;
+            return {
+                ymin: ymin,
+                xmin: xmin,
+                ymax: ymax,
+                xmax: xmax
+            };
+        };
+        def(self, '_bbox', {
+            get: function() {
+                if (null == _bbox)
+                {
+                    _bbox = BB(self._points);
+                }
+                return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    _hull = aligned_bounding_box_from_points(self._points, BB).map(Point2D);
+                }
+                return _hull;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
+            {
+                _length = null;
+                _bbox = null;
+                _hull = null;
+            }
+            return self.$super('isChanged', arguments);
+        };
+    },
+    name: 'QBezier',
+    clone: function() {
+        return new QBezier(this.points.map(function(p) {return p.clone();}));
+    },
+    transform: function(matrix) {
+        return new QBezier(this.points.map(function(p) {return p.transform(matrix);}));
+    },
+    f: function(t) {
+        return bezier2(t, this._points);
+    },
+    hasPoint: function(point) {
+        return point_on_qbezier(point, this._points)
+    },
+    intersects: function(other) {
+        var self = this, i;
+        if (other instanceof Point2D)
+        {
+            return self.hasPoint(other) ? [other] : false;
+        }
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
+        {
+            //i = polyline_circle_intersection(self._lines, other.center, other.radius);
+            i = qbezier_arc_intersection(self._points, other.center, other.radius, other.radius, [1, 0], null, null);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
+        {
+            //i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = qbezier_arc_intersection(self._points, other.center, other.radiusX, other.radiusY, other.cs, null, null);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
+        {
+            //i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = qbezier_arc_intersection(self._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (other instanceof QBezier)
+        {
+            //i = polyline_qbezier_intersection(self._lines, other._points);
+            i = qbezier_qbezier_intersection(self._points, other._points);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (other instanceof Object2D)
+        {
+            return other.intersects(self);
+        }
+        return false;
+    },
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        return [cbezier_from_points(this._points, t)];
+    },
+    toSVG: function(svg) {
+        return this.toSVGPath(arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var self = this, p = self._points,
+            path = ['M',p[0].x,p[0].y,'Q',p[1].x,p[1].y,p[2].x,p[2].y].join(' ');
+        return arguments.length ? SVG('path', {
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._points;
+        ctx.beginPath();
+        ctx.moveTo(p[0].x, p[0].y);
+        ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
+    }
+});
+Geometrize.QBezier = QBezier;
+/**[DOC_MD]
+ * ### CBezier (subclass of Bezier2D)
+ *
+ * Represents a cubic Bezier curve defined by its control points
+ * ```javascript
+ * const cbezier = CBezier([p1, p2, p3, p4]);
+ * cbezier.points[0].x += 10; // change it
+ * cbezier.points[2].x = 20; // change it
+ * ```
+[/DOC_MD]**/
+var CBezier = makeClass(Bezier2D, {
+    constructor: function CBezier(points) {
+        var self = this,
+            _length = null,
+            _bbox = null,
+            _hull = null,
+            BB = null
+        ;
+
+        if (points instanceof CBezier) return points;
+        if (!(self instanceof CBezier)) return new CBezier(points);
+
+        self.$super('constructor', [points]);
+
+        def(self, 'length', {
+            get: function() {
+                if (null == _length)
+                {
+                    // approximate
+                    _length = polyline_length(self._lines);
+                }
+                return _length;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        BB = function BB(c) {
+            // find min/max from zeroes of directional derivative along x and y
+            var tx = solve_quadratic(3*(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x), 2*(3*c[0].x - 6*c[1].x + 3*c[2].x), -3*c[0].x + 3*c[1].x),
+                px = false === tx ? [c[1], c[2]] : tx.map(function(t, i) {
+                    return 0 <= t && t <= 1 ? bezier3(t, c) : c[i+1];
+                }),
+                ty = solve_quadratic(3*(-c[0].y + 3*c[1].y - 3*c[2].y + c[3].y), 2*(3*c[0].y - 6*c[1].y + 3*c[2].y), -3*c[0].y + 3*c[1].y),
+                py = false === ty ? [c[1], c[2]] : ty.map(function(t, i) {
+                    return 0 <= t && t <= 1 ? bezier3(t, c) : c[i+1];
+                }),
+                xmin = stdMath.min.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
+                xmax = stdMath.max.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
+                ymin = stdMath.min.apply(stdMath, py.concat([c[0], c[3]]).map(y)),
+                ymax = stdMath.max.apply(stdMath, py.concat([c[0], c[3]]).map(y))
+            ;
+            return {
+                ymin: ymin,
+                xmin: xmin,
+                ymax: ymax,
+                xmax: xmax
+            };
+        };
+        def(self, '_bbox', {
+            get: function() {
+                if (null == _bbox)
+                {
+                    _bbox = BB(self._points);
+                }
+                return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    _hull = aligned_bounding_box_from_points(self._points, BB).map(Point2D);
+                }
+                return _hull;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
+            {
+                _length = null;
+                _bbox = null;
+                _hull = null;
+            }
+            return self.$super('isChanged', arguments);
+        };
+    },
+    name: 'CBezier',
+    clone: function() {
+        return new CBezier(this.points.map(function(p) {return p.clone();}));
+    },
+    transform: function(matrix) {
+        return new CBezier(this.points.map(function(p) {return p.transform(matrix);}));
+    },
+    f: function(t) {
+        return bezier3(t, this._points);
+    },
+    hasPoint: function(point) {
+        return point_on_cbezier(point, this._points)
+    },
+    intersects: function(other) {
+        var self = this, i;
+        if (other instanceof Point2D)
+        {
+            return self.hasPoint(other) ? [other] : false;
+        }
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
+        {
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
+        {
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
+        {
+            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
+        {
+            i = polyline_qbezier_intersection(self._lines, other._points);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (other instanceof CBezier)
+        {
+            i = polyline_cbezier_intersection(self._lines, other._points);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (other instanceof Object2D)
+        {
+            return other.intersects(self);
+        }
+        return false;
+    },
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        return [cbezier_from_points(this._points, t)];
+    },
+    toSVG: function(svg) {
+        return this.toSVGPath(arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var self = this, p = self._points,
+            path = ['M',p[0].x,p[0].y,'C',p[1].x,p[1].y,p[2].x,p[2].y,p[3].x,p[3].y].join(' ');
+        return arguments.length ? SVG('path', {
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._points;
+        ctx.beginPath();
+        ctx.moveTo(p[0].x, p[0].y);
+        ctx.bezierCurveTo(p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
+    }
+});
+Geometrize.CBezier = CBezier;
+/**[DOC_MD]
+ * ### Polyline (subclass of Curve2D)
  *
  * Represents an assembly of consecutive line segments between given points
  * ```javascript
@@ -2749,7 +3092,332 @@ var Polyline = makeClass(Curve2D, {
 });
 Geometrize.Polyline = Polyline;
 /**[DOC_MD]
- * ### 2D Elliptical Arc (subclass of EllipticArc2D)
+ * ### Polygon (subclass of Curve2D)
+ *
+ * Represents a polygon (a closed polyline) defined by its vertices
+ * ```javascript
+ * const polygon = Polygon([p1, p2, .., pn]);
+ * polygon.vertices[0].x += 10; // change it
+ * polygon.vertices[2].x = 20; // change it
+ * ```
+[/DOC_MD]**/
+var Polygon = makeClass(Curve2D, {
+    constructor: function Polygon(vertices) {
+        var self = this,
+            _length = null,
+            _area = null,
+            _bbox = null,
+            _hull = null,
+            _is_convex = null
+        ;
+
+        if (vertices instanceof Polygon) return vertices;
+        if (!(self instanceof Polygon)) return new Polygon(vertices);
+        self.$super('constructor', [vertices]);
+
+        def(self, 'vertices', {
+            get: function() {
+                return self.points;
+            },
+            set: function(vertices) {
+                self.points = vertices;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'edges', {
+            get: function() {
+                var v = self.points;
+                return 1 < v.length ? v.map(function(vertex, i) {
+                    return new Line(vertex, v[(i+1) % v.length]);
+                }) : [];
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, '_lines', {
+            get: function() {
+                return self._points.concat([self._points[0]]);
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, 'length', {
+            get: function() {
+                if (null == _length)
+                {
+                    _length = polyline_length(self._lines);
+                }
+                return _length;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'area', {
+            get: function() {
+                if (null == _area)
+                {
+                    _area = polyline_area(self._lines);
+                }
+                return _area;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, '_bbox', {
+            get: function() {
+                if (null == _bbox)
+                {
+                    _bbox = bounding_box_from_points(self._points);
+                }
+                return _bbox;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_hull', {
+            get: function() {
+                if (null == _hull)
+                {
+                    _hull = aligned_bounding_box_from_points(self._points).map(Point2D);
+                }
+                return _hull;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        def(self, '_is_convex', {
+            get: function() {
+                if (null == _is_convex)
+                {
+                    _is_convex = is_convex(self._points);
+                }
+                return _is_convex;
+            },
+            enumerable: false,
+            configurable: false
+        });
+        self.isChanged = function(isChanged) {
+            if (true === isChanged)
+            {
+                _length = null;
+                _area = null;
+                _bbox = null;
+                _hull = null;
+                _is_convex = null;
+            }
+            return self.$super('isChanged', arguments);
+        };
+    },
+    name: 'Polygon',
+    clone: function() {
+        return new Polygon(this.vertices.map(function(vertex) {return vertex.clone();}));
+    },
+    transform: function(matrix) {
+        return new Polygon(this.vertices.map(function(vertex) {return vertex.transform(matrix);}));
+    },
+    isClosed: function() {
+        return true;
+    },
+    isConvex: function() {
+        return this._is_convex;
+    },
+    f: function(t) {
+        var p = this._lines, n = p.length - 1, i = stdMath.floor(t*n);
+        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
+    },
+    fto: function(t) {
+        var self = this, p = self.points, n = p.length, i = stdMath.floor(t*n);
+        return new Polyline(p.slice(0, i+1).concat([bezier1(n*(t - i/n), [p[i], p[(i+1) % n]])]));
+    },
+    hasPoint: function(point) {
+        return 2 === point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
+    },
+    hasInsidePoint: function(point, strict) {
+        var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
+        return strict ? 1 === inside : 0 < inside;
+    },
+    intersects: function(other) {
+        var self = this, i;
+        if (other instanceof Point2D)
+        {
+            return self.hasPoint(other) ? [other] : false;
+        }
+        else if (Geometrize.Line && (other instanceof Geometrize.Line))
+        {
+            i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
+        {
+            i = polyline_circle_intersection(self._lines, other.center, other.radius);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
+        {
+            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
+        {
+            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
+        {
+            i = polyline_qbezier_intersection(self._lines, other._points);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
+        {
+            i = polyline_cbezier_intersection(self._lines, other._points);
+            return i ? i.map(Point2D) : false;
+        }
+        else if ((Geometrize.Polyline && (other instanceof Geometrize.Polyline)) || (other instanceof Polygon))
+        {
+            i = polyline_polyline_intersection(self._lines, other._lines);
+            return i ? i.map(Point2D) : false;
+        }
+        else if (other instanceof Object2D)
+        {
+            return other.intersects(self);
+        }
+        return false;
+    },
+    intersectsSelf: function() {
+        var self = this, ii, i = [], p = self._lines, n = p.length,
+            j, k, p1, p2, p3, p4;
+        for (j=0; j<n; ++j)
+        {
+            if (j+1 >= n) break;
+            for (k=j+2; k<n; ++k)
+            {
+                if (k+1 >= n) break;
+                p1 = p[j]; p2 = p[j+1];
+                p3 = p[k]; p4 = p[k+1];
+                ii = line_segments_intersection(p1, p2, p3, p4);
+                if (ii)
+                {
+                    if ((j === 0) && (k === n-2) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
+                    else if ((k === j+2) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
+                    i.push.apply(i, ii);
+                }
+            }
+        }
+        return i ? i.map(Point2D) : false;
+    },
+    bezierPoints: function(t) {
+        if (arguments.length) t = clamp(t, 0, 1);
+        else t = 1;
+        if (is_almost_equal(t, 1)) t = 1;
+        var p = this._lines, n = p.length - 1, i = stdMath.floor(t*n), j, b = new Array(1 === t ? i : (i+1));
+        for (j=0; j<i; ++j) b[j] = cbezier_from_points([p[j], p[j+1]], 1);
+        if (1 > t) b[i] = cbezier_from_points([p[i], p[i+1]], n*(t - i/n));
+        return b;
+    },
+    toSVG: function(svg) {
+        var self = this;
+        return SVG('polygon', {
+            'id': [self.id, false],
+            'points': [self._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, arguments.length ? svg : false);
+    },
+    toSVGPath: function(svg) {
+        var self = this, path = 'M '+(self._lines.map(function(p) {
+            return Str(p.x)+' '+Str(p.y);
+        }).join(' L '))+' Z';
+        return arguments.length ? SVG('path', {
+            'id': [self.id, false],
+            'd': [path, self.isChanged()],
+            'style': [self.style.toSVG(), self.style.isChanged()]
+        }, svg) : path;
+    },
+    toCanvas: function(ctx) {
+        var self = this;
+        self.style.toCanvas(ctx);
+        self.toCanvasPath(ctx);
+        if ('none' !== self.style['fill']) ctx.fill();
+        ctx.stroke();
+    },
+    toCanvasPath: function(ctx) {
+        var p = this._lines, n = p.length, i;
+        ctx.beginPath();
+        ctx.moveTo(p[0].x, p[0].y);
+        for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
+        ctx.closePath();
+    },
+    toTex: function() {
+        return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';
+    },
+    toString: function() {
+        return 'Polygon('+this.vertices.map(Str).join(',')+')';
+    }
+});
+Geometrize.Polygon = Polygon;
+
+// 2D Rect class
+var Rect = makeClass(Polygon, {
+    constructor: function Rect(top, width, height) {
+        var self = this, topLeft, bottomRight;
+        if (top instanceof Rect) return top;
+        if (!(self instanceof Rect)) return new Rect(top, width, height);
+        topLeft = Point2D(top);
+        if (is_numeric(width) && is_numeric(height))
+        {
+            bottomRight = new Point2D(topLeft.x + Num(width), topLeft.y + Num(height));
+        }
+        else
+        {
+            bottomRight = Point2D(width);
+        }
+        self.$super('constructor', [[topLeft, new Point2D(bottomRight.x, topLeft.y), bottomRight, new Point2D(topLeft.x, bottomRight.y)]]);
+
+        def(self, 'topLeft', {
+            get: function() {
+                return self.points[0];
+            },
+            set: function(topLeft) {
+                self.points[0] = topLeft;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'bottomRight', {
+            get: function() {
+                return self.points[2];
+            },
+            set: function(bottomRight) {
+                self.points[2] = bottomRight;
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'width', {
+            get: function() {
+                return abs(self.bottomRight.x - self.topLeft.x);
+            },
+            set: function(width) {
+                self.bottomRight.x = self.topLeft.x + Num(width);
+            },
+            enumerable: true,
+            configurable: false
+        });
+        def(self, 'height', {
+            get: function() {
+                return abs(self.bottomRight.y - self.topLeft.y);
+            },
+            set: function(height) {
+                self.bottomRight.y = self.topLeft.y + Num(height);
+            },
+            enumerable: true,
+            configurable: false
+        });
+    }
+});
+Geometrize.Rect = Rect;
+/**[DOC_MD]
+ * ### Arc (subclass of EllipticArc2D)
  *
  * Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
  * ```javascript
@@ -3124,6 +3792,33 @@ var Arc = makeClass(EllipticArc2D, {
             self.sweep
         );
     },
+    intersects: function(other) {
+        var self = this, i;
+        if (other instanceof Point2D)
+        {
+            return self.hasPoint(other) ? [other] : false;
+        }
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
+        {
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.radius, other.radius, [1, 0], null, null);
+            return i ? i.map(Point2D) : false
+        }
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
+        {
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.radiusX, other.radiusY, other.cs, null, null);
+            return i ? i.map(Point2D) : false
+        }
+        else if (other instanceof Arc)
+        {
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point2D) : false
+        }
+        else if (other instanceof Object2D)
+        {
+            return other.intersects(self);
+        }
+        return false;
+    },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);
     },
@@ -3164,671 +3859,7 @@ var Arc = makeClass(EllipticArc2D, {
 });
 Geometrize.Arc = Arc;
 /**[DOC_MD]
- * ### QBezier 2D Quadratic Bezier (subclass of Bezier2D)
- *
- * Represents a quadratic bezier curve defined by its control points
- * ```javascript
- * const qbezier = QBezier([p1, p2, p3]);
- * qbezier.points[0].x += 10; // change it
- * qbezier.points[1].x = 20; // change it
- * ```
-[/DOC_MD]**/
-var QBezier = makeClass(Bezier2D, {
-    constructor: function QBezier(points) {
-        var self = this,
-            _length = null,
-            _bbox = null,
-            _hull = null,
-            BB = null
-        ;
-
-        if (points instanceof QBezier) return points;
-        if (!(self instanceof QBezier)) return new QBezier(points);
-
-        self.$super('constructor', [points]);
-
-        def(self, 'length', {
-            get: function() {
-                if (null == _length)
-                {
-                    // approximate
-                    _length = polyline_length(self._lines);
-                }
-                return _length;
-            },
-            enumerable: true,
-            configurable: false
-        });
-        BB = function BB(p) {
-            // find min/max from zeroes of directional derivative along x and y
-            var tx = solve_linear(p[0].x - 2*p[1].x + p[2].x, p[1].x - p[0].x),
-                px = false === tx ? [p[1]] : tx.map(function(t) {
-                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
-                }),
-                ty = solve_linear(p[0].y - 2*p[1].y + p[2].y, p[1].y - p[0].y),
-                py = false === ty ? [p[1]] : ty.map(function(t) {
-                    return 0 <= t && t <= 1 ? bezier2(t, p) : p[1];
-                }),
-                xmin = stdMath.min.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
-                xmax = stdMath.max.apply(stdMath, px.concat([p[0], p[2]]).map(x)),
-                ymin = stdMath.min.apply(stdMath, py.concat([p[0], p[2]]).map(y)),
-                ymax = stdMath.max.apply(stdMath, py.concat([p[0], p[2]]).map(y))
-            ;
-            return {
-                ymin: ymin,
-                xmin: xmin,
-                ymax: ymax,
-                xmax: xmax
-            };
-        };
-        def(self, '_bbox', {
-            get: function() {
-                if (null == _bbox)
-                {
-                    _bbox = BB(self._points);
-                }
-                return _bbox;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        def(self, '_hull', {
-            get: function() {
-                if (null == _hull)
-                {
-                    _hull = aligned_bounding_box_from_points(self._points, BB).map(Point2D);
-                }
-                return _hull;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        self.isChanged = function(isChanged) {
-            if (true === isChanged)
-            {
-                _length = null;
-                _bbox = null;
-                _hull = null;
-            }
-            return self.$super('isChanged', arguments);
-        };
-    },
-    name: 'QBezier',
-    clone: function() {
-        return new QBezier(this.points.map(function(p) {return p.clone();}));
-    },
-    transform: function(matrix) {
-        return new QBezier(this.points.map(function(p) {return p.transform(matrix);}));
-    },
-    f: function(t) {
-        return bezier2(t, this._points);
-    },
-    hasPoint: function(point) {
-        return point_on_qbezier(point, this._points)
-    },
-    intersects: function(other) {
-        var self = this, i;
-        if (other instanceof Point2D)
-        {
-            return self.hasPoint(other) ? [other] : false;
-        }
-        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
-        {
-            i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
-        {
-            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
-        {
-            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (other instanceof QBezier)
-        {
-            i = polyline_qbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (other instanceof Object2D)
-        {
-            return other.intersects(self);
-        }
-        return false;
-    },
-    bezierPoints: function(t) {
-        if (arguments.length) t = clamp(t, 0, 1);
-        else t = 1;
-        if (is_almost_equal(t, 1)) t = 1;
-        return [cbezier_from_points(this._points, t)];
-    },
-    toSVG: function(svg) {
-        return this.toSVGPath(arguments.length ? svg : false);
-    },
-    toSVGPath: function(svg) {
-        var self = this, p = self._points,
-            path = ['M',p[0].x,p[0].y,'Q',p[1].x,p[1].y,p[2].x,p[2].y].join(' ');
-        return arguments.length ? SVG('path', {
-            'id': [self.id, false],
-            'd': [path, self.isChanged()],
-            'style': [self.style.toSVG(), self.style.isChanged()]
-        }, svg) : path;
-    },
-    toCanvas: function(ctx) {
-        var self = this;
-        self.style.toCanvas(ctx);
-        self.toCanvasPath(ctx);
-        ctx.stroke();
-    },
-    toCanvasPath: function(ctx) {
-        var p = this._points;
-        ctx.beginPath();
-        ctx.moveTo(p[0].x, p[0].y);
-        ctx.quadraticCurveTo(p[1].x, p[1].y, p[2].x, p[2].y);
-    }
-});
-Geometrize.QBezier = QBezier;
-/**[DOC_MD]
- * ### CBezier 2D Cubic Bezier (subclass of Bezier2D)
- *
- * Represents a cubic bezier curve defined by its control points
- * ```javascript
- * const cbezier = CBezier([p1, p2, p3, p4]);
- * cbezier.points[0].x += 10; // change it
- * cbezier.points[2].x = 20; // change it
- * ```
-[/DOC_MD]**/
-var CBezier = makeClass(Bezier2D, {
-    constructor: function CBezier(points) {
-        var self = this,
-            _length = null,
-            _bbox = null,
-            _hull = null,
-            BB = null
-        ;
-
-        if (points instanceof CBezier) return points;
-        if (!(self instanceof CBezier)) return new CBezier(points);
-
-        self.$super('constructor', [points]);
-
-        def(self, 'length', {
-            get: function() {
-                if (null == _length)
-                {
-                    // approximate
-                    _length = polyline_length(self._lines);
-                }
-                return _length;
-            },
-            enumerable: true,
-            configurable: false
-        });
-        BB = function BB(c) {
-            // find min/max from zeroes of directional derivative along x and y
-            var tx = solve_quadratic(3*(-c[0].x + 3*c[1].x - 3*c[2].x + c[3].x), 2*(3*c[0].x - 6*c[1].x + 3*c[2].x), -3*c[0].x + 3*c[1].x),
-                px = false === tx ? [c[1], c[2]] : tx.map(function(t, i) {
-                    return 0 <= t && t <= 1 ? bezier3(t, c) : c[i+1];
-                }),
-                ty = solve_quadratic(3*(-c[0].y + 3*c[1].y - 3*c[2].y + c[3].y), 2*(3*c[0].y - 6*c[1].y + 3*c[2].y), -3*c[0].y + 3*c[1].y),
-                py = false === ty ? [c[1], c[2]] : ty.map(function(t, i) {
-                    return 0 <= t && t <= 1 ? bezier3(t, c) : c[i+1];
-                }),
-                xmin = stdMath.min.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
-                xmax = stdMath.max.apply(stdMath, px.concat([c[0], c[3]]).map(x)),
-                ymin = stdMath.min.apply(stdMath, py.concat([c[0], c[3]]).map(y)),
-                ymax = stdMath.max.apply(stdMath, py.concat([c[0], c[3]]).map(y))
-            ;
-            return {
-                ymin: ymin,
-                xmin: xmin,
-                ymax: ymax,
-                xmax: xmax
-            };
-        };
-        def(self, '_bbox', {
-            get: function() {
-                if (null == _bbox)
-                {
-                    _bbox = BB(self._points);
-                }
-                return _bbox;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        def(self, '_hull', {
-            get: function() {
-                if (null == _hull)
-                {
-                    _hull = aligned_bounding_box_from_points(self._points, BB).map(Point2D);
-                }
-                return _hull;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        self.isChanged = function(isChanged) {
-            if (true === isChanged)
-            {
-                _length = null;
-                _bbox = null;
-                _hull = null;
-            }
-            return self.$super('isChanged', arguments);
-        };
-    },
-    name: 'CBezier',
-    clone: function() {
-        return new CBezier(this.points.map(function(p) {return p.clone();}));
-    },
-    transform: function(matrix) {
-        return new CBezier(this.points.map(function(p) {return p.transform(matrix);}));
-    },
-    f: function(t) {
-        return bezier3(t, this._points);
-    },
-    hasPoint: function(point) {
-        return point_on_cbezier(point, this._points)
-    },
-    intersects: function(other) {
-        var self = this, i;
-        if (other instanceof Point2D)
-        {
-            return self.hasPoint(other) ? [other] : false;
-        }
-        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
-        {
-            i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
-        {
-            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
-        {
-            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
-        {
-            i = polyline_qbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (other instanceof CBezier)
-        {
-            i = polyline_cbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (other instanceof Object2D)
-        {
-            return other.intersects(self);
-        }
-        return false;
-    },
-    bezierPoints: function(t) {
-        if (arguments.length) t = clamp(t, 0, 1);
-        else t = 1;
-        if (is_almost_equal(t, 1)) t = 1;
-        return [cbezier_from_points(this._points, t)];
-    },
-    toSVG: function(svg) {
-        return this.toSVGPath(arguments.length ? svg : false);
-    },
-    toSVGPath: function(svg) {
-        var self = this, p = self._points,
-            path = ['M',p[0].x,p[0].y,'C',p[1].x,p[1].y,p[2].x,p[2].y,p[3].x,p[3].y].join(' ');
-        return arguments.length ? SVG('path', {
-            'id': [self.id, false],
-            'd': [path, self.isChanged()],
-            'style': [self.style.toSVG(), self.style.isChanged()]
-        }, svg) : path;
-    },
-    toCanvas: function(ctx) {
-        var self = this;
-        self.style.toCanvas(ctx);
-        self.toCanvasPath(ctx);
-        ctx.stroke();
-    },
-    toCanvasPath: function(ctx) {
-        var p = this._points;
-        ctx.beginPath();
-        ctx.moveTo(p[0].x, p[0].y);
-        ctx.bezierCurveTo(p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
-    }
-});
-Geometrize.CBezier = CBezier;
-/**[DOC_MD]
- * ### Polygon 2D Polygon (subclass of Curve2D)
- *
- * Represents a polygon (a closed polyline) defined by its vertices
- * ```javascript
- * const polygon = Polygon([p1, p2, .., pn]);
- * polygon.vertices[0].x += 10; // change it
- * polygon.vertices[2].x = 20; // change it
- * ```
-[/DOC_MD]**/
-var Polygon = makeClass(Curve2D, {
-    constructor: function Polygon(vertices) {
-        var self = this,
-            _length = null,
-            _area = null,
-            _bbox = null,
-            _hull = null,
-            _is_convex = null
-        ;
-
-        if (vertices instanceof Polygon) return vertices;
-        if (!(self instanceof Polygon)) return new Polygon(vertices);
-        self.$super('constructor', [vertices]);
-
-        def(self, 'vertices', {
-            get: function() {
-                return self.points;
-            },
-            set: function(vertices) {
-                self.points = vertices;
-            },
-            enumerable: true,
-            configurable: false
-        });
-        def(self, 'edges', {
-            get: function() {
-                var v = self.points;
-                return 1 < v.length ? v.map(function(vertex, i) {
-                    return new Line(vertex, v[(i+1) % v.length]);
-                }) : [];
-            },
-            enumerable: true,
-            configurable: false
-        });
-        def(self, '_lines', {
-            get: function() {
-                return self._points.concat([self._points[0]]);
-            },
-            enumerable: false,
-            configurable: false
-        });
-        def(self, 'length', {
-            get: function() {
-                if (null == _length)
-                {
-                    _length = polyline_length(self._lines);
-                }
-                return _length;
-            },
-            enumerable: true,
-            configurable: false
-        });
-        def(self, 'area', {
-            get: function() {
-                if (null == _area)
-                {
-                    _area = polyline_area(self._lines);
-                }
-                return _area;
-            },
-            enumerable: true,
-            configurable: false
-        });
-        def(self, '_bbox', {
-            get: function() {
-                if (null == _bbox)
-                {
-                    _bbox = bounding_box_from_points(self._points);
-                }
-                return _bbox;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        def(self, '_hull', {
-            get: function() {
-                if (null == _hull)
-                {
-                    _hull = aligned_bounding_box_from_points(self._points).map(Point2D);
-                }
-                return _hull;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        def(self, '_is_convex', {
-            get: function() {
-                if (null == _is_convex)
-                {
-                    _is_convex = is_convex(self._points);
-                }
-                return _is_convex;
-            },
-            enumerable: false,
-            configurable: false
-        });
-        self.isChanged = function(isChanged) {
-            if (true === isChanged)
-            {
-                _length = null;
-                _area = null;
-                _bbox = null;
-                _hull = null;
-                _is_convex = null;
-            }
-            return self.$super('isChanged', arguments);
-        };
-    },
-    name: 'Polygon',
-    clone: function() {
-        return new Polygon(this.vertices.map(function(vertex) {return vertex.clone();}));
-    },
-    transform: function(matrix) {
-        return new Polygon(this.vertices.map(function(vertex) {return vertex.transform(matrix);}));
-    },
-    isClosed: function() {
-        return true;
-    },
-    isConvex: function() {
-        return this._is_convex;
-    },
-    f: function(t) {
-        var p = this._lines, n = p.length - 1, i = stdMath.floor(t*n);
-        return 1 === t ? {x:p[n].x, y:p[n].y} : bezier1(n*(t - i/n), [p[i], p[i+1]]);
-    },
-    fto: function(t) {
-        var self = this, p = self.points, n = p.length, i = stdMath.floor(t*n);
-        return new Polyline(p.slice(0, i+1).concat([bezier1(n*(t - i/n), [p[i], p[(i+1) % n]])]));
-    },
-    hasPoint: function(point) {
-        return 2 === point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
-    },
-    hasInsidePoint: function(point, strict) {
-        var inside = point_inside_polyline(point, {x:this._bbox.xmax+10, y:point.y}, this._lines);
-        return strict ? 1 === inside : 0 < inside;
-    },
-    intersects: function(other) {
-        var self = this, i;
-        if (other instanceof Point2D)
-        {
-            return self.hasPoint(other) ? [other] : false;
-        }
-        else if (Geometrize.Line && (other instanceof Geometrize.Line))
-        {
-            i = polyline_line_intersection(self._lines, other._points[0], other._points[1]);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
-        {
-            i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
-        {
-            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
-        {
-            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
-        {
-            i = polyline_qbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (Geometrize.CBezier && (other instanceof Geometrize.CBezier))
-        {
-            i = polyline_cbezier_intersection(self._lines, other._points);
-            return i ? i.map(Point2D) : false;
-        }
-        else if ((Geometrize.Polyline && (other instanceof Geometrize.Polyline)) || (other instanceof Polygon))
-        {
-            i = polyline_polyline_intersection(self._lines, other._lines);
-            return i ? i.map(Point2D) : false;
-        }
-        else if (other instanceof Object2D)
-        {
-            return other.intersects(self);
-        }
-        return false;
-    },
-    intersectsSelf: function() {
-        var self = this, ii, i = [], p = self._lines, n = p.length,
-            j, k, p1, p2, p3, p4;
-        for (j=0; j<n; ++j)
-        {
-            if (j+1 >= n) break;
-            for (k=j+2; k<n; ++k)
-            {
-                if (k+1 >= n) break;
-                p1 = p[j]; p2 = p[j+1];
-                p3 = p[k]; p4 = p[k+1];
-                ii = line_segments_intersection(p1, p2, p3, p4);
-                if (ii)
-                {
-                    if ((j === 0) && (k === n-2) && p_eq(p1, p4)) ii = ii.filter(function(p) {return !p_eq(p, p1);});
-                    else if ((k === j+2) && p_eq(p2, p3)) ii = ii.filter(function(p) {return !p_eq(p, p2);});
-                    i.push.apply(i, ii);
-                }
-            }
-        }
-        return i ? i.map(Point2D) : false;
-    },
-    bezierPoints: function(t) {
-        if (arguments.length) t = clamp(t, 0, 1);
-        else t = 1;
-        if (is_almost_equal(t, 1)) t = 1;
-        var p = this._lines, n = p.length - 1, i = stdMath.floor(t*n), j, b = new Array(1 === t ? i : (i+1));
-        for (j=0; j<i; ++j) b[j] = cbezier_from_points([p[j], p[j+1]], 1);
-        if (1 > t) b[i] = cbezier_from_points([p[i], p[i+1]], n*(t - i/n));
-        return b;
-    },
-    toSVG: function(svg) {
-        var self = this;
-        return SVG('polygon', {
-            'id': [self.id, false],
-            'points': [self._points.map(function(p) {return Str(p.x)+' '+Str(p.y);}).join(' '), self.isChanged()],
-            'style': [self.style.toSVG(), self.style.isChanged()]
-        }, arguments.length ? svg : false);
-    },
-    toSVGPath: function(svg) {
-        var self = this, path = 'M '+(self._lines.map(function(p) {
-            return Str(p.x)+' '+Str(p.y);
-        }).join(' L '))+' Z';
-        return arguments.length ? SVG('path', {
-            'id': [self.id, false],
-            'd': [path, self.isChanged()],
-            'style': [self.style.toSVG(), self.style.isChanged()]
-        }, svg) : path;
-    },
-    toCanvas: function(ctx) {
-        var self = this;
-        self.style.toCanvas(ctx);
-        self.toCanvasPath(ctx);
-        if ('none' !== self.style['fill']) ctx.fill();
-        ctx.stroke();
-    },
-    toCanvasPath: function(ctx) {
-        var p = this._lines, n = p.length, i;
-        ctx.beginPath();
-        ctx.moveTo(p[0].x, p[0].y);
-        for (i=1; i<n; ++i) ctx.lineTo(p[i].x, p[i].y);
-        ctx.closePath();
-    },
-    toTex: function() {
-        return '\\text{Polygon: }'+'\\left(' + this.vertices.map(Tex).join(',') + '\\right)';
-    },
-    toString: function() {
-        return 'Polygon('+this.vertices.map(Str).join(',')+')';
-    }
-});
-Geometrize.Polygon = Polygon;
-
-// 2D Rect class
-var Rect = makeClass(Polygon, {
-    constructor: function Rect(top, width, height) {
-        var self = this, topLeft, bottomRight;
-        if (top instanceof Rect) return top;
-        if (!(self instanceof Rect)) return new Rect(top, width, height);
-        topLeft = Point2D(top);
-        if (is_numeric(width) && is_numeric(height))
-        {
-            bottomRight = new Point2D(topLeft.x + Num(width), topLeft.y + Num(height));
-        }
-        else
-        {
-            bottomRight = Point2D(width);
-        }
-        self.$super('constructor', [[topLeft, new Point2D(bottomRight.x, topLeft.y), bottomRight, new Point2D(topLeft.x, bottomRight.y)]]);
-
-        def(self, 'topLeft', {
-            get: function() {
-                return self.points[0];
-            },
-            set: function(topLeft) {
-                self.points[0] = topLeft;
-            },
-            enumerable: true,
-            configurable: false
-        });
-        def(self, 'bottomRight', {
-            get: function() {
-                return self.points[2];
-            },
-            set: function(bottomRight) {
-                self.points[2] = bottomRight;
-            },
-            enumerable: true,
-            configurable: false
-        });
-        def(self, 'width', {
-            get: function() {
-                return abs(self.bottomRight.x - self.topLeft.x);
-            },
-            set: function(width) {
-                self.bottomRight.x = self.topLeft.x + Num(width);
-            },
-            enumerable: true,
-            configurable: false
-        });
-        def(self, 'height', {
-            get: function() {
-                return abs(self.bottomRight.y - self.topLeft.y);
-            },
-            set: function(height) {
-                self.bottomRight.y = self.topLeft.y + Num(height);
-            },
-            enumerable: true,
-            configurable: false
-        });
-    }
-});
-Geometrize.Rect = Rect;
-/**[DOC_MD]
- * ### 2D Circle (subclass of EllipticArc2D)
+ * ### Circle (subclass of EllipticArc2D)
  *
  * Represents a circle of given center (point) and radius
  * ```javascript
@@ -4068,7 +4099,7 @@ var Circle = makeClass(EllipticArc2D, {
 });
 Geometrize.Circle = Circle;
 /**[DOC_MD]
- * ### 2D Ellipse (subclass of EllipticArc2D)
+ * ### Ellipse (subclass of EllipticArc2D)
  *
  * Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
  * ```javascript
@@ -4308,13 +4339,13 @@ var Ellipse = makeClass(EllipticArc2D, {
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             //i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            i = ellipse_ellipse_intersection(self.center, self.radiusX, self.radiusY, self.cs, other.center, other.radius, other.radius, [1, 0]);
+            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, other.center, other.radius, other.radius, [1, 0], null, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Ellipse)
         {
             //i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            i = ellipse_ellipse_intersection(self.center, self.radiusX, self.radiusY, self. cs, other.center, other.radiusX, other.radiusY, other.cs);
+            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, other.center, other.radiusX, other.radiusY, other.cs, null, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Object2D)
@@ -4374,7 +4405,7 @@ var Ellipse = makeClass(EllipticArc2D, {
 });
 Geometrize.Ellipse = Ellipse;
 /**[DOC_MD]
- * ### Shape2D 2D generic Shape
+ * ### Shape2D (subclass of Object2D)
  *
  * container for 2D geometric objects, grouped together
  * ```javascript
@@ -4681,9 +4712,9 @@ Geometrize.Shape2D = Shape2D;
  * scene.add(line); // add object
  * scene.remove(line); // remove object
  * scene.getIntersections(); // return array of points of intersection of all objects in the scene
- * self.toSVG(); // render and return scene as SVG string
- * self.toCanvas(); // render and return scene as canvas
- * self.toIMG(); // render and return scene as base64 encoded PNG image
+ * scene.toSVG(); // render and return scene as SVG string
+ * scene.toCanvas(); // render and return scene as Canvas
+ * scene.toIMG(); // render and return scene as base64 encoded PNG image
  * ```
 [/DOC_MD]**/
 var Scene2D = makeClass(null, {
@@ -4939,7 +4970,7 @@ function point_on_arc(p, center, rx, ry, cs, theta, dtheta)
     var cos = cs[0], sin = cs[1],
         x0 = p.x - center.x,
         y0 = p.y - center.y,
-        x = cos*x0 + sin*y0,
+        x =  cos*x0 + sin*y0,
         y = -sin*x0 + cos*y0,
         t = cmod(stdMath.atan2(y/ry, x/rx));
     t = (t - theta)/dtheta;
@@ -5102,8 +5133,8 @@ function point_inside_ellipse(p, center, radiusX, radiusY, cs)
         cos = cs[0], sin = cs[1],
         dx0 = p.x - center.x,
         dy0 = p.y - center.y,
-        dx = cos*dx0 - sin*dy0,
-        dy = cos*dy0 + sin*dx0,
+        dx =  cos*dx0 + sin*dy0,
+        dy = -sin*dx0 + cos*dy0,
         d2 = dx*dx/rX2 + dy*dy/rY2
     ;
     if (is_almost_equal(d2, 1)) return 2;
@@ -5171,9 +5202,9 @@ function line_ellipse_intersection(p1, p2, abcdef)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
+function line_arc_intersection(p1, p2, abcdef, c, rx, ry, cs, t, d)
 {
-    if (null == abcdef) abcdef = ellipse2quadratic(c, rX, rY, cs);
+    if (null == abcdef) abcdef = ellipse2quadratic(c, rx, ry, cs);
     var p = new Array(2), pi = 0, i, n,
         x, y, x0, y0, t,
         s = solve_linear_quadratic_system(
@@ -5183,7 +5214,7 @@ function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2) && point_on_arc(s[i], c, rX, rY, cs, t, d))
+        if (point_on_line_segment(s[i], p1, p2) && point_on_arc(s[i], c, rx, ry, cs, t, d))
         {
             p[pi++] = s[i];
         }
@@ -5275,10 +5306,67 @@ function circle_circle_intersection(c1, r1, c2, r2)
     ;
     return is_strictly_equal(h, 0) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
-function ellipse_ellipse_intersection(c1, rx1, ry1, cs1, c2, rx2, ry2, cs2)
+/*function ellipse_ellipse_intersection(c1, rx1, ry1, cs1, c2, rx2, ry2, cs2)
 {
     var q1 = ellipse2quadratic(c1, rx1, ry1, cs1), q2 = ellipse2quadratic(c2, rx2, ry2, cs2);
     return solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+}*/
+function arc_arc_intersection(c1, rx1, ry1, cs1, t1, d1, c2, rx2, ry2, cs2, t2, d2)
+{
+    var q1, q2, s, p, pi, i, n;
+    q1 = ellipse2quadratic(c1, rx1, ry1, cs1);
+    q2 = ellipse2quadratic(c2, rx2, ry2, cs2);
+    s = solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+    if (!s) return false;
+    for (i=0,n=s.length,p=new Array(n),pi=0; i<n; ++i)
+    {
+        if (
+            ((null == t1 && 2 === point_inside_ellipse(s[i], c1, rx1, ry1, cs1)) || (null != t1 && point_on_arc(s[i], c1, rx1, ry1, cs1, t1, d1)))
+            && ((null == t2 && 2 === point_inside_ellipse(s[i], c2, rx2, ry2, cs2)) || (null != t2 && point_on_arc(s[i], c2, rx2, ry2, cs2, t2, d2)))
+        )
+        {
+            p[pi++] = s[i];
+        }
+    }
+    p.length = pi;
+    return p.length ? p : false;
+}
+function qbezier_arc_intersection(coeff, c, rx, ry, cs, t, d)
+{
+    var q1, q2, s, p, pi, i, n;
+    q1 = ellipse2quadratic(c, rx, ry, cs);
+    q2 = qbezier2quadratic(coeff);
+    s = solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+    if (!s) return false;
+    for (i=0,n=s.length,p=new Array(n),pi=0; i<n; ++i)
+    {
+        if (
+            ((null == t && 2 === point_inside_ellipse(s[i], c, rx, ry, cs)) || (null != t && point_on_arc(s[i], c, rx, ry, cs, t, d)))
+            && (point_on_qbezier(s[i], coeff))
+        )
+        {
+            p[pi++] = s[i];
+        }
+    }
+    p.length = pi;
+    return p.length ? p : false;
+}
+function qbezier_qbezier_intersection(coeff1, coeff2)
+{
+    var q1, q2, s, p, pi, i, n;
+    q1 = qbezier2quadratic(coeff1);
+    q2 = qbezier2quadratic(coeff2);
+    s = solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+    if (!s) return false;
+    for (i=0,n=s.length,p=new Array(n),pi=0; i<n; ++i)
+    {
+        if (point_on_qbezier(s[i], coeff1) && point_on_qbezier(s[i], coeff2))
+        {
+            p[pi++] = s[i];
+        }
+    }
+    p.length = pi;
+    return p.length ? p : false;
 }
 function polyline_line_intersection(polyline_points, p1, p2)
 {
@@ -5534,7 +5622,7 @@ function solve_quartic(e, a, b, c, d)
     if (is_strictly_equal(e, 0)) return solve_cubic(a, b, c, d);
     a /= e; b /= e; c /= e; d /= e;
     // v^2 + (-2 b^3 + 9 a b c - 27 c^2 - 27 a^2 d + 72 b d)v + (b^2 - 3 a c + 12 d)^3 = 0
-    var v, v1, v2, u, ur, D1, D2, p;
+    var v, v1, v2, u, ur, D1, D2, s;
     v = solve_quadratic(1, -2*pow(b, 3) + 9*a*b*c - 27*c*c - 27*a*a*d + 72*b*d, pow(b*b - 3*a*c + 12*d, 3));
     if (!v) return false;
     // u = \frac{a^2}{4} +\frac{-2b+v_1^{1/3}+v_2^{1/3}}{3}
@@ -5545,36 +5633,38 @@ function solve_quartic(e, a, b, c, d)
     ur = sqrt(u);
     // x_{1,2} = -\tfrac{1}{4}a+\tfrac{1}{2}\sqrt{u}\pm\tfrac{1}{4}\sqrt{3a^2-8b-4u+\frac{-a^3+4ab-8c}{\sqrt{u}}}
     // x_{3,4} = -\tfrac{1}{4}a-\tfrac{1}{2}\sqrt{u}\pm\tfrac{1}{4}\sqrt{3a^2-8b-4u-\frac{-a^3+4ab-8c}{\sqrt{u}}}
-    D1 = 3*a*a - 8*b - 4*u + (-pow(a, 3) + 4*a*b - 8*c)/ur;
-    D2 = 3*a*a - 8*b - 4*u - (-pow(a, 3) + 4*a*b - 8*c)/ur;
-    p = [];
+    v1 = 3*a*a - 8*b - 4*u;
+    v2 = (-pow(a, 3) + 4*a*b - 8*c)/ur;
+    D1 = v1 + v2;
+    D2 = v1 - v2;
+    s = [];
     if (0 <= D1)
     {
         if (is_strictly_equal(D1, 0))
         {
-            p.push(ur/2 - a/4);
+            s.push(ur/2 - a/4);
         }
         else
         {
             D1 = sqrt(D1)/4;
-            p.push(ur/2 - a/4 + D1);
-            p.push(ur/2 - a/4 - D1);
+            s.push(ur/2 - a/4 + D1);
+            s.push(ur/2 - a/4 - D1);
         }
     }
     if (0 <= D2)
     {
         if (is_strictly_equal(D2, 0))
         {
-            p.push(-ur/2 - a/4);
+            s.push(-ur/2 - a/4);
         }
         else
         {
             D2 = sqrt(D2)/4;
-            p.push(-ur/2 - a/4 + D2);
-            p.push(-ur/2 - a/4 - D2);
+            s.push(-ur/2 - a/4 + D2);
+            s.push(-ur/2 - a/4 - D2);
         }
     }
-    return p.length ? p : false;
+    return s.length ? s : false;
 }
 function solve_linear_linear_system(a, b, c, k, l, m)
 {
@@ -5606,7 +5696,7 @@ function solve_linear_quadratic_system(m, n, k, a, b, c, d, e, f)
         y1 = y[0];
         x = solve_quadratic(a, c*y1+d, b*y1*y1+e*y1+f);
         if (!x) return false;
-        return 2 === x.length ? [{x:x[0],y:y1},{x:x[1],y:y1}] : [{x:x[0],y:y1}];
+        return 2 === x.length ? [{x:x[0], y:y1},{x:x[1], y:y1}] : [{x:x[0], y:y1}];
     }
     else
     {
@@ -5623,26 +5713,26 @@ function solve_linear_quadratic_system(m, n, k, a, b, c, d, e, f)
 function solve_quadratic_quadratic_system(a1, b1, c1, d1, e1, f1, a2, b2, c2, d2, e2, f2)
 {
     /*
-    a1 x^2 + b1 y^2 + c1 xy + d1 x + e1 y + f1 = 0
-    a2 x^2 + b2 y^2 + c2 xy + d2 x + e2 y + f2 = 0
+    a1x^2+b1y^2+c1xy+d1x+e1y+f1=0
+    a2x^2+b2y^2+c2xy+d2x+e2y+f2=0
     */
-    var q, x, y, n, p, i, j;
+    var q, x, y, n, s, i, j;
     q = quadratics2quartic(a1, b1, c1, d1, e1, f1, a2, b2, c2, d2, e2, f2);
     x = solve_quartic(q[0], q[1], q[2], q[3], q[4]);
     if (!x) return false;
-    p = new Array(8);
+    s = new Array(8);
     j = 0;
     for (i=0,n=x.length; i<n; ++i)
     {
         y = solve_quadratic(b1, c1*x[i] + e1, x[i]*(a1*x[i] + d1) + f1);
         if (y)
         {
-            p[j++] = {x:x[i], y:y[0]};
-            if (1 < y.length) p[j++] = {x:x[i], y:y[1]};
+            s[j++] = {x:x[i], y:y[0]};
+            if (1 < y.length) s[j++] = {x:x[i], y:y[1]};
         }
     }
-    p.length = j;
-    return p.length ? p : false;
+    s.length = j;
+    return s.length ? s : false;
 }
 function line2linear(p1, p2)
 {
@@ -5663,7 +5753,7 @@ collect(expand(e), x)
     return [
     -pow(a_1,2)*pow(b_2,2) + 2*a_1*a_2*b_1*b_2 - a_1*b_1*pow(c_2,2) + a_1*b_2*c_1*c_2 - pow(a_2,2)*pow(b_1,2) + a_2*b_1*c_1*c_2 - a_2*b_2*pow(c_1,2),
     2*a_1*b_1*b_2*d_2 - 2*a_1*b_1*c_2*e_2 - 2*a_1*pow(b_2,2)*d_1 + a_1*b_2*c_1*e_2 + a_1*b_2*c_2*e_1 - 2*a_2*pow(b_1,2)*d_2 + 2*a_2*b_1*b_2*d_1 + a_2*b_1*c_1*e_2 + a_2*b_1*c_2*e_1 - 2*a_2*b_2*c_1*e_1 + b_1*c_1*c_2*d_2 - b_1*pow(c_2,2)*d_1 - b_2*pow(c_1,2)*d_2 + b_2*c_1*c_2*d_1,
-    2*a_1*b_1*b_2*f_2 - a_1*b_1*pow(e_2,2) - 2*a_1*pow(b_2,2)*f_1 + a_1*b_2*e_1*e_2 - 2*a_2*pow(b_1,2)*f_2 + 2*a_2*b_1*b_2*f_1 + a_2*b_1*e_1*e_2 - a_2*b_2*pow(e_1,2) - pow(b_1,2)*d_2**2 + 2*b_1*b_2*d_1*d_2 + b_1*c_1*c_2*f_2 + b_1*c_1*d_2*e_2 - b_1*pow(c_2,2)*f_1 - 2*b_1*c_2*d_1*e_2 + b_1*c_2*d_2*e_1 - pow(b_2,2)*pow(d_1,2) - b_2*pow(c_1,2)*f_2 + b_2*c_1*c_2*f_1 + b_2*c_1*d_1*e_2 - 2*b_2*c_1*d_2*e_1 + b_2*c_2*d_1*e_1,
+    2*a_1*b_1*b_2*f_2 - a_1*b_1*pow(e_2,2) - 2*a_1*pow(b_2,2)*f_1 + a_1*b_2*e_1*e_2 - 2*a_2*pow(b_1,2)*f_2 + 2*a_2*b_1*b_2*f_1 + a_2*b_1*e_1*e_2 - a_2*b_2*pow(e_1,2) - pow(b_1,2)*pow(d_2,2) + 2*b_1*b_2*d_1*d_2 + b_1*c_1*c_2*f_2 + b_1*c_1*d_2*e_2 - b_1*pow(c_2,2)*f_1 - 2*b_1*c_2*d_1*e_2 + b_1*c_2*d_2*e_1 - pow(b_2,2)*pow(d_1,2) - b_2*pow(c_1,2)*f_2 + b_2*c_1*c_2*f_1 + b_2*c_1*d_1*e_2 - 2*b_2*c_1*d_2*e_1 + b_2*c_2*d_1*e_1,
     -2*pow(b_1,2)*d_2*f_2 + 2*b_1*b_2*d_1*f_2 + 2*b_1*b_2*d_2*f_1 + b_1*c_1*e_2*f_2 + b_1*c_2*e_1*f_2 - 2*b_1*c_2*e_2*f_1 - b_1*d_1*pow(e_2,2) + b_1*d_2*e_1*e_2 - 2*pow(b_2,2)*d_1*f_1 - 2*b_2*c_1*e_1*f_2 + b_2*c_1*e_2*f_1 + b_2*c_2*e_1*f_1 + b_2*d_1*e_1*e_2 - b_2*d_2*pow(e_1,2),
     -pow(b_1,2)*pow(f_2,2) + 2*b_1*b_2*f_1*f_2 + b_1*e_1*e_2*f_2 - b_1*pow(e_2,2)*f_1 - pow(b_2,2)*pow(f_1,2) - b_2*pow(e_1,2)*f_2 + b_2*e_1*e_2*f_1
     ];

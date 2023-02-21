@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Topos3D 3D Geometric Topos (subclass of Object3D)
+ * ### Topos3D (subclass of Object3D)
  *
  * Represents a geometric topos, ie a set of 3D points
  * ```javascript

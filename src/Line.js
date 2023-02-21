@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Line 2D Line Segment (equivalent to Linear Bezier, subclass of Bezier2D)
+ * ### Line (equivalent to Linear Bezier, subclass of Bezier2D)
  *
  * Represents a line segment between 2 points
  * ```javascript

@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Polyline 2D Polyline (subclass of Curve2D)
+ * ### Polyline (subclass of Curve2D)
  *
  * Represents an assembly of consecutive line segments between given points
  * ```javascript

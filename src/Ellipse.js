@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### 2D Ellipse (subclass of EllipticArc2D)
+ * ### Ellipse (subclass of EllipticArc2D)
  *
  * Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
  * ```javascript
@@ -239,13 +239,13 @@ var Ellipse = makeClass(EllipticArc2D, {
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             //i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            i = ellipse_ellipse_intersection(self.center, self.radiusX, self.radiusY, self.cs, other.center, other.radius, other.radius, [1, 0]);
+            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, other.center, other.radius, other.radius, [1, 0], null, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Ellipse)
         {
             //i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            i = ellipse_ellipse_intersection(self.center, self.radiusX, self.radiusY, self. cs, other.center, other.radiusX, other.radiusY, other.cs);
+            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, other.center, other.radiusX, other.radiusY, other.cs, null, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Object2D)

@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Point2D 2D Point (subclass of Object2D)
+ * ### Point2D (subclass of Object2D)
  *
  * Represents a point in 2D space
  *

@@ -1,7 +1,7 @@
 /**[DOC_MD]
- * ### QBezier 2D Quadratic Bezier (subclass of Bezier2D)
+ * ### QBezier (subclass of Bezier2D)
  *
- * Represents a quadratic bezier curve defined by its control points
+ * Represents a quadratic Bezier curve defined by its control points
  * ```javascript
  * const qbezier = QBezier([p1, p2, p3]);
  * qbezier.points[0].x += 10; // change it
@@ -109,22 +109,26 @@ var QBezier = makeClass(Bezier2D, {
         }
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
-            i = polyline_circle_intersection(self._lines, other.center, other.radius);
+            //i = polyline_circle_intersection(self._lines, other.center, other.radius);
+            i = qbezier_arc_intersection(self._points, other.center, other.radius, other.radius, [1, 0], null, null);
             return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
-            i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            //i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
+            i = qbezier_arc_intersection(self._points, other.center, other.radiusX, other.radiusY, other.cs, null, null);
             return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
-            i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            //i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = qbezier_arc_intersection(self._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
             return i ? i.map(Point2D) : false;
         }
         else if (other instanceof QBezier)
         {
-            i = polyline_qbezier_intersection(self._lines, other._points);
+            //i = polyline_qbezier_intersection(self._lines, other._points);
+            i = qbezier_qbezier_intersection(self._points, other._points);
             return i ? i.map(Point2D) : false;
         }
         else if (other instanceof Object2D)

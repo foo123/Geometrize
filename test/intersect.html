@@ -71,7 +71,7 @@ const line1 = Line([20,20], [60,60]).setStyle('stroke', 'blue');
 const line2 = Line([50,2], [20,70]).setStyle('stroke', 'green');
 const line3 = Line([60,160], [300,0]).setStyle('stroke', 'orange');
 const line4 = Line([60,120], [300,-40]).setStyle('stroke', 'cyan');
-const shape = Shape2D([line1, line2, line3, line4]);
+const shape = Shape2D([line1, line2, Shape2D([line3, line4])]);
 
 const drawBoundingBox = (shape, color) => {
     const bb = shape.getBoundingBox();
@@ -95,10 +95,10 @@ scene.add(arc5);*/
 scene.add(qbezier);
 scene.add(cbezier);
 scene.add(curve);
-/*scene.add(line1);
-scene.add(line2);
-scene.add(line3);
-scene.add(line4);*/
+//scene.add(line1);
+//scene.add(line2);
+//scene.add(line3);
+//scene.add(line4);
 scene.add(shape);
 
 document.getElementById('intersections').addEventListener('click', () => {
@@ -122,7 +122,7 @@ document.getElementById('boxes').addEventListener('click', () => {
     drawBoundingBox(qbezier, 'cyan');
     drawBoundingBox(cbezier, 'magenta');
     drawBoundingBox(curve, 'yellow');
-    drawBoundingBox(shape, 'green');
+    //drawBoundingBox(shape, 'green');
     /*drawBoundingBox(arc2, 'yellow');
     drawBoundingBox(arc3, 'orange');
     drawBoundingBox(arc4, 'red');
@@ -137,7 +137,7 @@ document.getElementById('hulls').addEventListener('click', () => {
     drawConvexHull(qbezier, 'cyan');
     drawConvexHull(cbezier, 'magenta');
     drawConvexHull(curve, 'yellow');
-    drawConvexHull(shape, 'green');
+    //drawConvexHull(shape, 'green');
     /*drawConvexHull(arc2, 'yellow');
     drawConvexHull(arc3, 'orange');
     drawConvexHull(arc4, 'red');

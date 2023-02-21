@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Matrix3D 3D Homogeneous Transformation Matrix
+ * ### Matrix3D, 3D Homogeneous Transformation Matrix
  *
  * Represents a homogeneous transformation matrix for 3D transforms
  *

@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Topos2D 2D Geometric Topos (subclass of Object2D)
+ * ### Topos2D (subclass of Object2D)
  *
  * Represents a geometric topos, ie a set of points
  * ```javascript

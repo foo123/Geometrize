@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Value class
+ * ### Value
  *
  * Represents a generic scalar value which can change dynamically
  * (not used directly)

@@ -1,5 +1,5 @@
 
-### Style class
+### Style
 
 Represents the styling (eg stroke, fill, width) of a 2D or 3D object
 ```javascript
@@ -10,7 +10,7 @@ style['stroke'] = 'green'; // change it
 
 
 
-### Value class
+### Value
 
 Represents a generic scalar value which can change dynamically
 (not used directly)
@@ -18,7 +18,7 @@ Represents a generic scalar value which can change dynamically
 
 
 
-### Matrix2D 2D Homogeneous Transformation Matrix
+### Matrix2D, 2D Homogeneous Transformation Matrix
 
 Represents a homogeneous transformation matrix for 2D transforms
 
@@ -31,7 +31,7 @@ const p2 = m.transform(p);
 
 
 
-### Object2D Base Class
+### Object2D, Base Class
 
 Represents a generic 2D object
 (not used directly)
@@ -127,7 +127,7 @@ Represents a generic 2D object
 
 
 
-### Point2D 2D Point (subclass of Object2D)
+### Point2D (subclass of Object2D)
 
 Represents a point in 2D space
 
@@ -139,7 +139,7 @@ p.y = 5; // change it
 
 
 
-### Topos2D 2D Geometric Topos (subclass of Object2D)
+### Topos2D (subclass of Object2D)
 
 Represents a geometric topos, ie a set of points
 ```javascript
@@ -157,7 +157,7 @@ const topos = Topos2D([p1, p2, p3, .., pn]);
 
 
 
-### Curve2D 2D Generic Curve Base Class (subclass of Topos2D)
+### Curve2D (subclass of Topos2D)
 
 Represents a generic curve in 2D space
 (not used directly)
@@ -215,15 +215,15 @@ Represents a generic curve in 2D space
 
 
 
-### Bezier2D 2D Generic Bezier Curve Base Class (subclass of Curve2D)
+### Bezier2D (subclass of Curve2D)
 
-Represents a generic bezier curve in 2D space
+Represents a generic Bezier curve in 2D space
 (not used directly)
 
 
 
 
-### EllipticArc2D 2D Generic Elliptic Arc Base Class (subclass of Curve2D)
+### EllipticArc2D (subclass of Curve2D)
 
 Represents a part of an arbitrary ellipse in 2D space
 (not used directly)
@@ -231,7 +231,7 @@ Represents a part of an arbitrary ellipse in 2D space
 
 
 
-### ParametricCurve 2D Generic Parametric Curve (subclass of Curve2D)
+### ParametricCurve (subclass of Curve2D)
 
 Represents a generic parametric curve in 2D space
 ```javascript
@@ -241,7 +241,7 @@ const spiral = ParametricCurve((t) => ({x: cx + t*r*Math.cos(t*6*Math.PI), y: cy
 
 
 
-### CompositeCurve 2D Generic Composite Curve (subclass of Curve2D)
+### CompositeCurve (subclass of Curve2D)
 
 Represents a container of multiple, not necessarily joined curves
 ```javascript
@@ -260,7 +260,7 @@ const curve = CompositeCurve([Line(p1, p2), QBezier([p3, p4, p5]), Line(p6, p7)]
 
 
 
-### Line 2D Line Segment (equivalent to Linear Bezier, subclass of Bezier2D)
+### Line (equivalent to Linear Bezier, subclass of Bezier2D)
 
 Represents a line segment between 2 points
 ```javascript
@@ -271,7 +271,29 @@ line.end.y = 20; // change it
 
 
 
-### Polyline 2D Polyline (subclass of Curve2D)
+### QBezier (subclass of Bezier2D)
+
+Represents a quadratic Bezier curve defined by its control points
+```javascript
+const qbezier = QBezier([p1, p2, p3]);
+qbezier.points[0].x += 10; // change it
+qbezier.points[1].x = 20; // change it
+```
+
+
+
+### CBezier (subclass of Bezier2D)
+
+Represents a cubic Bezier curve defined by its control points
+```javascript
+const cbezier = CBezier([p1, p2, p3, p4]);
+cbezier.points[0].x += 10; // change it
+cbezier.points[2].x = 20; // change it
+```
+
+
+
+### Polyline (subclass of Curve2D)
 
 Represents an assembly of consecutive line segments between given points
 ```javascript
@@ -282,7 +304,18 @@ polyline.points[2].x = 20; // change it
 
 
 
-### 2D Elliptical Arc (subclass of EllipticArc2D)
+### Polygon (subclass of Curve2D)
+
+Represents a polygon (a closed polyline) defined by its vertices
+```javascript
+const polygon = Polygon([p1, p2, .., pn]);
+polygon.vertices[0].x += 10; // change it
+polygon.vertices[2].x = 20; // change it
+```
+
+
+
+### Arc (subclass of EllipticArc2D)
 
 Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
 ```javascript
@@ -294,40 +327,7 @@ arc.largeArc = false; // change it
 
 
 
-### QBezier 2D Quadratic Bezier (subclass of Bezier2D)
-
-Represents a quadratic bezier curve defined by its control points
-```javascript
-const qbezier = QBezier([p1, p2, p3]);
-qbezier.points[0].x += 10; // change it
-qbezier.points[1].x = 20; // change it
-```
-
-
-
-### CBezier 2D Cubic Bezier (subclass of Bezier2D)
-
-Represents a cubic bezier curve defined by its control points
-```javascript
-const cbezier = CBezier([p1, p2, p3, p4]);
-cbezier.points[0].x += 10; // change it
-cbezier.points[2].x = 20; // change it
-```
-
-
-
-### Polygon 2D Polygon (subclass of Curve2D)
-
-Represents a polygon (a closed polyline) defined by its vertices
-```javascript
-const polygon = Polygon([p1, p2, .., pn]);
-polygon.vertices[0].x += 10; // change it
-polygon.vertices[2].x = 20; // change it
-```
-
-
-
-### 2D Circle (subclass of EllipticArc2D)
+### Circle (subclass of EllipticArc2D)
 
 Represents a circle of given center (point) and radius
 ```javascript
@@ -338,7 +338,7 @@ circle.radius = 12; // change it
 
 
 
-### 2D Ellipse (subclass of EllipticArc2D)
+### Ellipse (subclass of EllipticArc2D)
 
 Represents an ellipse of given center (point), radiusX, radiusY and rotation angle
 ```javascript
@@ -349,7 +349,7 @@ ellipse.radiusX = 12; // change it
 
 
 
-### Shape2D 2D generic Shape
+### Shape2D (subclass of Object2D)
 
 container for 2D geometric objects, grouped together
 ```javascript
@@ -382,7 +382,7 @@ const line = Line([p1, p2]);
 scene.add(line); // add object
 scene.remove(line); // remove object
 scene.getIntersections(); // return array of points of intersection of all objects in the scene
-self.toSVG(); // render and return scene as SVG string
-self.toCanvas(); // render and return scene as canvas
-self.toIMG(); // render and return scene as base64 encoded PNG image
+scene.toSVG(); // render and return scene as SVG string
+scene.toCanvas(); // render and return scene as Canvas
+scene.toIMG(); // render and return scene as base64 encoded PNG image
 ```

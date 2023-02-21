@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Style class
+ * ### Style
  *
  * Represents the styling (eg stroke, fill, width) of a 2D or 3D object
  * ```javascript

@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### 2D Elliptical Arc (subclass of EllipticArc2D)
+ * ### Arc (subclass of EllipticArc2D)
  *
  * Represents an elliptic arc between start and end (points) having radiusX, radiusY and rotation angle and given largeArc and sweep flags
  * ```javascript
@@ -373,6 +373,33 @@ var Arc = makeClass(EllipticArc2D, {
             self.largeArc,
             self.sweep
         );
+    },
+    intersects: function(other) {
+        var self = this, i;
+        if (other instanceof Point2D)
+        {
+            return self.hasPoint(other) ? [other] : false;
+        }
+        else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
+        {
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.radius, other.radius, [1, 0], null, null);
+            return i ? i.map(Point2D) : false
+        }
+        else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
+        {
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.radiusX, other.radiusY, other.cs, null, null);
+            return i ? i.map(Point2D) : false
+        }
+        else if (other instanceof Arc)
+        {
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            return i ? i.map(Point2D) : false
+        }
+        else if (other instanceof Object2D)
+        {
+            return other.intersects(self);
+        }
+        return false;
     },
     toSVG: function(svg) {
         return this.toSVGPath(arguments.length ? svg : false);

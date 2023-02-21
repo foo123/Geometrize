@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Object2D Base Class
+ * ### Object2D, Base Class
  *
  * Represents a generic 2D object
  * (not used directly)

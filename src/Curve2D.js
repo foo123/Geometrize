@@ -1,5 +1,5 @@
 /**[DOC_MD]
- * ### Curve2D 2D Generic Curve Base Class (subclass of Topos2D)
+ * ### Curve2D (subclass of Topos2D)
  *
  * Represents a generic curve in 2D space
  * (not used directly)
@@ -271,9 +271,9 @@ var Curve2D = makeClass(Topos2D, {
 Geometrize.Curve2D = Curve2D;
 
 /**[DOC_MD]
- * ### Bezier2D 2D Generic Bezier Curve Base Class (subclass of Curve2D)
+ * ### Bezier2D (subclass of Curve2D)
  *
- * Represents a generic bezier curve in 2D space
+ * Represents a generic Bezier curve in 2D space
  * (not used directly)
  *
 [/DOC_MD]**/
@@ -333,7 +333,7 @@ var Bezier2D = makeClass(Curve2D, {
 Geometrize.Bezier2D = Bezier2D;
 
 /**[DOC_MD]
- * ### EllipticArc2D 2D Generic Elliptic Arc Base Class (subclass of Curve2D)
+ * ### EllipticArc2D (subclass of Curve2D)
  *
  * Represents a part of an arbitrary ellipse in 2D space
  * (not used directly)
@@ -446,7 +446,7 @@ var EllipticArc2D = makeClass(Curve2D, {
 Geometrize.EllipticArc2D = EllipticArc2D;
 
 /**[DOC_MD]
- * ### ParametricCurve 2D Generic Parametric Curve (subclass of Curve2D)
+ * ### ParametricCurve (subclass of Curve2D)
  *
  * Represents a generic parametric curve in 2D space
  * ```javascript
@@ -664,7 +664,7 @@ var MZ = /[M]/g,
     PXY = /(-?\s*\d+(?:\.\d+)?)\s+(-?\s*\d+(?:\.\d+)?)\s*$/
 ;
 /**[DOC_MD]
- * ### CompositeCurve 2D Generic Composite Curve (subclass of Curve2D)
+ * ### CompositeCurve (subclass of Curve2D)
  *
  * Represents a container of multiple, not necessarily joined curves
  * ```javascript

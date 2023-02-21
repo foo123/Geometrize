@@ -52,7 +52,7 @@ function point_on_arc(p, center, rx, ry, cs, theta, dtheta)
     var cos = cs[0], sin = cs[1],
         x0 = p.x - center.x,
         y0 = p.y - center.y,
-        x = cos*x0 + sin*y0,
+        x =  cos*x0 + sin*y0,
         y = -sin*x0 + cos*y0,
         t = cmod(stdMath.atan2(y/ry, x/rx));
     t = (t - theta)/dtheta;
@@ -215,8 +215,8 @@ function point_inside_ellipse(p, center, radiusX, radiusY, cs)
         cos = cs[0], sin = cs[1],
         dx0 = p.x - center.x,
         dy0 = p.y - center.y,
-        dx = cos*dx0 - sin*dy0,
-        dy = cos*dy0 + sin*dx0,
+        dx =  cos*dx0 + sin*dy0,
+        dy = -sin*dx0 + cos*dy0,
         d2 = dx*dx/rX2 + dy*dy/rY2
     ;
     if (is_almost_equal(d2, 1)) return 2;
@@ -284,9 +284,9 @@ function line_ellipse_intersection(p1, p2, abcdef)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
+function line_arc_intersection(p1, p2, abcdef, c, rx, ry, cs, t, d)
 {
-    if (null == abcdef) abcdef = ellipse2quadratic(c, rX, rY, cs);
+    if (null == abcdef) abcdef = ellipse2quadratic(c, rx, ry, cs);
     var p = new Array(2), pi = 0, i, n,
         x, y, x0, y0, t,
         s = solve_linear_quadratic_system(
@@ -296,7 +296,7 @@ function line_arc_intersection(p1, p2, abcdef, c, rX, rY, cs, t, d)
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2) && point_on_arc(s[i], c, rX, rY, cs, t, d))
+        if (point_on_line_segment(s[i], p1, p2) && point_on_arc(s[i], c, rx, ry, cs, t, d))
         {
             p[pi++] = s[i];
         }
@@ -388,10 +388,67 @@ function circle_circle_intersection(c1, r1, c2, r2)
     ;
     return is_strictly_equal(h, 0) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
-function ellipse_ellipse_intersection(c1, rx1, ry1, cs1, c2, rx2, ry2, cs2)
+/*function ellipse_ellipse_intersection(c1, rx1, ry1, cs1, c2, rx2, ry2, cs2)
 {
     var q1 = ellipse2quadratic(c1, rx1, ry1, cs1), q2 = ellipse2quadratic(c2, rx2, ry2, cs2);
     return solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+}*/
+function arc_arc_intersection(c1, rx1, ry1, cs1, t1, d1, c2, rx2, ry2, cs2, t2, d2)
+{
+    var q1, q2, s, p, pi, i, n;
+    q1 = ellipse2quadratic(c1, rx1, ry1, cs1);
+    q2 = ellipse2quadratic(c2, rx2, ry2, cs2);
+    s = solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+    if (!s) return false;
+    for (i=0,n=s.length,p=new Array(n),pi=0; i<n; ++i)
+    {
+        if (
+            ((null == t1 && 2 === point_inside_ellipse(s[i], c1, rx1, ry1, cs1)) || (null != t1 && point_on_arc(s[i], c1, rx1, ry1, cs1, t1, d1)))
+            && ((null == t2 && 2 === point_inside_ellipse(s[i], c2, rx2, ry2, cs2)) || (null != t2 && point_on_arc(s[i], c2, rx2, ry2, cs2, t2, d2)))
+        )
+        {
+            p[pi++] = s[i];
+        }
+    }
+    p.length = pi;
+    return p.length ? p : false;
+}
+function qbezier_arc_intersection(coeff, c, rx, ry, cs, t, d)
+{
+    var q1, q2, s, p, pi, i, n;
+    q1 = ellipse2quadratic(c, rx, ry, cs);
+    q2 = qbezier2quadratic(coeff);
+    s = solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+    if (!s) return false;
+    for (i=0,n=s.length,p=new Array(n),pi=0; i<n; ++i)
+    {
+        if (
+            ((null == t && 2 === point_inside_ellipse(s[i], c, rx, ry, cs)) || (null != t && point_on_arc(s[i], c, rx, ry, cs, t, d)))
+            && (point_on_qbezier(s[i], coeff))
+        )
+        {
+            p[pi++] = s[i];
+        }
+    }
+    p.length = pi;
+    return p.length ? p : false;
+}
+function qbezier_qbezier_intersection(coeff1, coeff2)
+{
+    var q1, q2, s, p, pi, i, n;
+    q1 = qbezier2quadratic(coeff1);
+    q2 = qbezier2quadratic(coeff2);
+    s = solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
+    if (!s) return false;
+    for (i=0,n=s.length,p=new Array(n),pi=0; i<n; ++i)
+    {
+        if (point_on_qbezier(s[i], coeff1) && point_on_qbezier(s[i], coeff2))
+        {
+            p[pi++] = s[i];
+        }
+    }
+    p.length = pi;
+    return p.length ? p : false;
 }
 function polyline_line_intersection(polyline_points, p1, p2)
 {
@@ -647,7 +704,7 @@ function solve_quartic(e, a, b, c, d)
     if (is_strictly_equal(e, 0)) return solve_cubic(a, b, c, d);
     a /= e; b /= e; c /= e; d /= e;
     // v^2 + (-2 b^3 + 9 a b c - 27 c^2 - 27 a^2 d + 72 b d)v + (b^2 - 3 a c + 12 d)^3 = 0
-    var v, v1, v2, u, ur, D1, D2, p;
+    var v, v1, v2, u, ur, D1, D2, s;
     v = solve_quadratic(1, -2*pow(b, 3) + 9*a*b*c - 27*c*c - 27*a*a*d + 72*b*d, pow(b*b - 3*a*c + 12*d, 3));
     if (!v) return false;
     // u = \frac{a^2}{4} +\frac{-2b+v_1^{1/3}+v_2^{1/3}}{3}
@@ -658,36 +715,38 @@ function solve_quartic(e, a, b, c, d)
     ur = sqrt(u);
     // x_{1,2} = -\tfrac{1}{4}a+\tfrac{1}{2}\sqrt{u}\pm\tfrac{1}{4}\sqrt{3a^2-8b-4u+\frac{-a^3+4ab-8c}{\sqrt{u}}}
     // x_{3,4} = -\tfrac{1}{4}a-\tfrac{1}{2}\sqrt{u}\pm\tfrac{1}{4}\sqrt{3a^2-8b-4u-\frac{-a^3+4ab-8c}{\sqrt{u}}}
-    D1 = 3*a*a - 8*b - 4*u + (-pow(a, 3) + 4*a*b - 8*c)/ur;
-    D2 = 3*a*a - 8*b - 4*u - (-pow(a, 3) + 4*a*b - 8*c)/ur;
-    p = [];
+    v1 = 3*a*a - 8*b - 4*u;
+    v2 = (-pow(a, 3) + 4*a*b - 8*c)/ur;
+    D1 = v1 + v2;
+    D2 = v1 - v2;
+    s = [];
     if (0 <= D1)
     {
         if (is_strictly_equal(D1, 0))
         {
-            p.push(ur/2 - a/4);
+            s.push(ur/2 - a/4);
         }
         else
         {
             D1 = sqrt(D1)/4;
-            p.push(ur/2 - a/4 + D1);
-            p.push(ur/2 - a/4 - D1);
+            s.push(ur/2 - a/4 + D1);
+            s.push(ur/2 - a/4 - D1);
         }
     }
     if (0 <= D2)
     {
         if (is_strictly_equal(D2, 0))
         {
-            p.push(-ur/2 - a/4);
+            s.push(-ur/2 - a/4);
         }
         else
         {
             D2 = sqrt(D2)/4;
-            p.push(-ur/2 - a/4 + D2);
-            p.push(-ur/2 - a/4 - D2);
+            s.push(-ur/2 - a/4 + D2);
+            s.push(-ur/2 - a/4 - D2);
         }
     }
-    return p.length ? p : false;
+    return s.length ? s : false;
 }
 function solve_linear_linear_system(a, b, c, k, l, m)
 {
@@ -719,7 +778,7 @@ function solve_linear_quadratic_system(m, n, k, a, b, c, d, e, f)
         y1 = y[0];
         x = solve_quadratic(a, c*y1+d, b*y1*y1+e*y1+f);
         if (!x) return false;
-        return 2 === x.length ? [{x:x[0],y:y1},{x:x[1],y:y1}] : [{x:x[0],y:y1}];
+        return 2 === x.length ? [{x:x[0], y:y1},{x:x[1], y:y1}] : [{x:x[0], y:y1}];
     }
     else
     {
@@ -736,26 +795,26 @@ function solve_linear_quadratic_system(m, n, k, a, b, c, d, e, f)
 function solve_quadratic_quadratic_system(a1, b1, c1, d1, e1, f1, a2, b2, c2, d2, e2, f2)
 {
     /*
-    a1 x^2 + b1 y^2 + c1 xy + d1 x + e1 y + f1 = 0
-    a2 x^2 + b2 y^2 + c2 xy + d2 x + e2 y + f2 = 0
+    a1x^2+b1y^2+c1xy+d1x+e1y+f1=0
+    a2x^2+b2y^2+c2xy+d2x+e2y+f2=0
     */
-    var q, x, y, n, p, i, j;
+    var q, x, y, n, s, i, j;
     q = quadratics2quartic(a1, b1, c1, d1, e1, f1, a2, b2, c2, d2, e2, f2);
     x = solve_quartic(q[0], q[1], q[2], q[3], q[4]);
     if (!x) return false;
-    p = new Array(8);
+    s = new Array(8);
     j = 0;
     for (i=0,n=x.length; i<n; ++i)
     {
         y = solve_quadratic(b1, c1*x[i] + e1, x[i]*(a1*x[i] + d1) + f1);
         if (y)
         {
-            p[j++] = {x:x[i], y:y[0]};
-            if (1 < y.length) p[j++] = {x:x[i], y:y[1]};
+            s[j++] = {x:x[i], y:y[0]};
+            if (1 < y.length) s[j++] = {x:x[i], y:y[1]};
         }
     }
-    p.length = j;
-    return p.length ? p : false;
+    s.length = j;
+    return s.length ? s : false;
 }
 function line2linear(p1, p2)
 {
@@ -776,7 +835,7 @@ collect(expand(e), x)
     return [
     -pow(a_1,2)*pow(b_2,2) + 2*a_1*a_2*b_1*b_2 - a_1*b_1*pow(c_2,2) + a_1*b_2*c_1*c_2 - pow(a_2,2)*pow(b_1,2) + a_2*b_1*c_1*c_2 - a_2*b_2*pow(c_1,2),
     2*a_1*b_1*b_2*d_2 - 2*a_1*b_1*c_2*e_2 - 2*a_1*pow(b_2,2)*d_1 + a_1*b_2*c_1*e_2 + a_1*b_2*c_2*e_1 - 2*a_2*pow(b_1,2)*d_2 + 2*a_2*b_1*b_2*d_1 + a_2*b_1*c_1*e_2 + a_2*b_1*c_2*e_1 - 2*a_2*b_2*c_1*e_1 + b_1*c_1*c_2*d_2 - b_1*pow(c_2,2)*d_1 - b_2*pow(c_1,2)*d_2 + b_2*c_1*c_2*d_1,
-    2*a_1*b_1*b_2*f_2 - a_1*b_1*pow(e_2,2) - 2*a_1*pow(b_2,2)*f_1 + a_1*b_2*e_1*e_2 - 2*a_2*pow(b_1,2)*f_2 + 2*a_2*b_1*b_2*f_1 + a_2*b_1*e_1*e_2 - a_2*b_2*pow(e_1,2) - pow(b_1,2)*d_2**2 + 2*b_1*b_2*d_1*d_2 + b_1*c_1*c_2*f_2 + b_1*c_1*d_2*e_2 - b_1*pow(c_2,2)*f_1 - 2*b_1*c_2*d_1*e_2 + b_1*c_2*d_2*e_1 - pow(b_2,2)*pow(d_1,2) - b_2*pow(c_1,2)*f_2 + b_2*c_1*c_2*f_1 + b_2*c_1*d_1*e_2 - 2*b_2*c_1*d_2*e_1 + b_2*c_2*d_1*e_1,
+    2*a_1*b_1*b_2*f_2 - a_1*b_1*pow(e_2,2) - 2*a_1*pow(b_2,2)*f_1 + a_1*b_2*e_1*e_2 - 2*a_2*pow(b_1,2)*f_2 + 2*a_2*b_1*b_2*f_1 + a_2*b_1*e_1*e_2 - a_2*b_2*pow(e_1,2) - pow(b_1,2)*pow(d_2,2) + 2*b_1*b_2*d_1*d_2 + b_1*c_1*c_2*f_2 + b_1*c_1*d_2*e_2 - b_1*pow(c_2,2)*f_1 - 2*b_1*c_2*d_1*e_2 + b_1*c_2*d_2*e_1 - pow(b_2,2)*pow(d_1,2) - b_2*pow(c_1,2)*f_2 + b_2*c_1*c_2*f_1 + b_2*c_1*d_1*e_2 - 2*b_2*c_1*d_2*e_1 + b_2*c_2*d_1*e_1,
     -2*pow(b_1,2)*d_2*f_2 + 2*b_1*b_2*d_1*f_2 + 2*b_1*b_2*d_2*f_1 + b_1*c_1*e_2*f_2 + b_1*c_2*e_1*f_2 - 2*b_1*c_2*e_2*f_1 - b_1*d_1*pow(e_2,2) + b_1*d_2*e_1*e_2 - 2*pow(b_2,2)*d_1*f_1 - 2*b_2*c_1*e_1*f_2 + b_2*c_1*e_2*f_1 + b_2*c_2*e_1*f_1 + b_2*d_1*e_1*e_2 - b_2*d_2*pow(e_1,2),
     -pow(b_1,2)*pow(f_2,2) + 2*b_1*b_2*f_1*f_2 + b_1*e_1*e_2*f_2 - b_1*pow(e_2,2)*f_1 - pow(b_2,2)*pow(f_1,2) - b_2*pow(e_1,2)*f_2 + b_2*e_1*e_2*f_1
     ];
