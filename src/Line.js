@@ -116,7 +116,7 @@ var Line = makeClass(Bezier2D, {
         {
             p = self._points;
             i = line_segments_intersection(p[0], p[1], other._points[0], other._points[1]);
-            return i ? [Point2D(i)] : false;
+            return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {

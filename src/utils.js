@@ -248,7 +248,7 @@ function line_segments_intersection(p1, p2, p3, p4)
         p2.y - p1.y, p1.x - p2.x, p2.x*p1.y - p1.x*p2.y,
         p4.y - p3.y, p3.x - p4.x, p4.x*p3.y - p3.x*p4.y
         );
-    return p && point_on_line_segment(p, p1, p2) && point_on_line_segment(p, p3, p4) ? p : false;
+    return p && p.length && point_on_line_segment(p[0], p1, p2) && point_on_line_segment(p[0], p3, p4) ? p : false;
 }
 function line_circle_intersection(p1, p2, abcdef)
 {
@@ -459,7 +459,7 @@ function polyline_line_intersection(polyline_points, p1, p2)
             polyline_points[j], polyline_points[j+1],
             p1, p2
         );
-        if (p) i.push(p);
+        if (p) i.push(p[0]);
     }
     return i.length ? i : false;
 }
@@ -532,7 +532,7 @@ function polyline_polyline_intersection(polyline1_points, polyline2_points)
                 polyline1_points[j], polyline1_points[j+1],
                 polyline2_points[k], polyline2_points[k+1]
             );
-            if (p) i.push(p);
+            if (p) i.push(p[0]);
         }
     }
     return i.length ? i : false;
@@ -758,7 +758,7 @@ function solve_linear_linear_system(a, b, c, k, l, m)
     */
     var D = a*l - b*k;
     // zero, infinite or one point
-    return is_strictly_equal(D, 0) ? false : {x:(b*m - c*l)/D, y:(c*k - a*m)/D};
+    return is_strictly_equal(D, 0) ? false : [{x:(b*m - c*l)/D, y:(c*k - a*m)/D}];
 }
 function solve_linear_quadratic_system(m, n, k, a, b, c, d, e, f)
 {
