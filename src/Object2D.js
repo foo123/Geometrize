@@ -30,7 +30,7 @@ var Object2D = makeClass(null, merge(null, {
 [/DOC_MD]**/
 /**[DOC_MD]
  * * `id: String` unique ID for this object
- * * `name: String` class/type name of object, eg "Object2D"
+ * * `name: String` class/type name of object, eg `"Object2D"`
 [/DOC_MD]**/
 /**[DOC_MD]
  * * `matrix: Matrix2D` the transform matrix of the object (if it applies)
@@ -163,7 +163,7 @@ var Object2D = makeClass(null, merge(null, {
         };
     },
 /**[DOC_MD]
- * * `hasPoint(point): Bool` check if given point is part of the boundary this object
+ * * `hasPoint(point): Bool` check if given point is part of the boundary of this object
 [/DOC_MD]**/
     hasPoint: function(point) {
         return false;

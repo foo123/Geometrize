@@ -4,7 +4,7 @@
 
 Computational Geometry and Rendering library for JavaScript
 
-**version: 1.0.0** (79 kB minified)
+**version: 1.0.0** (80 kB minified)
 
 
 [API Reference](/manual.md)

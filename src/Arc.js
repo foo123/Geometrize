@@ -382,17 +382,17 @@ var Arc = makeClass(EllipticArc2D, {
         }
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
-            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.radius, other.radius, [1, 0], null, null);
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, self.largeArc, self.sweep, other.center, other.radius, other.radius, [1, 0], null);
             return i ? i.map(Point2D) : false
         }
         else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
-            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.radiusX, other.radiusY, other.cs, null, null);
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, self.largeArc, self.sweep, other.center, other.radiusX, other.radiusY, other.cs, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Arc)
         {
-            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, self.largeArc, self.sweep, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta, other.largeArc, other.sweep);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Object2D)

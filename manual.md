@@ -45,7 +45,7 @@ Represents a generic 2D object
 
 
 * `id: String` unique ID for this object
-* `name: String` class/type name of object, eg "Object2D"
+* `name: String` class/type name of object, eg `"Object2D"`
 
 
 
@@ -91,7 +91,7 @@ Represents a generic 2D object
 
 
 
-* `hasPoint(point): Bool` check if given point is part of the boundary this object
+* `hasPoint(point): Bool` check if given point is part of the boundary of this object
 
 
 
@@ -386,3 +386,90 @@ scene.toSVG(); // render and return scene as SVG string
 scene.toCanvas(); // render and return scene as Canvas
 scene.toIMG(); // render and return scene as base64 encoded PNG image
 ```
+
+
+
+### Utilities
+
+
+
+
+### Geometry
+
+Geometry utilities:
+
+
+
+* `linearBezierCurve(t: Number, points: Object{x,y}[]): Object{x,y}` get point on linear Bezier curve at `t, 0 <= t <= 1` given its control points
+
+
+
+* `quadraticBezierCurve(t: Number, points: Object{x,y}[]): Object{x,y}` get point on quadratic Bezier curve at `t, 0 <= t <= 1` given its control points
+
+
+
+* `cubicBezierCurve(t: Number, points: Object{x,y}[]): Object{x,y}` get point on cubic Bezier curve at `t, 0 <= t <= 1` given its control points
+
+
+
+* `ellipticArcCurve(t: Number, cx: Number=0, cy: Number=0, rx: Number=1, ry: Number=rx, angle: Number=0): Object{x,y}` get point on elliptic arc curve at `t, 0 <= t <= 1` given its center, radii and angle of rotation
+
+
+
+* `computeConvexHull(points: Object{x,y}[]): Point2D[]` compute convex hull of points
+
+
+
+### Math
+
+Math utilities:
+
+
+
+* `deg(x)` radians to degrees
+
+
+
+* `rad(x)` degrees to radians
+
+
+
+* `hypot(x, y)` hypotenuse
+
+
+
+* `solveLinear(a, b)` solve linear equation
+`ax+b=0`
+
+
+
+* `solveQuadratic(a, b, c)` solve quadratic equation
+`ax^2+bx+c=0`
+
+
+
+* `solveCubic(a, b, c, d)` solve cubic equation
+`ax^3+bx^2+cx+d=0`
+
+
+
+* `solveQuartic(a, b, c, d, e)` solve quartic equation
+`ax^4+bx^3+cx^2+dx+e=0`
+
+
+
+* `solveLinearLinear(a, b, c, d, e, f)` solve system of 2 linear equations in 2 unknowns
+`ax+by+c=0`
+`dx+ey+f=0`
+
+
+
+* `solveLinearQuadratic(n, m, k, a, b, c, d, e, f)` solve system of a linear and a quadratic equation in 2 unknowns
+`nx+my+k=0`
+`ax^2+by^2+cxy+dx+ey+f=0`
+
+
+
+* `solveQuadraticQuadratic(a1, b1, c1, d1, e1, f1, a2, b2, c2, d2, e2, f2)` solve system of 2 quadratic equations in 2 unknowns
+`a1x^2+b1y^2+c1xy+d1x+e1y+f1=0`
+`a2x^2+b2y^2+c2xy+d2x+e2y+f2=0`

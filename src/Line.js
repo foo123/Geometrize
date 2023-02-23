@@ -133,7 +133,7 @@ var Line = makeClass(Bezier2D, {
         else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             p = self._points;
-            i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta, other.largeArc, other.sweep);
             return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))

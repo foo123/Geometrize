@@ -239,13 +239,13 @@ var Ellipse = makeClass(EllipticArc2D, {
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             //i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, other.center, other.radius, other.radius, [1, 0], null, null);
+            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, null, null, other.center, other.radius, other.radius, [1, 0], null, null, null, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Ellipse)
         {
             //i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, other.center, other.radiusX, other.radiusY, other.cs, null, null);
+            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, null, null, other.center, other.radiusX, other.radiusY, other.cs, null, null, null, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Object2D)

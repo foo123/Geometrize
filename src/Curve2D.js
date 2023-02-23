@@ -404,7 +404,7 @@ var EllipticArc2D = makeClass(Curve2D, {
         var self = this, ret = false;
         if (Geometrize.Arc && (self instanceof Geometrize.Arc))
         {
-            ret = point_on_arc(point, self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta);
+            ret = point_on_arc(point, self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, self.largeArc, self.sweep);
         }
         else if (Geometrize.Ellipse && (self instanceof Geometrize.Ellipse))
         {

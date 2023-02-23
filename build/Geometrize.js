@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.0 (2023-02-22 18:36:19)
+*   @version 1.0.0 (2023-02-23 11:55:45)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.0 (2023-02-22 18:36:19)
+*   @version 1.0.0 (2023-02-23 11:55:45)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -630,7 +630,7 @@ var Object2D = makeClass(null, merge(null, {
 [/DOC_MD]**/
 /**[DOC_MD]
  * * `id: String` unique ID for this object
- * * `name: String` class/type name of object, eg "Object2D"
+ * * `name: String` class/type name of object, eg `"Object2D"`
 [/DOC_MD]**/
 /**[DOC_MD]
  * * `matrix: Matrix2D` the transform matrix of the object (if it applies)
@@ -763,7 +763,7 @@ var Object2D = makeClass(null, merge(null, {
         };
     },
 /**[DOC_MD]
- * * `hasPoint(point): Bool` check if given point is part of the boundary this object
+ * * `hasPoint(point): Bool` check if given point is part of the boundary of this object
 [/DOC_MD]**/
     hasPoint: function(point) {
         return false;
@@ -1614,7 +1614,7 @@ var EllipticArc2D = makeClass(Curve2D, {
         var self = this, ret = false;
         if (Geometrize.Arc && (self instanceof Geometrize.Arc))
         {
-            ret = point_on_arc(point, self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta);
+            ret = point_on_arc(point, self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, self.largeArc, self.sweep);
         }
         else if (Geometrize.Ellipse && (self instanceof Geometrize.Ellipse))
         {
@@ -2413,7 +2413,7 @@ var Line = makeClass(Bezier2D, {
         else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             p = self._points;
-            i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = line_arc_intersection(p[0], p[1], null, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta, other.largeArc, other.sweep);
             return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.QBezier && (other instanceof Geometrize.QBezier))
@@ -2598,19 +2598,19 @@ var QBezier = makeClass(Bezier2D, {
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             //i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            i = qbezier_arc_intersection(self._points, other.center, other.radius, other.radius, [1, 0], null, null);
+            i = qbezier_arc_intersection(self._points, other.center, other.radius, other.radius, [1, 0], null);
             return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
             //i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            i = qbezier_arc_intersection(self._points, other.center, other.radiusX, other.radiusY, other.cs, null, null);
+            i = qbezier_arc_intersection(self._points, other.center, other.radiusX, other.radiusY, other.cs, null);
             return i ? i.map(Point2D) : false;
         }
         else if (Geometrize.Arc && (other instanceof Geometrize.Arc))
         {
             //i = polyline_arc_intersection(self._lines, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
-            i = qbezier_arc_intersection(self._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = qbezier_arc_intersection(self._points, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta, other.largeArc, other.sweep);
             return i ? i.map(Point2D) : false;
         }
         else if (other instanceof QBezier)
@@ -3800,17 +3800,17 @@ var Arc = makeClass(EllipticArc2D, {
         }
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
-            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.radius, other.radius, [1, 0], null, null);
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, self.largeArc, self.sweep, other.center, other.radius, other.radius, [1, 0], null);
             return i ? i.map(Point2D) : false
         }
         else if (Geometrize.Ellipse && (other instanceof Geometrize.Ellipse))
         {
-            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.radiusX, other.radiusY, other.cs, null, null);
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, self.largeArc, self.sweep, other.center, other.radiusX, other.radiusY, other.cs, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Arc)
         {
-            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta);
+            i = arc_arc_intersection(self.center, self.rX, self.rY, self.cs, self.theta, self.dtheta, self.largeArc, self.sweep, other.center, other.rX, other.rY, other.cs, other.theta, other.dtheta, other.largeArc, other.sweep);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Object2D)
@@ -4339,13 +4339,13 @@ var Ellipse = makeClass(EllipticArc2D, {
         else if (Geometrize.Circle && (other instanceof Geometrize.Circle))
         {
             //i = polyline_circle_intersection(self._lines, other.center, other.radius);
-            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, other.center, other.radius, other.radius, [1, 0], null, null);
+            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, null, null, other.center, other.radius, other.radius, [1, 0], null, null, null, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Ellipse)
         {
             //i = polyline_ellipse_intersection(self._lines, other.center, other.radiusX, other.radiusY, other.cs);
-            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, other.center, other.radiusX, other.radiusY, other.cs, null, null);
+            i = arc_arc_intersection(self.center, self.radiusX, self.radiusY, self.cs, null, null, null, null, other.center, other.radiusX, other.radiusY, other.cs, null, null, null, null);
             return i ? i.map(Point2D) : false
         }
         else if (other instanceof Object2D)
@@ -4965,7 +4965,7 @@ function point_on_line_segment(p, p1, p2)
     }
     return false;
 }
-function point_on_arc(p, center, rx, ry, cs, theta, dtheta)
+function point_on_arc(p, center, rx, ry, cs, theta, dtheta, fa, fs)
 {
     var cos = cs[0], sin = cs[1],
         x0 = p.x - center.x,
@@ -4973,7 +4973,14 @@ function point_on_arc(p, center, rx, ry, cs, theta, dtheta)
         x =  cos*x0 + sin*y0,
         y = -sin*x0 + cos*y0,
         t = cmod(stdMath.atan2(y/ry, x/rx));
-    t = (t - theta)/dtheta;
+    if (fa)
+    {
+        t = 1 - (cmod(theta + dtheta) - t)/dtheta;
+    }
+    else
+    {
+        t = (t - theta)/dtheta;
+    }
     return (t >= 0) && (t <= 1);
 }
 function point_on_qbezier(p, c)
@@ -5202,7 +5209,7 @@ function line_ellipse_intersection(p1, p2, abcdef)
     p.length = pi;
     return p.length ? p : false;
 }
-function line_arc_intersection(p1, p2, abcdef, c, rx, ry, cs, t, d)
+function line_arc_intersection(p1, p2, abcdef, c, rx, ry, cs, t, d, fa, fs)
 {
     if (null == abcdef) abcdef = ellipse2quadratic(c, rx, ry, cs);
     var p = new Array(2), pi = 0, i, n,
@@ -5214,7 +5221,7 @@ function line_arc_intersection(p1, p2, abcdef, c, rx, ry, cs, t, d)
     if (!s) return false;
     for (i=0,n=s.length; i<n; ++i)
     {
-        if (point_on_line_segment(s[i], p1, p2) && point_on_arc(s[i], c, rx, ry, cs, t, d))
+        if (point_on_line_segment(s[i], p1, p2) && point_on_arc(s[i], c, rx, ry, cs, t, d, fa, fs))
         {
             p[pi++] = s[i];
         }
@@ -5306,12 +5313,7 @@ function circle_circle_intersection(c1, r1, c2, r2)
     ;
     return is_strictly_equal(h, 0) ? [{x:px, y:py}] : [{x:px + h*dy, y:py - h*dx}, {x:px - h*dy, y:py + h*dx}];
 }
-/*function ellipse_ellipse_intersection(c1, rx1, ry1, cs1, c2, rx2, ry2, cs2)
-{
-    var q1 = ellipse2quadratic(c1, rx1, ry1, cs1), q2 = ellipse2quadratic(c2, rx2, ry2, cs2);
-    return solve_quadratic_quadratic_system(q1[0], q1[1], q1[2], q1[3], q1[4], q1[5], q2[0], q2[1], q2[2], q2[3], q2[4], q2[5]);
-}*/
-function arc_arc_intersection(c1, rx1, ry1, cs1, t1, d1, c2, rx2, ry2, cs2, t2, d2)
+function arc_arc_intersection(c1, rx1, ry1, cs1, t1, d1, fa1, fs1, c2, rx2, ry2, cs2, t2, d2, fa2, fs2)
 {
     var q1, q2, s, p, pi, i, n;
     q1 = ellipse2quadratic(c1, rx1, ry1, cs1);
@@ -5321,8 +5323,8 @@ function arc_arc_intersection(c1, rx1, ry1, cs1, t1, d1, c2, rx2, ry2, cs2, t2, 
     for (i=0,n=s.length,p=new Array(n),pi=0; i<n; ++i)
     {
         if (
-            ((null == t1 && 2 === point_inside_ellipse(s[i], c1, rx1, ry1, cs1)) || (null != t1 && point_on_arc(s[i], c1, rx1, ry1, cs1, t1, d1)))
-            && ((null == t2 && 2 === point_inside_ellipse(s[i], c2, rx2, ry2, cs2)) || (null != t2 && point_on_arc(s[i], c2, rx2, ry2, cs2, t2, d2)))
+            ((null == t1 && 2 === point_inside_ellipse(s[i], c1, rx1, ry1, cs1)) || (null != t1 && point_on_arc(s[i], c1, rx1, ry1, cs1, t1, d1, fa1, fs1)))
+            && ((null == t2 && 2 === point_inside_ellipse(s[i], c2, rx2, ry2, cs2)) || (null != t2 && point_on_arc(s[i], c2, rx2, ry2, cs2, t2, d2, fa2, fs2)))
         )
         {
             p[pi++] = s[i];
@@ -5331,7 +5333,7 @@ function arc_arc_intersection(c1, rx1, ry1, cs1, t1, d1, c2, rx2, ry2, cs2, t2, 
     p.length = pi;
     return p.length ? p : false;
 }
-function qbezier_arc_intersection(coeff, c, rx, ry, cs, t, d)
+function qbezier_arc_intersection(coeff, c, rx, ry, cs, t, d, fa, fs)
 {
     var q1, q2, s, p, pi, i, n;
     q1 = ellipse2quadratic(c, rx, ry, cs);
@@ -5341,7 +5343,7 @@ function qbezier_arc_intersection(coeff, c, rx, ry, cs, t, d)
     for (i=0,n=s.length,p=new Array(n),pi=0; i<n; ++i)
     {
         if (
-            ((null == t && 2 === point_inside_ellipse(s[i], c, rx, ry, cs)) || (null != t && point_on_arc(s[i], c, rx, ry, cs, t, d)))
+            ((null == t && 2 === point_inside_ellipse(s[i], c, rx, ry, cs)) || (null != t && point_on_arc(s[i], c, rx, ry, cs, t, d, fa, fs)))
             && (point_on_qbezier(s[i], coeff))
         )
         {
@@ -6620,21 +6622,100 @@ function is_function(x)
     return "function" === typeof x;
 }
 
-Geometrize.Math.deg = deg;
-Geometrize.Math.rad = rad;
-Geometrize.Math.hypot = hypot;
-Geometrize.Math.solveLinear = solve_linear;
-Geometrize.Math.solveQuadratic = solve_quadratic;
-Geometrize.Math.solveCubic = solve_cubic;
-Geometrize.Math.solveLinearLinear = solve_linear_linear_system;
-Geometrize.Math.solveLinearQuadratic = solve_linear_quadratic_system;
+/**[DOC_MD]
+ * ### Utilities
+ *
+[/DOC_MD]**/
+
+/**[DOC_MD]
+ * ### Geometry
+ *
+ * Geometry utilities:
+[/DOC_MD]**/
+/**[DOC_MD]
+ * * `linearBezierCurve(t: Number, points: Object{x,y}[]): Object{x,y}` get point on linear Bezier curve at `t, 0 <= t <= 1` given its control points
+[/DOC_MD]**/
 Geometrize.Geometry.linearBezierCurve = bezier1;
+/**[DOC_MD]
+ * * `quadraticBezierCurve(t: Number, points: Object{x,y}[]): Object{x,y}` get point on quadratic Bezier curve at `t, 0 <= t <= 1` given its control points
+[/DOC_MD]**/
 Geometrize.Geometry.quadraticBezierCurve = bezier2;
+/**[DOC_MD]
+ * * `cubicBezierCurve(t: Number, points: Object{x,y}[]): Object{x,y}` get point on cubic Bezier curve at `t, 0 <= t <= 1` given its control points
+[/DOC_MD]**/
 Geometrize.Geometry.cubicBezierCurve = bezier3;
-Geometrize.Geometry.ellipticArcCurve = arc;
-Geometrize.Geometry.computeConvexHull = function(points) {
-    return convex_hull(points).map(Point);
+/**[DOC_MD]
+ * * `ellipticArcCurve(t: Number, cx: Number=0, cy: Number=0, rx: Number=1, ry: Number=rx, angle: Number=0): Object{x,y}` get point on elliptic arc curve at `t, 0 <= t <= 1` given its center, radii and angle of rotation
+[/DOC_MD]**/
+Geometrize.Geometry.ellipticArcCurve = function(t, cx, cy, rx, ry, angle) {
+    angle = angle || 0;
+    if (null == rx) rx = 1;
+    if (null == ry) ry = rx;
+    cy = cy || 0;
+    cx = cx || 0;
+    return arc(t, cx, cy, rx, ry, stdMath.cos(angle), stdMath.sin(angle));
 };
+/**[DOC_MD]
+ * * `computeConvexHull(points: Object{x,y}[]): Point2D[]` compute convex hull of points
+[/DOC_MD]**/
+Geometrize.Geometry.computeConvexHull = function(points) {
+    return convex_hull(points).map(Point2D);
+};
+/**[DOC_MD]
+ * ### Math
+ *
+ * Math utilities:
+[/DOC_MD]**/
+/**[DOC_MD]
+ * * `deg(x)` radians to degrees
+[/DOC_MD]**/
+Geometrize.Math.deg = deg;
+/**[DOC_MD]
+ * * `rad(x)` degrees to radians
+[/DOC_MD]**/
+Geometrize.Math.rad = rad;
+/**[DOC_MD]
+ * * `hypot(x, y)` hypotenuse
+[/DOC_MD]**/
+Geometrize.Math.hypot = hypot;
+/**[DOC_MD]
+ * * `solveLinear(a, b)` solve linear equation
+ * `ax+b=0`
+[/DOC_MD]**/
+Geometrize.Math.solveLinear = solve_linear;
+/**[DOC_MD]
+ * * `solveQuadratic(a, b, c)` solve quadratic equation
+ * `ax^2+bx+c=0`
+[/DOC_MD]**/
+Geometrize.Math.solveQuadratic = solve_quadratic;
+/**[DOC_MD]
+ * * `solveCubic(a, b, c, d)` solve cubic equation
+ * `ax^3+bx^2+cx+d=0`
+[/DOC_MD]**/
+Geometrize.Math.solveCubic = solve_cubic;
+/**[DOC_MD]
+ * * `solveQuartic(a, b, c, d, e)` solve quartic equation
+ * `ax^4+bx^3+cx^2+dx+e=0`
+[/DOC_MD]**/
+Geometrize.Math.solveQuartic = solve_quartic;
+/**[DOC_MD]
+ * * `solveLinearLinear(a, b, c, d, e, f)` solve system of 2 linear equations in 2 unknowns
+ * `ax+by+c=0`
+ * `dx+ey+f=0`
+[/DOC_MD]**/
+Geometrize.Math.solveLinearLinear = solve_linear_linear_system;
+/**[DOC_MD]
+ * * `solveLinearQuadratic(n, m, k, a, b, c, d, e, f)` solve system of a linear and a quadratic equation in 2 unknowns
+ * `nx+my+k=0`
+ * `ax^2+by^2+cxy+dx+ey+f=0`
+[/DOC_MD]**/
+Geometrize.Math.solveLinearQuadratic = solve_linear_quadratic_system;
+/**[DOC_MD]
+ * * `solveQuadraticQuadratic(a1, b1, c1, d1, e1, f1, a2, b2, c2, d2, e2, f2)` solve system of 2 quadratic equations in 2 unknowns
+ * `a1x^2+b1y^2+c1xy+d1x+e1y+f1=0`
+ * `a2x^2+b2y^2+c2xy+d2x+e2y+f2=0`
+[/DOC_MD]**/
+Geometrize.Math.solveQuadraticQuadratic = solve_quadratic_quadratic_system;
 // export it
 return Geometrize;
 });
