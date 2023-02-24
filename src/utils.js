@@ -31,6 +31,14 @@ function point_line_segment_distance(p0, p1, p2)
     t = stdMath.max(0, stdMath.min(1, ((x - x1)*dx + (y - y1)*dy) / d));
     return hypot(x - x1 - t*dx, y - y1 - t*dy);
 }
+function lines_parallel(p1, p2, q1, q2)
+{
+    return is_almost_equal((p2.y - p1.y)*(q2.x - q1.x), (q2.y - q1.y)*(p2.x - p1.x));
+}
+function lines_perpendicular(p1, p2, q1, q2)
+{
+    return is_almost_equal((p2.y - p1.y)*(q2.y - q1.y), -(p2.x - p1.x)*(q2.x - q1.x));
+}
 function point_on_line_segment(p, p1, p2)
 {
     var t = 0,
@@ -559,6 +567,29 @@ function polyline_area(polyline_points)
         area += crossp(p1.x, p1.y, p2.x, p2.y)/2;
     }
     return area;
+}
+function plane_plane_intersection(a, b, c, d, k, l, m, n)
+{
+    var D = a*l - b*k;
+    // none, line or single point
+    if (is_strictly_equal(D, 0)) return false; // none
+    // one or two points (a line)
+    // x:(b*(m*t + n) - l*(c*t+d))/D, y:(k*(c*t+d) - a*(m*t + n))/D, z:t
+    return [
+    {x:(b*n - l*d)/D, y:(k*d - a*n)/D, z:0},
+    {x:(b*(m+n) - l*(c+d))/D, y:(k*(c+d) - a*(m+n))/D, z:1}
+    ];
+}
+function normal_to_plane(a, b, c, d)
+{
+    return {x:a, y:b, z:c};
+}
+function normal_to_points(p1, p2, p3)
+{
+    return crossp3(
+        p2.x - p1.x, p2.y - p1.y, p2.z - p1.z,
+        p3.x - p1.x, p3.y - p1.y, p3.z - p1.z
+    );
 }
 function convex_hull(points)
 {

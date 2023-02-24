@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.0 (2023-02-23 11:55:45)
+*   @version 1.0.0 (2023-02-24 15:46:51)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.0 (2023-02-23 11:55:45)
+*   @version 1.0.0 (2023-02-24 15:46:51)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -915,6 +915,10 @@ var Point2D = makeClass(Object2D, {
             self.$super('dispose');
         };
     },
+/**[DOC_MD]
+ * **Methods:**
+ *
+[/DOC_MD]**/
     name: 'Point2D',
     clone: function() {
         return new Point2D(this.x, this.y);
@@ -931,6 +935,9 @@ var Point2D = makeClass(Object2D, {
         xmax: self.x
         };
     },
+/**[DOC_MD]
+ * * `eq(point: Point2D|Object{x,y}|[x,y]): Bool` determine if equals another point-like
+[/DOC_MD]**/
     eq: function(other) {
         var self = this;
         if (other instanceof Point2D)
@@ -947,26 +954,48 @@ var Point2D = makeClass(Object2D, {
         }
         return false;
     },
+/**[DOC_MD]
+ * * `add(other: Point2D): Point2D` add points coordinate-wise
+ * * `add(other: Number): Point2D` add number to point coordinates
+[/DOC_MD]**/
     add: function(other) {
         var self = this;
         return other instanceof Point2D ? new Point2D(self.x+other.x, self.y+other.y) : new Point2D(self.x+Num(other), self.y+Num(other));
     },
+/**[DOC_MD]
+ * * `mul(other: Number): Point2D` multiply number to point coordinates
+[/DOC_MD]**/
     mul: function(other) {
         other = Num(other);
         return new Point2D(this.x*other, this.y*other);
     },
+/**[DOC_MD]
+ * * `dot(other: Point2D): Number` dot product of points
+[/DOC_MD]**/
     dot: function(other) {
         return dotp(this.x, this.y, other.x, other.y);
     },
+/**[DOC_MD]
+ * * `cross(other: Point2D): Number` cross product of points
+[/DOC_MD]**/
     cross: function(other) {
         return crossp(this.x, this.y, other.x, other.y);
     },
+/**[DOC_MD]
+ * * `angle(other: Point2D): Number` angle between points
+[/DOC_MD]**/
     angle: function(other) {
         return angle(this.x, this.y, other.x, other.y);
     },
+/**[DOC_MD]
+ * * `between(p1: Point2D, p1: Point2D): Bool` check if point is on line segment defined by points p1,p2
+[/DOC_MD]**/
     between: function(p1, p2) {
         return point_on_line_segment(this, p1, p2);
     },
+/**[DOC_MD]
+ * * `distanceToLine(p1: Point2D, p1: Point2D): Number` distance of point to line defined by points p1,p2
+[/DOC_MD]**/
     distanceToLine: function(p1, p2) {
         return point_line_distance(this, p1, p2);
     },
@@ -2368,6 +2397,10 @@ var Line = makeClass(Bezier2D, {
             return self.$super('isChanged', arguments);
         };
     },
+/**[DOC_MD]
+ * **Methods:**
+ *
+[/DOC_MD]**/
     name: 'Line',
     clone: function() {
         var self = this;
@@ -2434,8 +2467,27 @@ var Line = makeClass(Bezier2D, {
         }
         return false;
     },
-    distanceToPoint: function(point) {
-        return point_line_segment_distance(point, this._points[0], this._points[1]);
+/**[DOC_MD]
+ * * `distanceToPoint(p: Point2D): Number` distance of point to this line segment
+[/DOC_MD]**/
+    distanceToPoint: function(p) {
+        return point_line_segment_distance(p, this._points[0], this._points[1]);
+    },
+/**[DOC_MD]
+ * * `isParallelTo(l: Line): Bool` determine if line is parallel to line l
+ * * `isParallelTo(p: Point2D, q: Point2D): Bool` determine if line is parallel to line defined by points p,q
+[/DOC_MD]**/
+    isParallelTo: function(p, q) {
+        var _p = this._points;
+        return p instanceof Line ? lines_parallel(_p[0], _p[1], p._points[0], p._points[1]) : lines_parallel(_p[0], _p[1], p, q);
+    },
+/**[DOC_MD]
+ * * `isPerpendicularTo(l: Line): Bool` determine if line is perpendicular to line l
+ * * `isPerpendicularTo(p: Point2D, q: Point2D): Bool` determine if line is perpendicular to line defined by points p,q
+[/DOC_MD]**/
+    isPerpendicularTo: function(p, q) {
+        var _p = this._points;
+        return p instanceof Line ? lines_perpendicular(_p[0], _p[1], p._points[0], p._points[1]) : lines_perpendicular(_p[0], _p[1], p, q);
     },
     bezierPoints: function(t) {
         if (arguments.length) t = clamp(t, 0, 1);
@@ -4949,6 +5001,14 @@ function point_line_segment_distance(p0, p1, p2)
     t = stdMath.max(0, stdMath.min(1, ((x - x1)*dx + (y - y1)*dy) / d));
     return hypot(x - x1 - t*dx, y - y1 - t*dy);
 }
+function lines_parallel(p1, p2, q1, q2)
+{
+    return is_almost_equal((p2.y - p1.y)*(q2.x - q1.x), (q2.y - q1.y)*(p2.x - p1.x));
+}
+function lines_perpendicular(p1, p2, q1, q2)
+{
+    return is_almost_equal((p2.y - p1.y)*(q2.y - q1.y), -(p2.x - p1.x)*(q2.x - q1.x));
+}
 function point_on_line_segment(p, p1, p2)
 {
     var t = 0,
@@ -5477,6 +5537,29 @@ function polyline_area(polyline_points)
         area += crossp(p1.x, p1.y, p2.x, p2.y)/2;
     }
     return area;
+}
+function plane_plane_intersection(a, b, c, d, k, l, m, n)
+{
+    var D = a*l - b*k;
+    // none, line or single point
+    if (is_strictly_equal(D, 0)) return false; // none
+    // one or two points (a line)
+    // x:(b*(m*t + n) - l*(c*t+d))/D, y:(k*(c*t+d) - a*(m*t + n))/D, z:t
+    return [
+    {x:(b*n - l*d)/D, y:(k*d - a*n)/D, z:0},
+    {x:(b*(m+n) - l*(c+d))/D, y:(k*(c+d) - a*(m+n))/D, z:1}
+    ];
+}
+function normal_to_plane(a, b, c, d)
+{
+    return {x:a, y:b, z:c};
+}
+function normal_to_points(p1, p2, p3)
+{
+    return crossp3(
+        p2.x - p1.x, p2.y - p1.y, p2.z - p1.z,
+        p3.x - p1.x, p3.y - p1.y, p3.z - p1.z
+    );
 }
 function convex_hull(points)
 {

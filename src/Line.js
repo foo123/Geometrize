@@ -88,6 +88,10 @@ var Line = makeClass(Bezier2D, {
             return self.$super('isChanged', arguments);
         };
     },
+/**[DOC_MD]
+ * **Methods:**
+ *
+[/DOC_MD]**/
     name: 'Line',
     clone: function() {
         var self = this;
@@ -154,8 +158,27 @@ var Line = makeClass(Bezier2D, {
         }
         return false;
     },
-    distanceToPoint: function(point) {
-        return point_line_segment_distance(point, this._points[0], this._points[1]);
+/**[DOC_MD]
+ * * `distanceToPoint(p: Point2D): Number` distance of point to this line segment
+[/DOC_MD]**/
+    distanceToPoint: function(p) {
+        return point_line_segment_distance(p, this._points[0], this._points[1]);
+    },
+/**[DOC_MD]
+ * * `isParallelTo(l: Line): Bool` determine if line is parallel to line l
+ * * `isParallelTo(p: Point2D, q: Point2D): Bool` determine if line is parallel to line defined by points p,q
+[/DOC_MD]**/
+    isParallelTo: function(p, q) {
+        var _p = this._points;
+        return p instanceof Line ? lines_parallel(_p[0], _p[1], p._points[0], p._points[1]) : lines_parallel(_p[0], _p[1], p, q);
+    },
+/**[DOC_MD]
+ * * `isPerpendicularTo(l: Line): Bool` determine if line is perpendicular to line l
+ * * `isPerpendicularTo(p: Point2D, q: Point2D): Bool` determine if line is perpendicular to line defined by points p,q
+[/DOC_MD]**/
+    isPerpendicularTo: function(p, q) {
+        var _p = this._points;
+        return p instanceof Line ? lines_perpendicular(_p[0], _p[1], p._points[0], p._points[1]) : lines_perpendicular(_p[0], _p[1], p, q);
     },
     bezierPoints: function(t) {
         if (arguments.length) t = clamp(t, 0, 1);

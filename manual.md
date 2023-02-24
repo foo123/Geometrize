@@ -139,6 +139,44 @@ p.y = 5; // change it
 
 
 
+**Methods:**
+
+
+
+
+* `eq(point: Point2D|Object{x,y}|[x,y]): Bool` determine if equals another point-like
+
+
+
+* `add(other: Point2D): Point2D` add points coordinate-wise
+* `add(other: Number): Point2D` add number to point coordinates
+
+
+
+* `mul(other: Number): Point2D` multiply number to point coordinates
+
+
+
+* `dot(other: Point2D): Number` dot product of points
+
+
+
+* `cross(other: Point2D): Number` cross product of points
+
+
+
+* `angle(other: Point2D): Number` angle between points
+
+
+
+* `between(p1: Point2D, p1: Point2D): Bool` check if point is on line segment defined by points p1,p2
+
+
+
+* `distanceToLine(p1: Point2D, p1: Point2D): Number` distance of point to line defined by points p1,p2
+
+
+
 ### Topos2D (subclass of Object2D)
 
 Represents a geometric topos, ie a set of points
@@ -268,6 +306,25 @@ const line = Line(start, end);
 line.start.x += 10; // change it
 line.end.y = 20; // change it
 ```
+
+
+
+**Methods:**
+
+
+
+
+* `distanceToPoint(p: Point2D): Number` distance of point to this line segment
+
+
+
+* `isParallelTo(l: Line): Bool` determine if line is parallel to line l
+* `isParallelTo(p: Point2D, q: Point2D): Bool` determine if line is parallel to line defined by points p,q
+
+
+
+* `isPerpendicularTo(l: Line): Bool` determine if line is perpendicular to line l
+* `isPerpendicularTo(p: Point2D, q: Point2D): Bool` determine if line is perpendicular to line defined by points p,q
 
 
 

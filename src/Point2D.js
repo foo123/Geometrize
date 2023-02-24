@@ -94,6 +94,10 @@ var Point2D = makeClass(Object2D, {
             self.$super('dispose');
         };
     },
+/**[DOC_MD]
+ * **Methods:**
+ *
+[/DOC_MD]**/
     name: 'Point2D',
     clone: function() {
         return new Point2D(this.x, this.y);
@@ -110,6 +114,9 @@ var Point2D = makeClass(Object2D, {
         xmax: self.x
         };
     },
+/**[DOC_MD]
+ * * `eq(point: Point2D|Object{x,y}|[x,y]): Bool` determine if equals another point-like
+[/DOC_MD]**/
     eq: function(other) {
         var self = this;
         if (other instanceof Point2D)
@@ -126,26 +133,48 @@ var Point2D = makeClass(Object2D, {
         }
         return false;
     },
+/**[DOC_MD]
+ * * `add(other: Point2D): Point2D` add points coordinate-wise
+ * * `add(other: Number): Point2D` add number to point coordinates
+[/DOC_MD]**/
     add: function(other) {
         var self = this;
         return other instanceof Point2D ? new Point2D(self.x+other.x, self.y+other.y) : new Point2D(self.x+Num(other), self.y+Num(other));
     },
+/**[DOC_MD]
+ * * `mul(other: Number): Point2D` multiply number to point coordinates
+[/DOC_MD]**/
     mul: function(other) {
         other = Num(other);
         return new Point2D(this.x*other, this.y*other);
     },
+/**[DOC_MD]
+ * * `dot(other: Point2D): Number` dot product of points
+[/DOC_MD]**/
     dot: function(other) {
         return dotp(this.x, this.y, other.x, other.y);
     },
+/**[DOC_MD]
+ * * `cross(other: Point2D): Number` cross product of points
+[/DOC_MD]**/
     cross: function(other) {
         return crossp(this.x, this.y, other.x, other.y);
     },
+/**[DOC_MD]
+ * * `angle(other: Point2D): Number` angle between points
+[/DOC_MD]**/
     angle: function(other) {
         return angle(this.x, this.y, other.x, other.y);
     },
+/**[DOC_MD]
+ * * `between(p1: Point2D, p1: Point2D): Bool` check if point is on line segment defined by points p1,p2
+[/DOC_MD]**/
     between: function(p1, p2) {
         return point_on_line_segment(this, p1, p2);
     },
+/**[DOC_MD]
+ * * `distanceToLine(p1: Point2D, p1: Point2D): Number` distance of point to line defined by points p1,p2
+[/DOC_MD]**/
     distanceToLine: function(p1, p2) {
         return point_line_distance(this, p1, p2);
     },
