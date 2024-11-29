@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.0 (2023-02-24 15:46:51)
+*   @version 1.0.1 (2024-11-29 17:00:43)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.0 (2023-02-24 15:46:51)
+*   @version 1.0.1 (2024-11-29 17:00:43)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "1.0.0", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "1.0.1", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -2847,6 +2847,44 @@ var CBezier = makeClass(Bezier2D, {
         {
             return other.intersects(self);
         }
+        return false;
+    },
+    intersectsSelf: function() {
+        var p = this._points,
+            x0 = p[0].x, y0 = p[0].y,
+            x1 = p[1].x, y1 = p[1].y,
+            x2 = p[2].x, y2 = p[2].y,
+            x3 = p[3].x, y3 = p[3].y,
+            vxx, vxy, vyx, vyy,
+            vzx, vzy, x, y,
+            s, t, rs, rp;
+
+        vxx = x2 - x1;
+        vxy = y2 - y1;
+        vyx = x1 - x0;
+        vyy = y1 - y0;
+        vzx = x3 - x0;
+        vzy = y3 - y0;
+        s = solve_linear_linear_system(vxx, vyx, -vzx, vxy, vyy, -vzy);
+        if (!s)
+        {
+            return false;
+        }
+        x = s[0].x; y = s[0].y;
+        if (
+        (x > 1) ||
+        (4 * y > (x + 1) * (3 - x)) ||
+        (x > 0 && 2 * y + x < sqrt(3 * x * (4 - x))) ||
+        (3 * y < x * (3 - x))
+        )
+        {
+            return false;
+        }
+        rs = (x - 3) / (x + y - 3);
+        rp = rs * rs + 3 / (x + y - 3);
+        t = (rs - sqrt(rs * rs - 4 * rp)) / 2;
+        // parameters (t, s) = (t, rp/t)
+        if (0.0 <= t && t <= 1.0) return [Point2D(this.f(t))];
         return false;
     },
     bezierPoints: function(t) {

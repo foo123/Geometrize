@@ -138,6 +138,44 @@ var CBezier = makeClass(Bezier2D, {
         }
         return false;
     },
+    intersectsSelf: function() {
+        var p = this._points,
+            x0 = p[0].x, y0 = p[0].y,
+            x1 = p[1].x, y1 = p[1].y,
+            x2 = p[2].x, y2 = p[2].y,
+            x3 = p[3].x, y3 = p[3].y,
+            vxx, vxy, vyx, vyy,
+            vzx, vzy, x, y,
+            s, t, rs, rp;
+
+        vxx = x2 - x1;
+        vxy = y2 - y1;
+        vyx = x1 - x0;
+        vyy = y1 - y0;
+        vzx = x3 - x0;
+        vzy = y3 - y0;
+        s = solve_linear_linear_system(vxx, vyx, -vzx, vxy, vyy, -vzy);
+        if (!s)
+        {
+            return false;
+        }
+        x = s[0].x; y = s[0].y;
+        if (
+        (x > 1) ||
+        (4 * y > (x + 1) * (3 - x)) ||
+        (x > 0 && 2 * y + x < sqrt(3 * x * (4 - x))) ||
+        (3 * y < x * (3 - x))
+        )
+        {
+            return false;
+        }
+        rs = (x - 3) / (x + y - 3);
+        rp = rs * rs + 3 / (x + y - 3);
+        t = (rs - sqrt(rs * rs - 4 * rp)) / 2;
+        // parameters (t, s) = (t, rp/t)
+        if (0.0 <= t && t <= 1.0) return [Point2D(this.f(t))];
+        return false;
+    },
     bezierPoints: function(t) {
         if (arguments.length) t = clamp(t, 0, 1);
         else t = 1;
