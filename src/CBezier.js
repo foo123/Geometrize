@@ -144,22 +144,12 @@ var CBezier = makeClass(Bezier2D, {
             x1 = p[1].x, y1 = p[1].y,
             x2 = p[2].x, y2 = p[2].y,
             x3 = p[3].x, y3 = p[3].y,
-            vxx, vxy, vyx, vyy,
-            vzx, vzy, x, y,
-            s, t, rs, rp;
+            x, y, s, t, rs, rp;
 
-        vxx = x2 - x1;
-        vxy = y2 - y1;
-        vyx = x1 - x0;
-        vyy = y1 - y0;
-        vzx = x3 - x0;
-        vzy = y3 - y0;
-        s = solve_linear_linear_system(vxx, vyx, -vzx, vxy, vyy, -vzy);
-        if (!s)
-        {
-            return false;
-        }
-        x = s[0].x; y = s[0].y;
+        s = solve_linear_linear_system(x2 - x1, x1 - x0, -(x3 - x0), y2 - y1, y1 - y0, -(y3 - y0));
+        if (!s) return false;
+        x = s[0].x;
+        y = s[0].y;
         if (
         (x > 1) ||
         (4 * y > (x + 1) * (3 - x)) ||
