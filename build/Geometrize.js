@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.1 (2024-11-29 18:10:26)
+*   @version 1.0.2 (2024-11-30 16:09:17)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.1 (2024-11-29 18:10:26)
+*   @version 1.0.2 (2024-11-30 16:09:17)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -40,7 +40,7 @@ var HAS = Object.prototype.hasOwnProperty,
     isNode = ("undefined" !== typeof global) && ("[object global]" === toString.call(global)),
     isBrowser = ("undefined" !== typeof window) && ("[object Window]" === toString.call(window)),
     root = isNode ? global : (isBrowser ? window : this),
-    Geometrize = {VERSION: "1.0.1", Math: {}, Geometry: {}}
+    Geometrize = {VERSION: "1.0.2", Math: {}, Geometry: {}}
 ;
 
 // basic backwards-compatible "class" construction
@@ -1915,6 +1915,7 @@ var CompositeCurve = makeClass(Curve2D, {
     constructor: function CompositeCurve(curves) {
         var self = this,
             _curves = null,
+            __curves = null,
             _points = null,
             _length = null,
             _bbox = null,
@@ -2008,19 +2009,31 @@ var CompositeCurve = makeClass(Curve2D, {
                     else if (null == curves)
                     {
                         _curves = null;
+                        __curves = null;
                     }
                 }
             },
             enumerable: true,
             configurable: false
         });
+        def(self, '_curves', {
+            get: function() {
+                if (null == __curves)
+                {
+                    var matrix = self.matrix;
+                    __curves = self.curves.map(function(curve) {return curve.transform(matrix);});
+                }
+                return __curves;
+            },
+            enumerable: false,
+            configurable: false
+        });
         def(self, 'length', {
             get: function() {
                 if (null == _length)
                 {
-                    var m = self.matrix;
-                    _length = _curves.reduce(function(l, curve) {
-                        l += curve.transform(m).length;
+                    _length = self._curves.reduce(function(l, curve) {
+                        l += curve.length;
                         return l;
                     }, 0);
                 }
@@ -2040,9 +2053,8 @@ var CompositeCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _bbox)
                 {
-                    var m = self.matrix;
-                    _bbox = _curves.reduce(function(_bbox, curve) {
-                        var bb = curve.transform(m).getBoundingBox();
+                    _bbox = self._curves.reduce(function(_bbox, curve) {
+                        var bb = curve.getBoundingBox();
                         _bbox.ymin = stdMath.min(_bbox.ymin, bb.ymin);
                         _bbox.xmin = stdMath.min(_bbox.xmin, bb.xmin);
                         _bbox.ymax = stdMath.max(_bbox.ymax, bb.ymax);
@@ -2064,9 +2076,8 @@ var CompositeCurve = makeClass(Curve2D, {
             get: function() {
                 if (null == _hull)
                 {
-                    var m = self.matrix;
-                    _hull = convex_hull(_curves.reduce(function(hulls, curve) {
-                        hulls.push.apply(hulls, curve.transform(m)._hull);
+                    _hull = convex_hull(self._curves.reduce(function(hulls, curve) {
+                        hulls.push.apply(hulls, curve._hull);
                         return hulls;
                     }, []));
                 }
@@ -2079,6 +2090,7 @@ var CompositeCurve = makeClass(Curve2D, {
             if (true === isChanged)
             {
                 _points = null;
+                __curves = null;
                 _length = null;
                 _bbox = null;
                 _hull = null;
@@ -2134,18 +2146,18 @@ var CompositeCurve = makeClass(Curve2D, {
         return c[0]._points[0].eq(c[n-1]._points[c[n-1]._points.length-1]);
     },
     f: function(t) {
-        var c = this.curves, n = c.length - 1, i = stdMath.floor(t*n);
+        var c = this._curves, n = c.length - 1, i = stdMath.floor(t*n);
         return 1 === t ? c[n].f(t) : c[i].f(n*(t - i/n));
     },
     fto: function(t) {
-        var self = this, c = self.curves, n = c.length - 1, i = stdMath.floor(t*n);
+        var self = this, c = self._curves, n = c.length - 1, i = stdMath.floor(t*n);
         return new CompositeCurve(c.slice(0, i).concat([c[i].curveUpTo(1 === t ? 1 : (n*(t - i/n)))]));
     },
     derivative: function() {
-        return new CompositeCurve(this.curves.map(function(c) {return c.derivative();}));
+        return new CompositeCurve(this._curves.map(function(c) {return c.derivative();}));
     },
     hasPoint: function(point) {
-        for (var c=this.curves, n=c.length, i=0; i<n; ++i)
+        for (var c=this._curves, n=c.length, i=0; i<n; ++i)
         {
             if (c[i].hasPoint(point))
                 return true;
@@ -2160,7 +2172,7 @@ var CompositeCurve = makeClass(Curve2D, {
         }
         else if (other instanceof Object2D)
         {
-            for (var ii,i=[],c=self.curves,n=c.length,j=0; j<n; ++j)
+            for (var ii,i=[],c=self._curves,n=c.length,j=0; j<n; ++j)
             {
                 ii = c[j].intersects(other);
                 if (ii) i.push.apply(i, ii);
@@ -2170,7 +2182,7 @@ var CompositeCurve = makeClass(Curve2D, {
         return false;
     },
     intersectsSelf: function() {
-        var self = this, ii, i = [], c = self.curves, n = c.length,
+        var self = this, ii, i = [], c = self._curves, n = c.length,
             j, k, p1, p2, p3, p4;
         for (j=0; j<n; ++j)
         {
@@ -2194,7 +2206,7 @@ var CompositeCurve = makeClass(Curve2D, {
         return i ? i.map(Point2D) : false;
     },
     polylinePoints: function() {
-        return this.curves.reduce(function(lines, curve) {
+        return this._curves.reduce(function(lines, curve) {
             lines.push.apply(lines, curve.polylinePoints());
             return lines;
         }, []);
@@ -2203,7 +2215,7 @@ var CompositeCurve = makeClass(Curve2D, {
         if (arguments.length) t = clamp(t, 0, 1);
         else t = 1;
         if (is_almost_equal(t, 1)) t = 1;
-        var c = this.curves, n = c.length - 1, i = stdMath.floor(t*n), j, b = [];
+        var c = this._curves, n = c.length - 1, i = stdMath.floor(t*n), j, b = [];
         for (j=0; j<i; ++j) b.push.apply(b, c[j].bezierPoints(1));
         b.push.apply(b, c[i].bezierPoints(1 === t ? 1 : (n*(t - i/n))));
         return b;
@@ -2213,7 +2225,7 @@ var CompositeCurve = makeClass(Curve2D, {
     },
     toSVGPath: function(svg) {
         var self = this,
-            curves = self.curves,
+            curves = self._curves,
             isConnected = self.isConnected(),
             isClosed = self.isClosed(isConnected),
             mz, p,
@@ -2272,7 +2284,7 @@ var CompositeCurve = makeClass(Curve2D, {
     },
     toCanvasPath: function(ctx) {
         var self = this,
-            curves = self.curves,
+            curves = self._curves,
             n = curves.length, i,
             isConnected, isClosed,
             m, b, c;
@@ -4495,7 +4507,7 @@ Geometrize.Ellipse = Ellipse;
 [/DOC_MD]**/
 var Shape2D = makeClass(Object2D, {
     constructor: function Shape2D(objects) {
-        var self = this, _svgs = null, _objects = null, _bbox = null, _hull = null,
+        var self = this, _svgs = null, _objects = null, __objects = null, _bbox = null, _hull = null,
             obj_add, obj_del, onObjectChange, onArrayChange;
 
         if (!(self instanceof Shape2D)) return new Shape2D(objects);
@@ -4558,9 +4570,8 @@ var Shape2D = makeClass(Object2D, {
             get: function() {
                 if (null == _bbox)
                 {
-                    var m = self.matrix;
-                    _bbox = _objects.reduce(function(_bbox, obj) {
-                        var bb = obj.transform(m).getBoundingBox();
+                    _bbox = self._objects.reduce(function(_bbox, obj) {
+                        var bb = obj.getBoundingBox();
                         _bbox.ymin = stdMath.min(_bbox.ymin, bb.ymin);
                         _bbox.xmin = stdMath.min(_bbox.xmin, bb.xmin);
                         _bbox.ymax = stdMath.max(_bbox.ymax, bb.ymax);
@@ -4582,9 +4593,8 @@ var Shape2D = makeClass(Object2D, {
             get: function() {
                 if (null == _hull)
                 {
-                    var m = self.matrix;
-                    _hull = convex_hull(_objects.reduce(function(hulls, obj) {
-                        hulls.push.apply(hulls, obj.transform(m)._hull);
+                    _hull = convex_hull(self._objects.reduce(function(hulls, obj) {
+                        hulls.push.apply(hulls, obj._hull);
                         return hulls;
                     }, []));
                 }
@@ -4625,15 +4635,29 @@ var Shape2D = makeClass(Object2D, {
                     else if (null == objects)
                     {
                         _objects = null;
+                        __objects = null;
                     }
                 }
             },
             enumerable: true,
             configurable: false
         });
+        def(self, '_objects', {
+            get: function() {
+                if (null == __objects)
+                {
+                    var matrix = self.matrix;
+                    __objects = _objects.map(function(object) {return object.transform(matrix);});
+                }
+                return __objects;
+            },
+            enumerable: false,
+            configurable: false
+        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
+                __objects = null;
                 _bbox = null;
                 _hull = null;
             }
@@ -4681,7 +4705,7 @@ var Shape2D = makeClass(Object2D, {
         return this._hull.map(function(p) {return p.clone();});
     },
     hasPoint: function(point) {
-        for (var o=this.objects, n=o.length, i=0; i<n; ++i)
+        for (var o=this._objects, n=o.length, i=0; i<n; ++i)
         {
             if (o[i].hasPoint(point))
                 return true;
@@ -4696,7 +4720,7 @@ var Shape2D = makeClass(Object2D, {
         }
         else if (other instanceof Object2D)
         {
-            for (var ii,i=[],o=self.objects,n=o.length,j=0; j<n; ++j)
+            for (var ii,i=[],o=self._objects,n=o.length,j=0; j<n; ++j)
             {
                 ii = o[j].intersects(other);
                 if (ii) i.push.apply(i, ii);
@@ -4706,7 +4730,7 @@ var Shape2D = makeClass(Object2D, {
         return false;
     },
     intersectsSelf: function() {
-        var self = this, ii, i = [], o = self.objects,
+        var self = this, ii, i = [], o = self._objects,
             n = o.length, j, k;
         for (j=0; j<n; ++j)
         {
@@ -4753,14 +4777,13 @@ var Shape2D = makeClass(Object2D, {
         }, false, self.objects.map(function(o) {return o.toSVG();}).join(''));
     },
     toSVGPath: function(svg) {
-        var self = this, objects = self.objects,
-            path = objects.map(function(o) {return o.toSVGPath();}).join(' ');
+        var self = this, toSVGPath = function(object) {return object.toSVGPath();};
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
-            'd': [path, self.isChanged()],
+            'd': [self.objects.map(toSVGPath).join(' '), self.isChanged()],
             'transform': [self.matrix.toSVG(), self.isChanged()],
             'style': [self.style.toSVG(), self.style.isChanged()]
-        }, svg) : path;
+        }, svg) : (self._objects.map(toSVGPath).join(' '));
     },
     toCanvas: function(ctx) {
         var self = this, t = ctx.getTransform();

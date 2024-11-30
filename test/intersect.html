@@ -61,7 +61,7 @@ const curve = CompositeCurve([
     Arc([40,100], [40,80], 10, 10, 0, 0, 0),
     QBezier([[40,80],[20,100],[60,120]]),
     Line([60,120], [70,100])
-]).transform(Matrix2D.translate(-20, 0));
+]).setMatrix(Matrix2D.translate(-20, 0));
 const line1 = Line([20,20], [60,60]).setStyle('stroke', 'blue');
 const line2 = Line([50,2], [20,70]).setStyle('stroke', 'green');
 const line3 = Line([60,160], [300,0]).setStyle('stroke', 'orange');

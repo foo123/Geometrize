@@ -9,7 +9,7 @@
 [/DOC_MD]**/
 var Shape2D = makeClass(Object2D, {
     constructor: function Shape2D(objects) {
-        var self = this, _svgs = null, _objects = null, _bbox = null, _hull = null,
+        var self = this, _svgs = null, _objects = null, __objects = null, _bbox = null, _hull = null,
             obj_add, obj_del, onObjectChange, onArrayChange;
 
         if (!(self instanceof Shape2D)) return new Shape2D(objects);
@@ -72,9 +72,8 @@ var Shape2D = makeClass(Object2D, {
             get: function() {
                 if (null == _bbox)
                 {
-                    var m = self.matrix;
-                    _bbox = _objects.reduce(function(_bbox, obj) {
-                        var bb = obj.transform(m).getBoundingBox();
+                    _bbox = self._objects.reduce(function(_bbox, obj) {
+                        var bb = obj.getBoundingBox();
                         _bbox.ymin = stdMath.min(_bbox.ymin, bb.ymin);
                         _bbox.xmin = stdMath.min(_bbox.xmin, bb.xmin);
                         _bbox.ymax = stdMath.max(_bbox.ymax, bb.ymax);
@@ -96,9 +95,8 @@ var Shape2D = makeClass(Object2D, {
             get: function() {
                 if (null == _hull)
                 {
-                    var m = self.matrix;
-                    _hull = convex_hull(_objects.reduce(function(hulls, obj) {
-                        hulls.push.apply(hulls, obj.transform(m)._hull);
+                    _hull = convex_hull(self._objects.reduce(function(hulls, obj) {
+                        hulls.push.apply(hulls, obj._hull);
                         return hulls;
                     }, []));
                 }
@@ -139,15 +137,29 @@ var Shape2D = makeClass(Object2D, {
                     else if (null == objects)
                     {
                         _objects = null;
+                        __objects = null;
                     }
                 }
             },
             enumerable: true,
             configurable: false
         });
+        def(self, '_objects', {
+            get: function() {
+                if (null == __objects)
+                {
+                    var matrix = self.matrix;
+                    __objects = _objects.map(function(object) {return object.transform(matrix);});
+                }
+                return __objects;
+            },
+            enumerable: false,
+            configurable: false
+        });
         self.isChanged = function(isChanged) {
             if (true === isChanged)
             {
+                __objects = null;
                 _bbox = null;
                 _hull = null;
             }
@@ -195,7 +207,7 @@ var Shape2D = makeClass(Object2D, {
         return this._hull.map(function(p) {return p.clone();});
     },
     hasPoint: function(point) {
-        for (var o=this.objects, n=o.length, i=0; i<n; ++i)
+        for (var o=this._objects, n=o.length, i=0; i<n; ++i)
         {
             if (o[i].hasPoint(point))
                 return true;
@@ -210,7 +222,7 @@ var Shape2D = makeClass(Object2D, {
         }
         else if (other instanceof Object2D)
         {
-            for (var ii,i=[],o=self.objects,n=o.length,j=0; j<n; ++j)
+            for (var ii,i=[],o=self._objects,n=o.length,j=0; j<n; ++j)
             {
                 ii = o[j].intersects(other);
                 if (ii) i.push.apply(i, ii);
@@ -220,7 +232,7 @@ var Shape2D = makeClass(Object2D, {
         return false;
     },
     intersectsSelf: function() {
-        var self = this, ii, i = [], o = self.objects,
+        var self = this, ii, i = [], o = self._objects,
             n = o.length, j, k;
         for (j=0; j<n; ++j)
         {
@@ -267,14 +279,13 @@ var Shape2D = makeClass(Object2D, {
         }, false, self.objects.map(function(o) {return o.toSVG();}).join(''));
     },
     toSVGPath: function(svg) {
-        var self = this, objects = self.objects,
-            path = objects.map(function(o) {return o.toSVGPath();}).join(' ');
+        var self = this, toSVGPath = function(object) {return object.toSVGPath();};
         return arguments.length ? SVG('path', {
             'id': [self.id, false],
-            'd': [path, self.isChanged()],
+            'd': [self.objects.map(toSVGPath).join(' '), self.isChanged()],
             'transform': [self.matrix.toSVG(), self.isChanged()],
             'style': [self.style.toSVG(), self.style.isChanged()]
-        }, svg) : path;
+        }, svg) : (self._objects.map(toSVGPath).join(' '));
     },
     toCanvas: function(ctx) {
         var self = this, t = ctx.getTransform();
