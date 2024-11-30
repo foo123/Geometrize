@@ -120,8 +120,8 @@ var Polygon = makeClass(Curve2D, {
     clone: function() {
         return new Polygon(this.vertices.map(function(vertex) {return vertex.clone();}));
     },
-    transform: function(matrix) {
-        return new Polygon(this.vertices.map(function(vertex) {return vertex.transform(matrix);}));
+    transform: function(matrix, withSelfMatrix) {
+        return new Polygon((true === withSelfMatrix ? this._points : this.points).map(object_transform(matrix)));
     },
     isClosed: function() {
         return true;

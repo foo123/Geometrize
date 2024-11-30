@@ -210,15 +210,16 @@ var Ellipse = makeClass(EllipticArc2D, {
         var self = this;
         return new Ellipse(self.center.clone(), self.radiusX, self.radiusY, self.angle);
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         var self = this,
             c = self.center,
             rX = self.radiusX,
             rY = self.radiusY,
             a = self.angle,
-            t = matrix.getTranslation(),
-            r = deg(matrix.getRotationAngle()),
-            s = matrix.getScale()
+            mat = (true === withSelfMatrix) && self.hasMatrix() ? matrix.mul(self.matrix) : matrix,
+            t = mat.getTranslation(),
+            r = deg(mat.getRotationAngle()),
+            s = mat.getScale()
         ;
         return new Ellipse(
             new Point2D(c.x + t.x, c.y + t.y),

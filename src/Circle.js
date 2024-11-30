@@ -167,12 +167,13 @@ var Circle = makeClass(EllipticArc2D, {
         var self = this;
         return new Circle(self.center.clone(), self.radius);
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         var self = this,
             c = self.center,
             r = self.radius,
-            ct = c.transform(matrix),
-            pt = new Point2D(c.x+r, c.y+r).transform(matrix)
+            mat = (true === withSelfMatrix) && self.hasMatrix() ? matrix.mul(self.matrix) : matrix,
+            ct = c.transform(mat),
+            pt = new Point2D(c.x+r, c.y+r).transform(mat)
         ;
         return new Circle(ct, dist(ct, pt));
     },

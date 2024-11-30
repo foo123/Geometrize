@@ -102,8 +102,8 @@ var Point2D = makeClass(Object2D, {
     clone: function() {
         return new Point2D(this.x, this.y);
     },
-    transform: function(matrix) {
-        return matrix.transform(this);
+    transform: function(matrix, withSelfMatrix) {
+        return ((true === withSelfMatrix) && this.hasMatrix() ? matrix.mul(this.matrix) : matrix).transform(this);
     },
     getBoundingBox: function() {
         var self = this;

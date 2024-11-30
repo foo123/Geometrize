@@ -356,17 +356,18 @@ var Arc = makeClass(EllipticArc2D, {
         var self = this;
         return new Arc(self.start.clone(), self.end.clone(), self.radiusX, self.radiusY, self.angle, self.largeArc, self.sweep);
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         var self = this,
             rX = self.radiusX,
             rY = self.radiusY,
             a = self.angle,
-            r = deg(matrix.getRotationAngle()),
-            s = matrix.getScale()
+            mat = (true === withSelfMatrix) && self.hasMatrix() ? matrix.mul(self.matrix) : matrix,
+            r = deg(mat.getRotationAngle()),
+            s = mat.getScale()
         ;
         return new Arc(
-            self.start.transform(matrix),
-            self.end.transform(matrix),
+            self.start.transform(mat),
+            self.end.transform(mat),
             rX * s.x,
             rY * s.y,
             a + r,

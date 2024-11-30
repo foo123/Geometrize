@@ -92,9 +92,6 @@ var QBezier = makeClass(Bezier2D, {
     clone: function() {
         return new QBezier(this.points.map(function(p) {return p.clone();}));
     },
-    transform: function(matrix) {
-        return new QBezier(this.points.map(function(p) {return p.transform(matrix);}));
-    },
     f: function(t) {
         return bezier2(t, this._points);
     },

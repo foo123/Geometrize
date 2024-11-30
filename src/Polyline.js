@@ -102,8 +102,8 @@ var Polyline = makeClass(Curve2D, {
     clone: function() {
         return new Polyline(this.points.map(function(point) {return point.clone();}));
     },
-    transform: function(matrix) {
-        return new Polyline(this.points.map(function(point) {return point.transform(matrix);}));
+    transform: function(matrix, withSelfMatrix) {
+        return new Polyline((true === withSelfMatrix ? this._points : this.points).map(object_transform(matrix)));
     },
     isClosed: function() {
         var self = this, p = self.points;

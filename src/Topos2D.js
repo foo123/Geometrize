@@ -116,7 +116,7 @@ var Topos2D = makeClass(Object2D, {
     clone: function() {
         return new Topos2D(this.points.map(function(p) {return p.clone();}));
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         return new Topos2D(this.points.map(function(p) {return matrix.transform(p);}));
     },
     hasPoint: function(point) {

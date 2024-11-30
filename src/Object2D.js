@@ -219,3 +219,9 @@ var Object2D = makeClass(null, merge(null, {
     }
 }, Changeable));
 Geometrize.Object2D = Object2D;
+
+function object_transform(matrix, withSelfMatrix)
+{
+    if (2 > arguments.length) withSelfMatrix = false;
+    return function(object) {return object.transform(matrix, withSelfMatrix);};
+}

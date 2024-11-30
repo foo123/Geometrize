@@ -293,6 +293,11 @@ var Bezier2D = makeClass(Curve2D, {
         });
     },
     name: 'Bezier2D',
+    transform: function(matrix, withSelfMatrix) {
+        var self = this, bezier = self.costructor,
+            points = true === withSelfMatrix ? self._points : self.points;
+        return new bezier(points.map(object_transform(matrix)));
+    },
     fto: function(t) {
         var self = this;
         return new self.constructor(de_casteljau(t, self.points, true).points);
@@ -509,8 +514,9 @@ var ParametricCurve = makeClass(Curve2D, {
     clone: function() {
         return new ParametricCurve(this.f);
     },
-    transform: function(matrix) {
-        return (new ParametricCurve(this.f)).setMatrix(matrix);
+    transform: function(matrix, withSelfMatrix) {
+        var self = this;
+        return (new ParametricCurve(self.f)).setMatrix(true === withSelfMatrix ? (self.matrix && matrix ? matrix.mul(self.matrix) : (matrix || self.matrix)) : matrix);
     },
     fto: function(tmax) {
         var f = this.f, pmax = f(tmax);
@@ -782,7 +788,7 @@ var CompositeCurve = makeClass(Curve2D, {
                 if (null == __curves)
                 {
                     var matrix = self.matrix;
-                    __curves = self.curves.map(function(curve) {return curve.transform(matrix);});
+                    __curves = self.curves.map(function(curve) {return curve.transform(matrix, true);});
                 }
                 return __curves;
             },
@@ -881,8 +887,9 @@ var CompositeCurve = makeClass(Curve2D, {
     clone: function() {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.clone();}));
     },
-    transform: function(matrix) {
-        return new CompositeCurve(this.curves.map(function(curve) {return curve.transform(matrix);}));
+    transform: function(matrix, withSelfMatrix) {
+        var curves = true === withSelfMatrix ? this._curves : this.curves;
+        return new CompositeCurve(curves.map(object_transform(matrix, withSelfMatrix)));
     },
     isConnected: function() {
         var c = this.curves, c1, c2, p1, p2, n = c.length-1, i;

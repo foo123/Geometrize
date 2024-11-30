@@ -92,9 +92,6 @@ var CBezier = makeClass(Bezier2D, {
     clone: function() {
         return new CBezier(this.points.map(function(p) {return p.clone();}));
     },
-    transform: function(matrix) {
-        return new CBezier(this.points.map(function(p) {return p.transform(matrix);}));
-    },
     f: function(t) {
         return bezier3(t, this._points);
     },

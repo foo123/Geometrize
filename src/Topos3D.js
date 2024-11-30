@@ -116,7 +116,7 @@ var Topos3D = makeClass(Object3D, {
     clone: function() {
         return new Topos3D(this.points.map(function(p) {return p.clone();}));
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         return new Topos3D(this.points.map(function(p) {return matrix.transform(p);}));
     },
     hasPoint: function(point) {

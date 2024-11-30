@@ -149,7 +149,7 @@ var Shape2D = makeClass(Object2D, {
                 if (null == __objects)
                 {
                     var matrix = self.matrix;
-                    __objects = _objects.map(function(object) {return object.transform(matrix);});
+                    __objects = _objects.map(function(object) {return object.transform(matrix, true);});
                 }
                 return __objects;
             },
@@ -191,8 +191,8 @@ var Shape2D = makeClass(Object2D, {
     hasMatrix: function() {
         return true;
     },
-    transform: function(matrix) {
-        return new Shape2D(this.objects.map(function(obj) {return obj.transform(matrix);}));
+    transform: function(matrix, withSelfMatrix) {
+        return new Shape2D((true === withSelfMatrix ? this._objects : this.objects).map(object_transform(matrix, withSelfMatrix)));
     },
     getBoundingBox: function() {
         var bb = this._bbox;

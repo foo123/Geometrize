@@ -125,8 +125,8 @@ var Point3D = makeClass(Object3D, {
     clone: function() {
         return new Point3D(this.x, this.y, this.z);
     },
-    transform: function(matrix) {
-        return matrix.transform(this);
+    transform: function(matrix, withSelfMatrix) {
+        return ((true === withSelfMatrix) && this.hasMatrix() ? matrix.mul(this.matrix) : matrix).transform(this);
     },
     getBoundingBox: function() {
         var self = this;

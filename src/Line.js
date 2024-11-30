@@ -97,10 +97,6 @@ var Line = makeClass(Bezier2D, {
         var self = this;
         return new Line(self.start.clone(), self.end.clone());
     },
-    transform: function(matrix) {
-        var self = this;
-        return new Line(self.start.transform(matrix), self.end.transform(matrix));
-    },
     f: function(t) {
         return bezier1(t, this._points);
     },
