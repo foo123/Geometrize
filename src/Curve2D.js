@@ -294,7 +294,7 @@ var Bezier2D = makeClass(Curve2D, {
     },
     name: 'Bezier2D',
     transform: function(matrix, withSelfMatrix) {
-        var self = this, bezier = self.costructor,
+        var self = this, bezier = self.constructor,
             points = true === withSelfMatrix ? self._points : self.points;
         return new bezier(points.map(object_transform(matrix)));
     },

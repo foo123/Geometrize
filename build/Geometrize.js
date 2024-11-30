@@ -2,14 +2,14 @@
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.2 (2024-11-30 16:09:17)
+*   @version 1.0.2 (2024-11-30 19:59:25)
 *   https://github.com/foo123/Geometrize
 *
 **//**
 *   Geometrize
 *   computational geometry and rendering library for JavaScript
 *
-*   @version 1.0.2 (2024-11-30 16:09:17)
+*   @version 1.0.2 (2024-11-30 19:59:25)
 *   https://github.com/foo123/Geometrize
 *
 **/
@@ -819,6 +819,12 @@ var Object2D = makeClass(null, merge(null, {
     }
 }, Changeable));
 Geometrize.Object2D = Object2D;
+
+function object_transform(matrix, withSelfMatrix)
+{
+    if (2 > arguments.length) withSelfMatrix = false;
+    return function(object) {return object.transform(matrix, withSelfMatrix);};
+}
 /**[DOC_MD]
  * ### Point2D (subclass of Object2D)
  *
@@ -923,8 +929,8 @@ var Point2D = makeClass(Object2D, {
     clone: function() {
         return new Point2D(this.x, this.y);
     },
-    transform: function(matrix) {
-        return matrix.transform(this);
+    transform: function(matrix, withSelfMatrix) {
+        return ((true === withSelfMatrix) && this.hasMatrix() ? matrix.mul(this.matrix) : matrix).transform(this);
     },
     getBoundingBox: function() {
         var self = this;
@@ -1187,7 +1193,7 @@ var Topos2D = makeClass(Object2D, {
     clone: function() {
         return new Topos2D(this.points.map(function(p) {return p.clone();}));
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         return new Topos2D(this.points.map(function(p) {return matrix.transform(p);}));
     },
     hasPoint: function(point) {
@@ -1532,6 +1538,11 @@ var Bezier2D = makeClass(Curve2D, {
         });
     },
     name: 'Bezier2D',
+    transform: function(matrix, withSelfMatrix) {
+        var self = this, bezier = self.constructor,
+            points = true === withSelfMatrix ? self._points : self.points;
+        return new bezier(points.map(object_transform(matrix)));
+    },
     fto: function(t) {
         var self = this;
         return new self.constructor(de_casteljau(t, self.points, true).points);
@@ -1748,8 +1759,9 @@ var ParametricCurve = makeClass(Curve2D, {
     clone: function() {
         return new ParametricCurve(this.f);
     },
-    transform: function(matrix) {
-        return (new ParametricCurve(this.f)).setMatrix(matrix);
+    transform: function(matrix, withSelfMatrix) {
+        var self = this;
+        return (new ParametricCurve(self.f)).setMatrix(true === withSelfMatrix ? (self.matrix && matrix ? matrix.mul(self.matrix) : (matrix || self.matrix)) : matrix);
     },
     fto: function(tmax) {
         var f = this.f, pmax = f(tmax);
@@ -2021,7 +2033,7 @@ var CompositeCurve = makeClass(Curve2D, {
                 if (null == __curves)
                 {
                     var matrix = self.matrix;
-                    __curves = self.curves.map(function(curve) {return curve.transform(matrix);});
+                    __curves = self.curves.map(function(curve) {return curve.transform(matrix, true);});
                 }
                 return __curves;
             },
@@ -2120,8 +2132,9 @@ var CompositeCurve = makeClass(Curve2D, {
     clone: function() {
         return new CompositeCurve(this.curves.map(function(curve) {return curve.clone();}));
     },
-    transform: function(matrix) {
-        return new CompositeCurve(this.curves.map(function(curve) {return curve.transform(matrix);}));
+    transform: function(matrix, withSelfMatrix) {
+        var curves = true === withSelfMatrix ? this._curves : this.curves;
+        return new CompositeCurve(curves.map(object_transform(matrix, withSelfMatrix)));
     },
     isConnected: function() {
         var c = this.curves, c1, c2, p1, p2, n = c.length-1, i;
@@ -2418,10 +2431,6 @@ var Line = makeClass(Bezier2D, {
         var self = this;
         return new Line(self.start.clone(), self.end.clone());
     },
-    transform: function(matrix) {
-        var self = this;
-        return new Line(self.start.transform(matrix), self.end.transform(matrix));
-    },
     f: function(t) {
         return bezier1(t, this._points);
     },
@@ -2644,9 +2653,6 @@ var QBezier = makeClass(Bezier2D, {
     clone: function() {
         return new QBezier(this.points.map(function(p) {return p.clone();}));
     },
-    transform: function(matrix) {
-        return new QBezier(this.points.map(function(p) {return p.transform(matrix);}));
-    },
     f: function(t) {
         return bezier2(t, this._points);
     },
@@ -2814,9 +2820,6 @@ var CBezier = makeClass(Bezier2D, {
     name: 'CBezier',
     clone: function() {
         return new CBezier(this.points.map(function(p) {return p.clone();}));
-    },
-    transform: function(matrix) {
-        return new CBezier(this.points.map(function(p) {return p.transform(matrix);}));
     },
     f: function(t) {
         return bezier3(t, this._points);
@@ -3025,8 +3028,8 @@ var Polyline = makeClass(Curve2D, {
     clone: function() {
         return new Polyline(this.points.map(function(point) {return point.clone();}));
     },
-    transform: function(matrix) {
-        return new Polyline(this.points.map(function(point) {return point.transform(matrix);}));
+    transform: function(matrix, withSelfMatrix) {
+        return new Polyline((true === withSelfMatrix ? this._points : this.points).map(object_transform(matrix)));
     },
     isClosed: function() {
         var self = this, p = self.points;
@@ -3305,8 +3308,8 @@ var Polygon = makeClass(Curve2D, {
     clone: function() {
         return new Polygon(this.vertices.map(function(vertex) {return vertex.clone();}));
     },
-    transform: function(matrix) {
-        return new Polygon(this.vertices.map(function(vertex) {return vertex.transform(matrix);}));
+    transform: function(matrix, withSelfMatrix) {
+        return new Polygon((true === withSelfMatrix ? this._points : this.points).map(object_transform(matrix)));
     },
     isClosed: function() {
         return true;
@@ -3866,17 +3869,18 @@ var Arc = makeClass(EllipticArc2D, {
         var self = this;
         return new Arc(self.start.clone(), self.end.clone(), self.radiusX, self.radiusY, self.angle, self.largeArc, self.sweep);
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         var self = this,
             rX = self.radiusX,
             rY = self.radiusY,
             a = self.angle,
-            r = deg(matrix.getRotationAngle()),
-            s = matrix.getScale()
+            mat = (true === withSelfMatrix) && self.hasMatrix() ? matrix.mul(self.matrix) : matrix,
+            r = deg(mat.getRotationAngle()),
+            s = mat.getScale()
         ;
         return new Arc(
-            self.start.transform(matrix),
-            self.end.transform(matrix),
+            self.start.transform(mat),
+            self.end.transform(mat),
             rX * s.x,
             rY * s.y,
             a + r,
@@ -4119,12 +4123,13 @@ var Circle = makeClass(EllipticArc2D, {
         var self = this;
         return new Circle(self.center.clone(), self.radius);
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         var self = this,
             c = self.center,
             r = self.radius,
-            ct = c.transform(matrix),
-            pt = new Point2D(c.x+r, c.y+r).transform(matrix)
+            mat = (true === withSelfMatrix) && self.hasMatrix() ? matrix.mul(self.matrix) : matrix,
+            ct = c.transform(mat),
+            pt = new Point2D(c.x+r, c.y+r).transform(mat)
         ;
         return new Circle(ct, dist(ct, pt));
     },
@@ -4402,15 +4407,16 @@ var Ellipse = makeClass(EllipticArc2D, {
         var self = this;
         return new Ellipse(self.center.clone(), self.radiusX, self.radiusY, self.angle);
     },
-    transform: function(matrix) {
+    transform: function(matrix, withSelfMatrix) {
         var self = this,
             c = self.center,
             rX = self.radiusX,
             rY = self.radiusY,
             a = self.angle,
-            t = matrix.getTranslation(),
-            r = deg(matrix.getRotationAngle()),
-            s = matrix.getScale()
+            mat = (true === withSelfMatrix) && self.hasMatrix() ? matrix.mul(self.matrix) : matrix,
+            t = mat.getTranslation(),
+            r = deg(mat.getRotationAngle()),
+            s = mat.getScale()
         ;
         return new Ellipse(
             new Point2D(c.x + t.x, c.y + t.y),
@@ -4647,7 +4653,7 @@ var Shape2D = makeClass(Object2D, {
                 if (null == __objects)
                 {
                     var matrix = self.matrix;
-                    __objects = _objects.map(function(object) {return object.transform(matrix);});
+                    __objects = _objects.map(function(object) {return object.transform(matrix, true);});
                 }
                 return __objects;
             },
@@ -4689,8 +4695,8 @@ var Shape2D = makeClass(Object2D, {
     hasMatrix: function() {
         return true;
     },
-    transform: function(matrix) {
-        return new Shape2D(this.objects.map(function(obj) {return obj.transform(matrix);}));
+    transform: function(matrix, withSelfMatrix) {
+        return new Shape2D((true === withSelfMatrix ? this._objects : this.objects).map(object_transform(matrix, withSelfMatrix)));
     },
     getBoundingBox: function() {
         var bb = this._bbox;
